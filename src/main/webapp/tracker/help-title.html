@@ -1,0 +1,22 @@
+<div>
+  <p>
+  The title that will be used for newly created issue.  This string
+  will also used when Hudson updates an existing issue.
+  </p>
+  <p>
+  You may include environmental variables, referred to by ${ENV_VAR_NAME}, 
+    that will be 
+    interpreted at runtime in this field.<br/>
+    For example, your title might be "Hudson build failed for
+  ${JOB_NAME}.".<br/>
+    See <a href='/env-vars.html' target=_new>the list of available
+  environment variables</a>.<br/>
+  </p>
+  <p>
+  Adding environmental variables -- ${BUILD_ID}, for example -- that
+  change between runs will cause new issues to be opened whenever the
+  build fails. Alternatively, choosing a title that will not change
+  between runs will insure that all build status activity is directed
+  to a single tracker issue.
+  </p>
+</div>

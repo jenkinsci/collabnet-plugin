@@ -1,0 +1,21 @@
+<div>
+  <p>
+  If set to 'no':
+    <ul>
+      <li>issues will only be updated on failure or if the issue is still open.</li>  
+      <li>New issues are only opened on failure.</li>
+      <li>If a failure occurs and the last submitted issue is closed, a new issue will be opened.</li>
+    </ul>
+  </p>
+  <p>
+  If set to 'yes': 
+    <ul>
+      <li>the last issue will be updated even if it's a subsequent success.</li>  
+      <li>a new issue will be opened on an initial success (i.e. if no issue exists yet).</li>
+      <li>If the last submitted issue is closed and a failure occurs, that issue will be reopened.</li>
+    </ul>
+  </p>
+  <p>
+  If you prefer to have an issue that always tracks the state of the hudson build, you should choose 'yes'.  If you only want issues when you have failures, and to have each failure treated separately, you should choose 'no'.
+  </p>
+</div>

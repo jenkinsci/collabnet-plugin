@@ -1,0 +1,167 @@
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" 
+ xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form" 
+ xmlns:c="/hudson/plugins/collabnet/tags">
+
+  <j:set var="cnfr_id" value="${descriptor.getUniqueId()}" />
+
+  <j:set var="rootHelpURL" value="${descriptor.getHelpUrl()}"/>
+
+  <f:entry title="CollabNet TeamForge URL" 
+   description="For example, https://forge.collab.net" 
+   help="${rootHelpURL}/help-collabnetUrl.html">
+    <f:textbox name="cnfr.collabneturl" value="${instance.getCollabNetUrl()}" 
+     id="${cnfr_id}.cnfr.collabneturl" 
+     checkUrl="'${rootURL}/publisher/CNFileRelease/collabNetUrlCheck?value=' + 
+       escape(this.value)" 
+     onchange="document.getElementById('${cnfr_id}.cnfr.password').onchange();"
+    />
+  </f:entry>
+
+  <f:entry title="Username" help="${rootHelpURL}/help-username.html">
+    <f:textbox name="cnfr.username" value="${instance.username}" 
+     id="${cnfr_id}.cnfr.username" 
+     checkUrl="'${rootURL}/publisher/CNFileRelease/requiredCheck?name=' + 
+       'Username&amp;value='+escape(this.value)" 
+     onchange="document.getElementById('${cnfr_id}.cnfr.password').onchange();
+    "/>
+  </f:entry>
+
+  <f:entry title="Password" help="${rootHelpURL}/help-password.html">
+    <input type="password" name="cnfr.password" value="${instance.password}" 
+     id="${cnfr_id}.cnfr.password" class='setting-input validated' 
+     checkUrl="'${rootURL}/publisher/CNFileRelease/passwordCheck?password=' + 
+       escape(this.value) + '&amp;url=' + 
+       escape(document.getElementById('${cnfr_id}.cnfr.collabneturl').value) + 
+       '&amp;username=' + 
+       escape(document.getElementById('${cnfr_id}.cnfr.username').value)" 
+     onchange="_${cnfr_id}_cnfr_project_update();
+       document.getElementById('_${cnfr_id}_cnfr_project').onchange();"/>
+  </f:entry>
+
+  <f:entry title="Project" help="${rootHelpURL}/help-project.html">
+    <c:updatableComboBox name="cnfr.project" id="_${cnfr_id}_cnfr_project" 
+     clazz="setting-input validated" value="${instance.project}" 
+     items="${instance.getProjects()}" 
+     checkUrl="'${rootURL}/publisher/CNFileRelease/projectCheck?project=' + 
+       escape(document.getElementById('_${cnfr_id}_cnfr_project').value) + 
+       '&amp;password=' + 
+       escape(document.getElementById('${cnfr_id}.cnfr.password').value) + 
+       '&amp;url=' + 
+       escape(document.getElementById('${cnfr_id}.cnfr.collabneturl').value) + 
+       '&amp;username=' + 
+       escape(document.getElementById('${cnfr_id}.cnfr.username').value)" 
+     updateUrl="'${rootURL}/publisher/CNFileRelease/getProjects?url=' + 
+       escape(document.getElementById('${cnfr_id}.cnfr.collabneturl').value) + 
+       '&amp;username=' + 
+       escape(document.getElementById('${cnfr_id}.cnfr.username').value) + 
+       '&amp;password=' + 
+       escape(document.getElementById('${cnfr_id}.cnfr.password').value)" 
+     onchange="_${cnfr_id}_cnfr_package_update();
+       document.getElementById('_${cnfr_id}_cnfr_package').onchange();"/>
+  </f:entry>
+
+  <f:entry title="Package" help="${rootHelpURL}/help-package.html">    
+    <c:updatableComboBox name="cnfr.package" id="_${cnfr_id}_cnfr_package" 
+     clazz="setting-input validated" value="${instance.package}" 
+     items="${instance.getPackages()}" 
+     checkUrl="'${rootURL}/publisher/CNFileRelease/packageCheck?package=' + 
+       escape(this.value) +'&amp;project=' + 
+       escape(document.getElementById('_${cnfr_id}_cnfr_project').value) + 
+       '&amp;password='+ 
+       escape(document.getElementById('${cnfr_id}.cnfr.password').value) + 
+       '&amp;url=' + 
+       escape(document.getElementById('${cnfr_id}.cnfr.collabneturl').value) + 
+       '&amp;username=' + 
+       escape(document.getElementById('${cnfr_id}.cnfr.username').value)" 
+     updateUrl="'${rootURL}/publisher/CNFileRelease/getPackages?url=' + 
+       escape(document.getElementById('${cnfr_id}.cnfr.collabneturl').value) + 
+       '&amp;username=' + 
+       escape(document.getElementById('${cnfr_id}.cnfr.username').value) + 
+       '&amp;password=' + 
+       escape(document.getElementById('${cnfr_id}.cnfr.password').value) +
+       '&amp;project=' + 
+       escape(document.getElementById('_${cnfr_id}_cnfr_project').value)"
+     onchange="_${cnfr_id}_cnfr_release_update();
+       document.getElementById('_${cnfr_id}_cnfr_release').onchange();"
+    />
+  </f:entry>
+
+  <f:entry title="Release" help="${rootHelpURL}/help-release.html">
+    <c:updatableComboBox name="cnfr.release" id="_${cnfr_id}_cnfr_release" 
+     clazz="setting-input validated" value="${instance.release}" 
+     items="${instance.getReleases()}" 
+     checkUrl="'${rootURL}/publisher/CNFileRelease/releaseCheck?release=' + 
+       escape(this.value) + '&amp;package=' + 
+       escape(document.getElementById('_${cnfr_id}_cnfr_package').value) + 
+       '&amp;project=' + 
+       escape(document.getElementById('_${cnfr_id}_cnfr_project').value) + 
+       '&amp;password='+ 
+       escape(document.getElementById('${cnfr_id}.cnfr.password').value) + 
+       '&amp;url=' + 
+       escape(document.getElementById('${cnfr_id}.cnfr.collabneturl').value) + 
+       '&amp;username=' + 
+       escape(document.getElementById('${cnfr_id}.cnfr.username').value) +
+       '&amp;required=true'" 
+     updateUrl="'${rootURL}/publisher/CNFileRelease/getReleases?url=' + 
+       escape(document.getElementById('${cnfr_id}.cnfr.collabneturl').value) + 
+       '&amp;username=' + 
+       escape(document.getElementById('${cnfr_id}.cnfr.username').value) + 
+       '&amp;password=' + 
+       escape(document.getElementById('${cnfr_id}.cnfr.password').value) +
+       '&amp;project=' + 
+       escape(document.getElementById('_${cnfr_id}_cnfr_project').value) +
+       '&amp;package=' + 
+       escape(document.getElementById('_${cnfr_id}_cnfr_package').value)" />
+  </f:entry>
+
+
+  <f:entry title="Overwrite existing files?" 
+   help="${rootHelpURL}/help-overwrite.html">
+  <span>
+      <f:radio name="${cnfr_id}.cnfr.overwrite" id="overwrite_yes" title="Yes" 
+       value="true" checked="${instance.overwrite() != false}">
+      </f:radio>
+      <label for="overwrite_yes">Yes</label>
+      <f:radio name="${cnfr_id}.cnfr.overwrite" id="overwrite_no" title="No" 
+       value="false" checked="${instance.overwrite() == false}">
+      </f:radio>
+      <label for="overwrite_no">No</label>
+    </span>
+  </f:entry>
+  <f:entry title="File Patterns to Upload" 
+   help="${rootHelpURL}/help-filepattern.html">
+    <link rel="stylesheet" href="/plugin/collabnet/css/style.css" 
+     type="text/css"/>
+    <j:choose>
+      <j:when test="${instance != null}">
+        <f:repeatable name="cnfr.files" var="file" 
+         items="${instance.getFilePatterns()}" minimum="1" noAddButton="true">
+          <f:textbox name="cnfr.file" value="${file}" 
+           checkUrl="'${rootURL}/publisher/CNFileRelease/' + 
+             'unRequiredInterpretedCheck?value='+escape(this.value)" />
+            <div align="right">
+              <input type="button" value="Add File Pattern" 
+               class="repeatable-add show-if-last" />
+              <input type="button" value="Delete File Pattern" 
+               class="repeatable-delete show-if-not-only"/> 
+            </div>
+        </f:repeatable>
+      </j:when>
+      <j:otherwise>
+        <f:repeatable name="cnfr.files" var="file" 
+         items="${['']}" minimum="1" noAddButton="true">
+          <f:textbox name="cnfr.file" value="${file}" 
+           checkUrl="'${rootURL}/publisher/CNFileRelease/' + 
+             'unRequiredInterpretedCheck?value='+escape(this.value)" />
+            <div align="right">
+              <input type="button" value="Add File Pattern" 
+               class="repeatable-add show-if-last" />
+              <input type="button" value="Delete File Pattern" 
+               class="repeatable-delete show-if-not-only"/> 
+            </div>
+        </f:repeatable>
+      </j:otherwise>
+    </j:choose>
+  </f:entry>
+  
+</j:jelly>

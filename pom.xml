@@ -1,0 +1,325 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>org.jvnet.hudson.plugins</groupId>
+    <artifactId>plugin</artifactId>
+    <version>1.295</version>
+    <relativePath>../pom.xml</relativePath>
+  </parent>
+  <artifactId>collabnet</artifactId>
+  <version>1.0-SNAPSHOT</version>
+  <name>&lt;a href="http://www.collab.net/">CollabNet&lt;/a> Plugins</name>
+  <description>CollabNet packages</description>
+  <packaging>hpi</packaging>
+
+  <properties>
+    <compile.java.version>1.5</compile.java.version>
+    <hudson.plugin.version>1.23</hudson.plugin.version>
+  </properties>
+
+  <repositories>
+    <repository>
+      <id>collabnet-libs</id>
+      <url>file:${project.basedir}/lib</url>
+    </repository>
+  </repositories>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.apache.axis</groupId>    
+      <artifactId>axis</artifactId>
+      <version>1.4</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.axis</groupId>    
+      <artifactId>axis-jaxrpc</artifactId>
+      <version>1.4</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.axis</groupId>    
+      <artifactId>axis-saaj</artifactId>
+      <version>1.4</version>
+    </dependency>
+    <dependency>
+      <groupId>com.collabnet.ce.soap50.webservices</groupId>
+      <artifactId>sf_soap50_sdk</artifactId>
+      <version>1.1</version>
+    </dependency>
+    <dependency>
+      <groupId>commons-httpclient</groupId>
+      <artifactId>commons-httpclient</artifactId>
+      <version>[3.0,4.0)</version>
+      <exclusions>
+        <exclusion>
+          <groupId>junit</groupId>
+          <artifactId>junit</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>com.collabnet.contrib</groupId>
+      <artifactId>httpclient-contrib-ssl</artifactId>
+      <version>1.0</version>
+    </dependency>
+    <dependency>
+      <groupId>com.collabnet.cubit.api</groupId>
+      <artifactId>cubit-rest-connector</artifactId>
+      <version>1.0</version>
+    </dependency>
+    <dependency>
+      <groupId>com.collabnet.ce.soap50.webservices</groupId>
+      <artifactId>sf_soap50_sdk</artifactId>
+      <version>1.1</version>
+    </dependency>
+    <dependency>
+      <groupId>org.jvnet.hudson.plugins</groupId>
+      <artifactId>promoted-builds</artifactId>
+      <version>1.1</version>
+    </dependency>
+    <dependency>
+      <groupId>log4j</groupId>
+      <artifactId>log4j</artifactId>
+      <version>1.2.14</version>
+    </dependency>
+    <dependency>
+      <groupId>javax.servlet</groupId>
+      <artifactId>servlet-api</artifactId>
+      <version>2.3</version>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <finalName>CollabNet-${version}</finalName>
+    <plugins>
+      <plugin>
+        <groupId>org.jvnet.hudson.tools</groupId>
+        <artifactId>maven-hpi-plugin</artifactId>
+        <version>${hudson.plugin.version}</version>
+        <extensions>true</extensions>
+      </plugin>
+      <plugin>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <configuration>
+          <source>${compile.java.version}</source>
+          <target>${compile.java.version}</target>
+        </configuration>
+      </plugin>
+<plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>copy</id>
+            <phase>compile</phase>
+            <goals>
+              <goal>copy</goal>
+            </goals>
+            <configuration>
+                <artifactItems>
+                   <artifactItem>
+                     <groupId>org.jvnet.hudson.plugins</groupId>
+                     <artifactId>promoted-builds</artifactId>
+                     <type>hpi</type>
+                     <overWrite>true</overWrite>
+                     <outputDirectory>${project.build.directory}/WEB-INF/plugins/</outputDirectory>
+                   </artifactItem>
+                 </artifactItems>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <artifactId>maven-javadoc-plugin</artifactId>
+      </plugin>
+      <plugin>
+        <artifactId>maven-source-plugin</artifactId>
+      </plugin>
+      <plugin>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <excludes>
+            <!-- to test, comment out tests below and set the CAPS
+                 values properly for your local system; also make
+                 sure you have test project and users as below. -->
+            <exclude>**/AuthnTest*</exclude>
+            <exclude>**/AuthzTest*</exclude>
+            <exclude>**/ProjectAuthTest*</exclude>
+            <exclude>**/DocUploadTest*</exclude>
+            <exclude>**/FileReleaseTest*</exclude>
+            <exclude>**/PblUploadTest*</exclude>
+            <exclude>**/TrackerTest*</exclude>
+          </excludes>
+          <systemProperties>
+            <property>
+              <name>project.build.directory</name>
+              <value>${basedir}/target</value>
+            </property>
+            <property>
+              <name>teamforge_url</name>
+              <value>TEAMFORGE_URL</value>
+            </property>
+            <property>
+              <name>admin_user</name>
+              <value>testAdmin</value>
+            </property>
+            <property>
+              <name>password</name>
+              <value>testpw</value> 
+            </property>
+            <property>
+              <name>teamforge_project</name>
+              <value>hudsonTestProject</value>
+            </property>
+            <!-- properties for authn -->
+            <property>
+              <name>invalid_user</name>
+              <value>nonuser</value>
+            </property>
+            <!-- end properties for authn -->
+            <!-- properties for authz -->
+            <property>
+              <name>admin_group</name>
+              <value>hudsonAdmins</value>
+            </property>
+            <property>
+              <name>admin_group_member</name>
+              <value>hudsonAdminMember</value>
+            </property>
+            <property>
+              <name>read_user</name>
+              <value>hudsonRead</value>
+            </property>
+            <property>
+              <name>read_group</name>
+              <value>hudsonReaders</value>
+            </property>
+            <property>
+              <name>read_group_member</name>
+              <value>hudsonReadMember</value>
+            </property>
+            <!-- end properties for authz -->
+            <!-- properties for project auth -->
+            <property>
+              <name>build_user</name>
+              <value>hudsonBuildUser</value>
+            </property>
+            <property>
+              <name>config_user</name>
+              <value>hudsonConfigureUser</value>
+            </property>
+            <property>
+              <name>delete_user</name>
+              <value>hudsonDeleteUser</value>
+            </property>
+            <property>
+              <name>promote_user</name>
+              <value>hudsonPromoteUser</value>
+            </property>
+            <property>
+              <name>read_user</name>
+              <value>hudsonReadUser</value>
+            </property>
+            <!-- end properties for project auth -->
+            <!-- properties for doc uploader -->
+            <property>
+              <name>doc_path</name>
+              <value>stuff/to/upload/${BUILD_ID}</value>
+            </property>
+            <property>
+              <name>doc_desc</name>
+              <value>uploaded from hudson build #${BUILD_NUMBER}</value>
+            </property>
+            <property>
+              <name>doc_file_pattern</name>
+              <value>*</value>
+            </property>
+            <!-- end properties for doc uploader -->
+            <!-- properties for file release -->
+            <property>
+              <name>fr_package</name>
+              <value>test package</value>
+            </property>
+            <property>
+              <name>fr_release</name>
+              <value>test release</value>
+            </property>
+            <property>
+              <name>fr_overwrite</name>
+              <value>true</value>
+            </property>
+            <!-- end properties for file release -->
+            <!-- properties for pbl test -->
+            <property>
+              <name>lm_url</name>
+              <value>LAB_MANAGMENT_URL</value>
+            </property>
+            <property>
+              <name>lm_user</name>
+              <value>grue</value>
+            </property>
+            <property>
+              <name>key</name>
+              <value>SET_LAB_MAMANGEMENT_KEY</value>
+            </property>
+            <property>
+              <name>lm_project</name>
+              <value>zork</value>
+            </property>
+            <property>
+              <name>pub_or_priv</name>
+              <value>pub</value>
+            </property>
+            <property>
+              <name>pbl_filename</name>
+              <value>test.txt</value>
+            </property>
+            <property>
+              <name>pbl_path</name>
+              <value>hudsonTest/${BUILD_ID}</value>
+            </property>
+            <property>
+              <name>pbl_force</name>
+              <value>false</value>
+            </property>
+            <!-- end properties for pbl test -->
+            <!-- properties for tracker test -->
+            <property>
+              <name>tracker</name>
+              <value>testTracker</value>
+            </property>
+            <property>
+              <name>issue_title</name>
+              <value>Test bug for Hudson! Build id #${BUILD_ID}</value>
+            </property>
+            <property>
+              <name>assign_user</name>
+              <value>testAdmin</value>
+            </property>
+            <property>
+              <name>priority</name>
+              <value>1</value>
+            </property>
+            <property>
+              <name>attach_log</name>
+              <value>true</value>
+            </property>
+            <property>
+              <name>always_update</name>
+              <value>false</value>
+            </property>
+            <property>
+              <name>close_on_success</name>
+              <value>false</value>
+            </property>
+            <property>
+              <name>tracker_release</name>
+              <value>test release</value>
+            </property>
+            <!-- end properties for tracker test -->
+          </systemProperties>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+
+</project>

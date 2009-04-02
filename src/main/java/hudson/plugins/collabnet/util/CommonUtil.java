@@ -1,0 +1,124 @@
+package hudson.plugins.collabnet.util;
+
+import java.rmi.RemoteException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Map;
+import java.util.logging.Logger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import net.sf.json.JSONObject;
+
+/**
+ * Class for methods that are useful across Hudson plugins.
+ */
+public class CommonUtil {
+    
+    /**
+     * As a utility class, CommonUtil should never be instantiated.
+     */
+    private CommonUtil() {}
+
+    /**
+     * Returns true if the string value of the key in the form
+     * is "true".  If it's missing, returns false.
+     *
+     * @param key to find value for.
+     * @param formData that holds key/value.
+     * @return true if the string value of this key is "true".
+     */
+    public static boolean getBoolean(String key, JSONObject formData) {
+        boolean value = false;
+        String valueStr = (String)formData.get(key);
+        if (valueStr != null) {
+            value = valueStr.equals("true");
+        }
+        return value;
+    }  
+
+    /**
+     * Translates a string that may contain  build vars like ${BUILD_VAR} to
+     * a string with those vars interpreted.
+     * 
+     * @param build the Hudson build.
+     * @param str the string to be interpreted.
+     * @return the interpreted string.
+     * @throws IllegalArgumentException if the env var is not found.
+     */
+    public static String getInterpreted(Map<String, String> envVars, 
+                                        String str) {
+        Pattern envPat = Pattern.compile("\\$\\{(\\w*)\\}");
+        Matcher matcher = envPat.matcher(str);
+        StringBuffer intStr = new StringBuffer();
+        while (matcher.find()) {
+            String key = matcher.group(1);
+            // find build_var
+            if (!envVars.containsKey(key)) {
+                String message = "Environmental Variable not found: " + key;
+                throw new IllegalArgumentException(message);
+            } else {
+                String value = envVars.get(key);
+                matcher.appendReplacement(intStr, value);
+            }
+        }
+        matcher.appendTail(intStr);
+        return intStr.toString();
+    }
+
+    /**
+     * Convenience method to log RemoteExceptions.  
+     *
+     * @param log to log this message to.
+     * @param methodName in progress on when this exception occurred.
+     * @param re The RemoteException that was thrown.
+     */
+    public static void logRE(Logger logger, String methodName, 
+                             RemoteException re) {
+        logger.info(methodName + " failed due to " + 
+                    re.getClass().getName() + ": " + re.getMessage());
+    }
+
+    /**
+     * Escape characters that may make javascript error (like quotes or
+     * backslashes).
+     *
+     * @param collection list of strings to sanitize
+     * @return collection of sanitized strings.
+     */
+    public static Collection<String> sanitizeForJS(Collection<String> collection) {
+        Collection<String> sanitized = new ArrayList<String>();
+        for (String c: collection) {
+            c = c.replace("\\", "\\\\"); 
+            c = c.replace("'","\\'"); 
+            c = c.replace("\"","\\\""); 
+            c = c.replace("<","\\<"); 
+            c = c.replace(">","\\>"); 
+            sanitized.add(c);
+        }
+        return sanitized;
+    }
+
+    /**
+     * String leading and trailing '/'s from a String.
+     *
+     * @param str string to strip.
+     * @return string without leading or trailing '/'s.
+     */
+    public static String stripSlashes(String str) {
+        str = str.replaceAll("^/+", "");
+        return str.replaceAll("/+$", "");
+    }
+
+    /**
+     * @param value string to test.
+     * @return true if a String value is null or empty.
+     */
+    protected static boolean unset(String value) {
+        if (value == null || value.equals("")) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+}

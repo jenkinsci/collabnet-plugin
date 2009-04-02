@@ -1,0 +1,43 @@
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" 
+ xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form"
+ xmlns:c="/hudson/plugins/collabnet/tags">
+
+  <f:block>
+    <fieldset style="margin-bottom:1em">
+      <legend>Authorization from CollabNet TeamForge</legend>
+      <table width="100%">
+
+        <tr>
+          <td colspan="3">
+            This Hudson instance has been configured to use the CollabNet 
+            TeamForge site <a href="${descriptor.getCollabNetUrl()}">
+              ${descriptor.getCollabNetUrl()}
+            </a> 
+            for authentication.
+          </td>
+        </tr>
+
+        <f:entry title="CollabNet TeamForge Project" 
+         help="/plugin/collabnet/auth/help-assocProject.html">
+          <c:updatableComboBox name="capp.project" 
+           value="${instance.getProject()}"
+           id="capp_project" clazz='setting-input validated'
+           items="${descriptor.getProjects()}"
+           checkUrl="'${rootURL}/jobProperty/CNAuthProjectProperty/' + 
+             'projectCheck?project='+escape(this.value)" />
+        </f:entry>
+
+        <f:optionalBlock name="capp.createRoles" 
+         title="Create Hudson roles in CollabNet TeamForge for this project." 
+         checked="${instance.createRoles()}" 
+         help="/plugin/collabnet/auth/help-createRoles.html" />
+
+        <f:optionalBlock name="capp.grantDefaults" 
+         title="Grant default permissions to members of the project." 
+         checked="${instance.grantDefaultRoles()}" 
+         help="/plugin/collabnet/auth/help-grantRoles.html" />       
+
+      </table>
+    </fieldset>
+  </f:block>
+</j:jelly>

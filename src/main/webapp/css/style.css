@@ -1,0 +1,21 @@
+/* ============== handle wrapped repeatable elements =================== */
+
+/* == 2 deep == */
+.repeated-chunk .repeated-chunk .show-if-last      { visibility: hidden; }
+.repeated-chunk .repeated-chunk.last .show-if-last { visibility: visible; }
+
+.repeated-chunk .repeated-chunk .show-if-not-last      { visibility: visible; }
+.repeated-chunk .repeated-chunk.last .show-if-not-last { visibility: hidden; }
+
+.repeated-chunk .repeated-chunk .show-if-not-only      { visibility: visible; }
+.repeated-chunk .repeated-chunk.only .show-if-not-only { visibility: hidden; }
+
+/* == 3 deep == */
+.repeated-chunk .repeated-chunk .repeated-chunk .show-if-last      { visibility: hidden; }
+.repeated-chunk .repeated-chunk .repeated-chunk.last .show-if-last { visibility: visible; }
+
+.repeated-chunk .repeated-chunk .repeated-chunk .show-if-not-last      { visibility: visible; }
+.repeated-chunk .repeated-chunk .repeated-chunk.last .show-if-not-last { visibility: hidden; }
+
+.repeated-chunk .repeated-chunk .repeated-chunk .show-if-not-only      { visibility: visible; }
+.repeated-chunk .repeated-chunk .repeated-chunk.only .show-if-not-only { visibility: hidden; }

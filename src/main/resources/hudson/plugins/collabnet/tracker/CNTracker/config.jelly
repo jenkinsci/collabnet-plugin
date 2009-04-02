@@ -1,0 +1,207 @@
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" 
+ xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form" 
+ xmlns:c="/hudson/plugins/collabnet/tags">
+  
+  <j:set var="rootHelpURL" value="${descriptor.getHelpUrl()}"/>
+
+  <f:entry title="CollabNet TeamForge URL" 
+   description="For example, https://forge.collab.net" 
+   help="${rootHelpURL}/help-collabnetUrl.html">
+    <f:textbox name="cntracker.collabneturl" 
+     value="${instance.getCollabNetUrl()}" id="cntracker.collabneturl" 
+     checkUrl="'${rootURL}/publisher/CNTracker/collabNetUrlCheck?value=' + 
+       escape(this.value)" 
+     onchange="document.getElementById('cntracker.password').onchange(); "/>
+  </f:entry>
+
+  <f:entry title="Username" help="${rootHelpURL}/help-username.html">
+    <f:textbox name="cntracker.username" value="${instance.username}" 
+     id="cntracker.username" 
+     checkUrl="'${rootURL}/publisher/CNTracker/requiredCheck?name=' +
+       'Username&amp;value=' + escape(this.value)" 
+     onchange="document.getElementById('cntracker.password').onchange();" />
+  </f:entry>
+
+  <f:entry title="Password" help="${rootHelpURL}/help-password.html">
+    <input type="password" name="cntracker.password" 
+     value="${instance.password}" id="cntracker.password" 
+     class='setting-input validated' 
+     checkUrl="'${rootURL}/publisher/CNTracker/passwordCheck?password=' + 
+       escape(this.value) + '&amp;url=' + 
+       escape(document.getElementById('cntracker.collabneturl').value) + 
+       '&amp;username=' + 
+       escape(document.getElementById('cntracker.username').value)" 
+     onchange="cntracker_project_update();
+       document.getElementById('cntracker_project').onchange();" />
+  </f:entry>
+
+  <f:entry title="Project" help="${rootHelpURL}/help-project.html">
+    <c:updatableComboBox name="cntracker.project" value="${instance.project}" 
+     id="cntracker_project" clazz="setting-input validated"
+     items="${instance.getProjects()}"
+     checkUrl="'${rootURL}/publisher/CNTracker/projectCheck?project=' + 
+       escape(this.value) + '&amp;password='+ 
+       escape(document.getElementById('cntracker.password').value) + 
+       '&amp;url=' + 
+       escape(document.getElementById('cntracker.collabneturl').value) + 
+       '&amp;username=' + 
+       escape(document.getElementById('cntracker.username').value)" 
+     updateUrl="'${rootURL}/publisher/CNTracker/getProjects?password='+ 
+       escape(document.getElementById('cntracker.password').value) + 
+       '&amp;url=' + 
+       escape(document.getElementById('cntracker.collabneturl').value) + 
+       '&amp;username=' + 
+       escape(document.getElementById('cntracker.username').value)"
+     onchange="cntracker_tracker_update();
+               cntracker_release_update();
+               cntracker_assign_user_update();
+               document.getElementById('cntracker_tracker').onchange(); 
+               document.getElementById('cntracker_assign_user').onchange(); 
+               document.getElementById('cntracker_release').onchange();" />
+  </f:entry>
+
+  <f:entry title="Tracker" help="${rootHelpURL}/help-tracker.html">
+    <c:updatableComboBox name="cntracker.tracker" value="${instance.tracker}" 
+     id="cntracker_tracker" clazz="setting-input validated"
+     items="${instance.getTrackers()}"
+     checkUrl="'${rootURL}/publisher/CNTracker/trackerCheck?tracker=' + 
+       escape(this.value) +'&amp;project=' + 
+       escape(document.getElementById('cntracker_project').value) + 
+       '&amp;password='+ 
+       escape(document.getElementById('cntracker.password').value) + 
+       '&amp;url=' + 
+       escape(document.getElementById('cntracker.collabneturl').value) + 
+       '&amp;username=' + 
+       escape(document.getElementById('cntracker.username').value)" 
+     updateUrl="'${rootURL}/publisher/CNTracker/getTrackers?project=' + 
+       escape(document.getElementById('cntracker_project').value) + 
+       '&amp;password='+ 
+       escape(document.getElementById('cntracker.password').value) + 
+       '&amp;url=' + 
+       escape(document.getElementById('cntracker.collabneturl').value) + 
+       '&amp;username=' + 
+       escape(document.getElementById('cntracker.username').value)" />
+  </f:entry>
+
+  <f:entry title="Issue Title" help="${rootHelpURL}/help-title.html">
+    <f:textbox name="cntracker.title" value="${instance.title}" 
+     id="cntracker.title" 
+     checkUrl="'${rootURL}/publisher/CNTracker/requiredInterpretedCheck?' +
+       'name=Issue%20Title&amp;value='+escape(this.value)" />
+  </f:entry>
+
+  <f:entry title="Assign issue to" help="${rootHelpURL}/help-assign.html">
+    <c:updatableComboBox name="cntracker.assign_user" 
+     value="${instance.assignUser}" id="cntracker_assign_user" 
+     clazz="setting-input validated" items="${instance.getUsers()}"
+     checkUrl="'${rootURL}/publisher/CNTracker/assignCheck?assign=' + 
+       escape(this.value) +'&amp;project=' + 
+       escape(document.getElementById('cntracker_project').value) + 
+       '&amp;password='+ 
+       escape(document.getElementById('cntracker.password').value) + 
+       '&amp;url=' + 
+       escape(document.getElementById('cntracker.collabneturl').value) + 
+       '&amp;username=' + 
+       escape(document.getElementById('cntracker.username').value)"
+     updateUrl="'${rootURL}/publisher/CNTracker/getProjectUsers?project=' + 
+       escape(document.getElementById('cntracker_project').value) + 
+       '&amp;password='+ 
+       escape(document.getElementById('cntracker.password').value) + 
+       '&amp;url=' + 
+       escape(document.getElementById('cntracker.collabneturl').value) + 
+       '&amp;username=' + 
+       escape(document.getElementById('cntracker.username').value)" />
+  </f:entry>
+
+  <f:entry name="cntracker.priority" title="Priority" 
+   help="${rootHelpURL}/help-priority.html">
+    <select class="setting-input" name="cntracker.priority">
+      <f:option value="1" selected="${instance.priority==1}">
+       1 - Highest
+      </f:option>
+      <f:option value="2" selected="${instance.priority==2}">
+       2 - High
+      </f:option>
+      <f:option value="3" selected="${instance.priority==3}">
+       3 - Medium
+      </f:option>
+      <f:option value="4" selected="${instance.priority==4}">
+       4 - Low
+      </f:option>
+      <f:option value="5" selected="${instance.priority==5}">
+       5 - Lowest
+      </f:option>
+     </select>
+  </f:entry>
+
+  <f:entry title="Attach build log?" help="${rootHelpURL}/help-buildlog.html">
+  <span>
+      <f:radio name="cntracker.attach_log" 
+       id="attach_yes" title="Yes" value="true" 
+       checked="${instance.attachLog() != false}">
+      </f:radio>
+      <label for="attach_yes">Yes</label>
+      <f:radio name="cntracker.attach_log" 
+       id="attach_no" title="No" value="false" 
+       checked="${instance.attachLog() == false}">
+      </f:radio>
+      <label for="attach_no">No</label>
+    </span>
+  </f:entry>
+
+  <f:entry title="Always update issue?" 
+   help="${rootHelpURL}/help-alwaysUpdate.html">
+  <span>
+      <f:radio name="cntracker.always_update" 
+       id="update_yes" title="Yes" value="true" 
+       checked="${instance.alwaysUpdate()==true}">
+      </f:radio>
+      <label for="update_yes">Yes</label>
+      <f:radio name="cntracker.always_update" 
+       id="update_no" title="No" value="false" 
+       checked="${instance.alwaysUpdate()!=true}">
+      </f:radio>
+      <label for="update_no">No</label>
+    </span>
+  </f:entry>
+
+  <f:entry title="Close open issue on success?" 
+   help="${rootHelpURL}/help-closeIssue.html">
+  <span>
+      <f:radio name="cntracker.close_issue" 
+       id="close_yes" title="Yes" value="true" 
+       checked="${instance.closeOnSuccess() != false}">
+      </f:radio>
+      <label for="close_yes">Yes</label>
+      <f:radio name="cntracker.close_issue" 
+       id="close_no" title="No" value="false" 
+       checked="${instance.closeOnSuccess() == false}">
+      </f:radio>
+      <label for="close_no">No</label>
+    </span>
+  </f:entry>
+
+  <f:entry title="Reported Release" help="${rootHelpURL}/help-release.html">
+    <c:updatableComboBox name="cntracker.release" value="${instance.release}" 
+     id="cntracker_release" clazz="setting-input validated"
+     items="${instance.getReleases()}"
+     checkUrl="'${rootURL}/publisher/CNTracker/releaseCheck?release=' + 
+       escape(this.value) +'&amp;project=' + 
+       escape(document.getElementById('cntracker_project').value) + 
+       '&amp;password='+ 
+       escape(document.getElementById('cntracker.password').value) + 
+       '&amp;url=' + 
+       escape(document.getElementById('cntracker.collabneturl').value) + 
+       '&amp;username=' + 
+       escape(document.getElementById('cntracker.username').value) +
+       '&amp;required=false'"
+     updateUrl="'${rootURL}/publisher/CNTracker/getReleases?project=' + 
+       escape(document.getElementById('cntracker_project').value) + 
+       '&amp;password='+ 
+       escape(document.getElementById('cntracker.password').value) + 
+       '&amp;url=' + 
+       escape(document.getElementById('cntracker.collabneturl').value) + 
+       '&amp;username=' + 
+       escape(document.getElementById('cntracker.username').value)" />
+  </f:entry>
+</j:jelly>

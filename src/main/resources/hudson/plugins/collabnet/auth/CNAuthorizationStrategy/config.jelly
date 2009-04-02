@@ -1,0 +1,82 @@
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" 
+ xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
+
+  <j:set var="rootHelpURL" value="${descriptor.getHelpUrl()}" />
+  <j:set var="checkURL" value="${rootURL}/descriptor/hudson.plugins.collabnet.auth.CNAuthorizationStrategy" />
+
+  <j:choose>
+    <j:when test="${descriptor.isGoodCNVersion(descriptor.getCollabNetUrl())}">
+      <j:set var="error_style" value="display:none" />
+    </j:when>
+    <j:otherwise>
+      <j:set var="error_style" value="display:inline" />
+    </j:otherwise>
+  </j:choose>
+
+  <tr>
+    <td class="setting-leftspace"></td>
+    <td colspan="3">
+      <div id="auth_error" class="error" style="${error_style}">
+       CollabNet Authorization is designed to work with CollabNet 
+       ${descriptor.GOOD_VERSION} and later.  (The configured version is 
+       <text id="version">${descriptor.getVersion(descriptor.getCollabNetUrl()).toString()}</text>.)  
+       Please choose another method of authorization.
+      </div>
+    </td>
+  </tr>
+
+  <script>
+    // this function will be called when the authentication server changes
+    function authentication_update(value) {
+       var error_div = document.getElementById("auth_error");
+       if (error_div != null) {
+           var methodUrl = '${checkURL}/versionCheck?url=' + value;
+             new Ajax.Request(methodUrl, {
+                method : "post",
+                onComplete : function(x) {
+                   var json = x.responseText.evalJSON(false);
+                   YAHOO.util.Dom.setStyle(error_div, "display", 
+                                           json["error_display_style"]);
+                   var version_text = document.getElementById("version");
+                   version_text.innerHTML = json["version"];
+                }
+             });
+       }
+    }
+
+  </script>
+
+  <f:entry title="Hudson Admin Users" 
+   help="${rootHelpURL}/help-hudsonAdminUsers.html">
+    <f:textbox name="cnas.adminUsers" value="${instance.getAdminUsersStr()}" 
+     id="cnas.adminUsers" 
+     checkUrl="'${checkURL}/userCheck?value=' + escape(this.value)" 
+     onchange="document.getElementById('cnas.adminGroups').onchange();" />
+  </f:entry>
+
+  <f:entry title="Hudson Admin Groups" 
+    help="${rootHelpURL}/help-hudsonAdminGroups.html">
+    <f:textbox name="cnas.adminGroups" value="${instance.getAdminGroupsStr()}" 
+     id="cnas.adminGroups" 
+     checkUrl="'${checkURL}/' +
+       'groupCheck?groups=' + escape(this.value) + '&amp;users=' + 
+       escape(document.getElementById('cnas.adminUsers').value)" />
+  </f:entry>
+
+  <f:entry title="Hudson Read-Only Users" 
+   help="${rootHelpURL}/help-hudsonReadUsers.html">
+    <f:textbox name="cnas.readUsers" value="${instance.getReadUsersStr()}" 
+     id="cnas.readUsers" 
+     checkUrl="'${checkURL}/' +
+       'userCheck?value=' + escape(this.value)" />
+  </f:entry>
+
+  <f:entry title="Hudson Read-Only Groups" 
+   help="${rootHelpURL}/help-hudsonReadGroups.html">
+    <f:textbox name="cnas.readGroups" value="${instance.getReadGroupsStr()}" 
+     id="cnas.readGroups" 
+     checkUrl="'${checkURL}/' +
+       'groupCheck?groups='  +escape(this.value)" />
+  </f:entry>
+
+</j:jelly>

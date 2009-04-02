@@ -1,0 +1,104 @@
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" 
+ xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form" 
+ xmlns:c="/hudson/plugins/collabnet/tags">
+
+  <j:set var="rootHelpURL" value="${descriptor.getHelpUrl()}" />
+
+  <f:entry title="CollabNet TeamForge URL" 
+   description="For example, https://forge.collab.net" 
+   help="${rootHelpURL}/help-collabnetUrl.html">
+    <f:textbox name="cndu.collabneturl" value="${instance.getCollabNetUrl()}" 
+     id="cndu.collabneturl" 
+     checkUrl="'${rootURL}/publisher/CNDocumentUploader/collabNetUrlCheck?' +
+       'value='+escape(this.value)" 
+     onchange="document.getElementById('cndu.password').onchange();" />
+  </f:entry>
+
+  <f:entry title="Username" help="${rootHelpURL}/help-username.html">
+    <f:textbox name="cndu.username" value="${instance.username}" 
+     id="cndu.username" 
+     checkUrl="'${rootURL}/publisher/CNDocumentUploader/requiredCheck?' + 
+       'name=Username&amp;value='+escape(this.value)" 
+     onchange="document.getElementById('cndu.password').onchange();" />
+  </f:entry>
+
+  <f:entry title="Password" help="${rootHelpURL}/help-password.html">
+    <input type="password" name="cndu.password" value="${instance.password}" 
+     id="cndu.password" class='setting-input validated' 
+     checkUrl="'${rootURL}/publisher/CNDocumentUploader/passwordCheck?' +
+       'password=' + escape(this.value) + '&amp;url=' + 
+       escape(document.getElementById('cndu.collabneturl').value) + 
+       '&amp;username=' + 
+       escape(document.getElementById('cndu.username').value)" 
+     onchange="cndu_project_update();
+       document.getElementById('cndu_project').onchange();" />
+  </f:entry>
+
+  <f:entry title="Project" help="${rootHelpURL}/help-project.html">
+    <c:updatableComboBox name="cndu.project" value="${instance.project}" 
+     id="cndu_project" clazz="setting-input validated"
+     items="${instance.getProjects()}"
+     checkUrl="'${rootURL}/publisher/CNDocumentUploader/projectCheck?' +
+       'project=' + escape(this.value) + '&amp;password=' + 
+       escape(document.getElementById('cndu.password').value) + 
+       '&amp;url=' + 
+       escape(document.getElementById('cndu.collabneturl').value) + 
+       '&amp;username=' + 
+       escape(document.getElementById('cndu.username').value)"
+     updateUrl="'${rootURL}/publisher/CNDocumentUploader/getProjects?' +
+       'password=' + 
+       escape(document.getElementById('cndu.password').value) + 
+       '&amp;url=' + 
+       escape(document.getElementById('cndu.collabneturl').value) + 
+       '&amp;username=' + 
+       escape(document.getElementById('cndu.username').value)" />
+  </f:entry>
+
+  <f:entry title="Upload Folder Path" help="${rootHelpURL}/help-uploadPath.html">
+    <f:textbox name="cndu.upload_path" value="${instance.getUploadPath()}" 
+     id="cndu.upload_path" 
+     checkUrl="'${rootURL}/publisher/CNDocumentUploader/pathCheck?path=' + 
+       escape(this.value) + '&amp;project=' + 
+       escape(document.getElementById('cndu_project').value) + 
+       '&amp;password='+ 
+       escape(document.getElementById('cndu.password').value) + '&amp;url=' + 
+       escape(document.getElementById('cndu.collabneturl').value) + 
+       '&amp;username=' + 
+       escape(document.getElementById('cndu.username').value)" />
+  </f:entry>
+
+  <f:entry title="Description" help="${rootHelpURL}/help-description.html">
+    <f:textbox name="cndu.description" value="${instance.description}" 
+     id="cndu.description"/>
+  </f:entry>
+
+  <f:entry title="File Patterns to Upload" 
+   help="${rootHelpURL}/help-filepattern.html">
+    <f:repeatable name="cndu.files" var="file" 
+     items="${instance.getFilePatterns()}" minimum="1" noAddButton="true">
+      <f:textbox name="cndu.file" value="${file}" 
+       checkUrl="'${rootURL}/publisher/CNDocumentUploader/' + 
+         'unRequiredInterpretedCheck?value='+escape(this.value)" />
+      <div align="right">
+        <input type="button" value="Add File Pattern" 
+         class="repeatable-add show-if-last" />
+        <input type="button" value="Delete File Pattern" 
+         class="repeatable-delete show-if-not-only" /> 
+      </div>
+    </f:repeatable>
+  </f:entry>    
+
+  <f:entry title="Upload build log?" 
+   help="${rootHelpURL}/help-buildlog.html">
+    <span>
+      <f:radio name="cndu.buildlog" id="yes" title="Yes"
+       value="true" checked="${instance.includeBuildLog()==true}">
+      </f:radio>
+      <label for="yes">Yes</label> 
+      <f:radio name="cndu.buildlog" id="no" title="No" 
+       value="false" checked="${instance.includeBuildLog()!=true}">
+      </f:radio>
+      <label for="no">No</label>
+    </span>
+  </f:entry>
+</j:jelly>

@@ -1,0 +1,27 @@
+<div>
+  <p>
+    Files will be uploaded relative to this path.
+    For example, if your path is "/my/path", and this is the first build,
+    the files will be uploaded at:
+    https://mgr.cubit.example.com/pbl/project_name/priv/my/path/.
+  </p>
+  <p>
+    You may include environmental variables, referred to by ${ENV_VAR_NAME}, 
+    that will be 
+    interpreted at runtime in this field.  For example, your path could be 
+    "/my/path/${BUILD_ID}" or "/my/path/build_${BUILD_NUMBER}".<br>
+    See <a href='/env-vars.html' target=_new>the list of available environment variables</a>.<br>
+    It is wise to include a build-specific environmental variable in your
+    path if you intend to set the force option to false.
+  </p>
+  <p>
+    If "Preserve Local Directory Structure" is chosen, the directory structure 
+    from the workspace will be preserved
+    after upload.  So if your file pattern is "upload_stuff/sub_folder/my_file.txt", 
+    the file will end
+    up at:<br>
+    https://mgr.cubit.example.com/pbl/project_name/priv/my/path/upload_stuff/sub_folder/my_file.txt<br>
+    If "Do Not Preserve..." is chosen, the file would end up at:<br>
+    https://mgr.cubit.example.com/pbl/project_name/priv/my/path/my_file.txt
+  </p>
+</div>
