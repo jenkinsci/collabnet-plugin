@@ -10,6 +10,7 @@
   <version>1.0-SNAPSHOT</version>
   <name>&lt;a href="http://www.collab.net/">CollabNet&lt;/a> Plugins</name>
   <description>CollabNet packages</description>
+  <url>http://wiki.hudson-ci.org/display/HUDSON/CollabNet+Plugin</url>
   <packaging>hpi</packaging>
 
   <properties>
