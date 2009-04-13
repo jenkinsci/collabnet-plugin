@@ -7,8 +7,8 @@
     <relativePath>../pom.xml</relativePath>
   </parent>
   <artifactId>collabnet</artifactId>
-  <version>1.0-SNAPSHOT</version>
-  <name>&lt;a href="http://www.collab.net/">CollabNet&lt;/a> Plugins</name>
+  <version>1.0</version>
+  <name>&lt;a href="http://www.collab.net/"&gt;CollabNet&lt;/a&gt; Plugins</name>
   <description>CollabNet packages</description>
   <url>http://wiki.hudson-ci.org/display/HUDSON/CollabNet+Plugin</url>
   <packaging>hpi</packaging>
@@ -323,4 +323,10 @@
     </plugins>
   </build>
 
+
+  <scm>
+    <connection>scm:svn:https://guest@svn.dev.java.net/svn/hudson/tags/collabnet-1.0</connection>
+    <developerConnection>scm:svn:https://svn.dev.java.net/svn/hudson/tags/collabnet-1.0</developerConnection>
+    <url>https://hudson.dev.java.net/source/browse/hudson/hudson/plugins/collabnet/tags/collabnet-1.0</url>
+  </scm>
 </project>
