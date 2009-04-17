@@ -15,7 +15,7 @@ import java.rmi.RemoteException;
  * Wraps a collabNetApp.
  */
 public class SimpleFileStorageApp {
-    private static int BYTE_SIZE = 1024;
+    private static int BYTE_SIZE = 1048576; // 1 MB
     private CollabNetApp collabNetApp;
     private ISimpleFileStorageAppSoap ifsa;
     
