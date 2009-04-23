@@ -4,7 +4,7 @@ package hudson.plugins.collabnet.documentuploader;
 import com.collabnet.ce.soap50.webservices.docman.DocumentSoapDO;
 import com.collabnet.ce.webservices.CollabNetApp;
 import com.collabnet.ce.webservices.DocumentApp;
-import com.collabnet.ce.webservices.SimpleFileStorageApp;
+import com.collabnet.ce.webservices.FileStorageApp;
 
 import hudson.Launcher;
 import hudson.FilePath;
@@ -476,7 +476,7 @@ public class CNDocumentUploader extends Publisher {
             return null;
         }
         String id = null;
-        SimpleFileStorageApp sfsa = new SimpleFileStorageApp(this.cna);
+        FileStorageApp sfsa = new FileStorageApp(this.cna);
         try {
             id = sfsa.uploadFile(build.getLogFile());
         } catch (RemoteException re) {
@@ -497,7 +497,7 @@ public class CNDocumentUploader extends Publisher {
             return null;
         }
         String id = null;
-        final SimpleFileStorageApp sfsa = new SimpleFileStorageApp(this.cna);
+        final FileStorageApp sfsa = new FileStorageApp(this.cna);
         try {
             id = filePath.act(new FileCallable<String>() {
                 public String invoke(File f, VirtualChannel channel) 

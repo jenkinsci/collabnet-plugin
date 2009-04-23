@@ -32,7 +32,7 @@ import org.kohsuke.stapler.StaplerResponse;
 import com.collabnet.ce.soap50.webservices.tracker.ArtifactSoapDO;
 import com.collabnet.ce.webservices.CollabNetApp;
 import com.collabnet.ce.webservices.FrsApp;
-import com.collabnet.ce.webservices.SimpleFileStorageApp;
+import com.collabnet.ce.webservices.FileStorageApp;
 import com.collabnet.ce.webservices.TrackerApp;
 
 
@@ -723,7 +723,7 @@ public class CNTracker extends Publisher {
             return null;
         }
         String id = null;
-        SimpleFileStorageApp sfsa = new SimpleFileStorageApp(this.cna);
+        FileStorageApp sfsa = new FileStorageApp(this.cna);
         try {
             id = sfsa.uploadFile(build.getLogFile());
         } catch (RemoteException re) {

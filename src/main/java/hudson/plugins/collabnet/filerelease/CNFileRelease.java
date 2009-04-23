@@ -4,7 +4,7 @@ package hudson.plugins.collabnet.filerelease;
 import com.collabnet.ce.soap50.webservices.frs.FrsFileSoapDO;
 import com.collabnet.ce.webservices.CollabNetApp;
 import com.collabnet.ce.webservices.FrsApp;
-import com.collabnet.ce.webservices.SimpleFileStorageApp;
+import com.collabnet.ce.webservices.FileStorageApp;
 
 import hudson.Launcher;
 import hudson.FilePath;
@@ -324,7 +324,7 @@ public class CNFileRelease extends Publisher {
     public int uploadFiles(AbstractBuild<?, ?> build, 
                             final String releaseId) {
         int numUploaded = 0;
-        final SimpleFileStorageApp sfsa = new SimpleFileStorageApp(this.cna);
+        final FileStorageApp sfsa = new FileStorageApp(this.cna);
         final FrsApp fa = new FrsApp(this.cna);
         this.log("Uploading file to project '" + this.getProject() + 
                  "', package '" + this.getPackage() + "', release '" + 
