@@ -2,41 +2,47 @@
  xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form" 
  xmlns:c="/hudson/plugins/collabnet/tags">
 
+  <script src="/plugin/collabnet/scripts/cnauth_override.js" type="text/javascript" />
+
   <j:set var="cnfr_id" value="${descriptor.getUniqueId()}" />
 
   <j:set var="rootHelpURL" value="${descriptor.getHelpUrl()}"/>
 
-  <f:entry title="CollabNet TeamForge URL" 
-   description="For example, https://forge.collab.net" 
-   help="${rootHelpURL}/help-collabnetUrl.html">
-    <f:textbox name="cnfr.collabneturl" value="${instance.getCollabNetUrl()}" 
-     id="${cnfr_id}.cnfr.collabneturl" 
-     checkUrl="'${rootURL}/publisher/CNFileRelease/collabNetUrlCheck?value=' + 
-       escape(this.value)" 
-     onchange="document.getElementById('${cnfr_id}.cnfr.password').onchange();"
-    />
-  </f:entry>
-
-  <f:entry title="Username" help="${rootHelpURL}/help-username.html">
-    <f:textbox name="cnfr.username" value="${instance.username}" 
-     id="${cnfr_id}.cnfr.username" 
-     checkUrl="'${rootURL}/publisher/CNFileRelease/requiredCheck?name=' + 
-       'Username&amp;value='+escape(this.value)" 
-     onchange="document.getElementById('${cnfr_id}.cnfr.password').onchange();
-    "/>
-  </f:entry>
-
-  <f:entry title="Password" help="${rootHelpURL}/help-password.html">
-    <input type="password" name="cnfr.password" value="${instance.password}" 
-     id="${cnfr_id}.cnfr.password" class='setting-input validated' 
-     checkUrl="'${rootURL}/publisher/CNFileRelease/passwordCheck?password=' + 
-       escape(this.value) + '&amp;url=' + 
-       escape(document.getElementById('${cnfr_id}.cnfr.collabneturl').value) + 
-       '&amp;username=' + 
-       escape(document.getElementById('${cnfr_id}.cnfr.username').value)" 
-     onchange="_${cnfr_id}_cnfr_project_update();
-       document.getElementById('_${cnfr_id}_cnfr_project').onchange();"/>
-  </f:entry>
+  <j:choose>
+    <j:when test="${descriptor.canInheritAuth()}">
+      <f:nested>
+        <table style="width:100%">
+          <j:set var="cnfr_override" value="false" />
+          <j:choose>
+            <j:when test="${instance != null}">
+              <j:set var="cnfr_override" 
+                value="${instance.overrideAuth()}" />
+            </j:when>
+          </j:choose>
+          <c:cnOptionalBlock id="${cnfr_id}.cnfr.override_auth" 
+           name="${cnfr_id}.cnfr.override_auth" 
+           title="Override the Global CollabNet Configuration"
+           checked="${cnfr_override}" 
+           onclick="document.getElementById('${cnfr_id}.cnfr.password').onchange()"
+             >
+           <c:cnAuth prefix="${cnfr_id}.cnfr" 
+            checkUrlRoot="${rootURL}/publisher/CNFileRelease" 
+            helpUrlRoot="${rootHelpURL}" url="${instance.getCollabNetUrl()}" 
+            username="${instance.username}" password="${instance.password}" 
+            onchange="document.getElementById('_${cnfr_id}_cnfr_project').onchange();"
+           />
+          </c:cnOptionalBlock>
+        </table>
+      </f:nested>
+    </j:when>
+    <j:otherwise>
+      <c:cnAuth prefix="${cnfr_id}.cnfr" 
+       checkUrlRoot="${rootURL}/publisher/CNFileRelease" 
+       helpUrlRoot="${rootHelpURL}" url="${instance.getCollabNetUrl()}" 
+       username="${instance.username}" password="${instance.password}" 
+       onchange="document.getElementById('_${cnfr_id}_cnfr_project').onchange();" />
+    </j:otherwise>
+  </j:choose>
 
   <f:entry title="Project" help="${rootHelpURL}/help-project.html">
     <c:updatableComboBox name="cnfr.project" id="_${cnfr_id}_cnfr_project" 
@@ -44,19 +50,10 @@
      items="${instance.getProjects()}" 
      checkUrl="'${rootURL}/publisher/CNFileRelease/projectCheck?project=' + 
        escape(document.getElementById('_${cnfr_id}_cnfr_project').value) + 
-       '&amp;password=' + 
-       escape(document.getElementById('${cnfr_id}.cnfr.password').value) + 
-       '&amp;url=' + 
-       escape(document.getElementById('${cnfr_id}.cnfr.collabneturl').value) + 
-       '&amp;username=' + 
-       escape(document.getElementById('${cnfr_id}.cnfr.username').value)" 
-     updateUrl="'${rootURL}/publisher/CNFileRelease/getProjects?url=' + 
-       escape(document.getElementById('${cnfr_id}.cnfr.collabneturl').value) + 
-       '&amp;username=' + 
-       escape(document.getElementById('${cnfr_id}.cnfr.username').value) + 
-       '&amp;password=' + 
-       escape(document.getElementById('${cnfr_id}.cnfr.password').value)" 
-     onchange="_${cnfr_id}_cnfr_package_update();
+       '&amp;' + get_auth_param_str('${cnfr_id}.cnfr')" 
+     updateUrl="'${rootURL}/publisher/CNFileRelease/getProjects?' +
+       get_auth_param_str('${cnfr_id}.cnfr')" 
+     onchange="
        document.getElementById('_${cnfr_id}_cnfr_package').onchange();"/>
   </f:entry>
 
@@ -67,21 +64,12 @@
      checkUrl="'${rootURL}/publisher/CNFileRelease/packageCheck?package=' + 
        escape(this.value) +'&amp;project=' + 
        escape(document.getElementById('_${cnfr_id}_cnfr_project').value) + 
-       '&amp;password='+ 
-       escape(document.getElementById('${cnfr_id}.cnfr.password').value) + 
-       '&amp;url=' + 
-       escape(document.getElementById('${cnfr_id}.cnfr.collabneturl').value) + 
-       '&amp;username=' + 
-       escape(document.getElementById('${cnfr_id}.cnfr.username').value)" 
-     updateUrl="'${rootURL}/publisher/CNFileRelease/getPackages?url=' + 
-       escape(document.getElementById('${cnfr_id}.cnfr.collabneturl').value) + 
-       '&amp;username=' + 
-       escape(document.getElementById('${cnfr_id}.cnfr.username').value) + 
-       '&amp;password=' + 
-       escape(document.getElementById('${cnfr_id}.cnfr.password').value) +
+       '&amp;' + get_auth_param_str('${cnfr_id}.cnfr')" 
+     updateUrl="'${rootURL}/publisher/CNFileRelease/getPackages?' + 
+       get_auth_param_str('${cnfr_id}.cnfr') +
        '&amp;project=' + 
        escape(document.getElementById('_${cnfr_id}_cnfr_project').value)"
-     onchange="_${cnfr_id}_cnfr_release_update();
+     onchange="
        document.getElementById('_${cnfr_id}_cnfr_release').onchange();"
     />
   </f:entry>
@@ -95,19 +83,10 @@
        escape(document.getElementById('_${cnfr_id}_cnfr_package').value) + 
        '&amp;project=' + 
        escape(document.getElementById('_${cnfr_id}_cnfr_project').value) + 
-       '&amp;password='+ 
-       escape(document.getElementById('${cnfr_id}.cnfr.password').value) + 
-       '&amp;url=' + 
-       escape(document.getElementById('${cnfr_id}.cnfr.collabneturl').value) + 
-       '&amp;username=' + 
-       escape(document.getElementById('${cnfr_id}.cnfr.username').value) +
+       '&amp;' + get_auth_param_str('${cnfr_id}.cnfr') +
        '&amp;required=true'" 
-     updateUrl="'${rootURL}/publisher/CNFileRelease/getReleases?url=' + 
-       escape(document.getElementById('${cnfr_id}.cnfr.collabneturl').value) + 
-       '&amp;username=' + 
-       escape(document.getElementById('${cnfr_id}.cnfr.username').value) + 
-       '&amp;password=' + 
-       escape(document.getElementById('${cnfr_id}.cnfr.password').value) +
+     updateUrl="'${rootURL}/publisher/CNFileRelease/getReleases?' + 
+       get_auth_param_str('${cnfr_id}.cnfr') +
        '&amp;project=' + 
        escape(document.getElementById('_${cnfr_id}_cnfr_project').value) +
        '&amp;package=' + 

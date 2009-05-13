@@ -1,0 +1,42 @@
+<!--
+      <%@attribute name="prefix" required="true" %>  
+      <%@attribute name="checkUrlRoot" required="true" %>  
+      <%@attribute name="helpUrlRoot" required="true" %>  
+      <%@attribute name="url" required="true" %>  
+      <%@attribute name="username" required="true" %>  
+      <%@attribute name="password" required="true" %>
+      <%@attribute name="onchange" required="false" %>  
+-->
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form" xmlns:c="/com/collabnet/cubit/hudson/tags">
+
+ <f:entry title="CollabNet TeamForge URL" 
+   description="For example, https://forge.collab.net" 
+   help="${attrs.helpUrlRoot}/help-collabnetUrl.html">
+    <f:textbox name="${attrs.prefix}.collabneturl" 
+     value="${attrs.url}" id="${attrs.prefix}.collabneturl" 
+     checkUrl="'${attrs.checkUrlRoot}/collabNetUrlCheck?value=' + 
+       escape(this.value)" 
+     onchange="document.getElementById('${attrs.prefix}.password').onchange(); "/>
+  </f:entry>
+
+  <f:entry title="Username" help="${attrs.helpUrlRoot}/help-username.html">
+    <f:textbox name="${attrs.prefix}.username" value="${attrs.username}" 
+     id="${attrs.prefix}.username" 
+     checkUrl="'${attrs.checkUrlRoot}/requiredCheck?name=' +
+       'Username&amp;value=' + escape(this.value)" 
+     onchange="document.getElementById('${attrs.prefix}.password').onchange();" />
+  </f:entry>
+
+  <f:entry title="Password" help="${attrs.helpUrlRoot}/help-password.html">
+    <input type="password" name="${attrs.prefix}.password" 
+     value="${attrs.password}" id="${attrs.prefix}.password" 
+     class='setting-input validated' 
+     checkUrl="'${attrs.checkUrlRoot}/passwordCheck?password=' + 
+       escape(this.value) + '&amp;url=' + 
+       escape(document.getElementById('${attrs.prefix}.collabneturl').value) + 
+       '&amp;username=' + 
+       escape(document.getElementById('${attrs.prefix}.username').value)" 
+     onchange="${attrs.onchange}" />
+  </f:entry>
+
+</j:jelly>

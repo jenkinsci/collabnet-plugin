@@ -1,6 +1,5 @@
 package hudson.plugins.collabnet.tracker;
 
-
 import hudson.Launcher;
 import hudson.model.AbstractBuild;
 import hudson.model.BuildListener;
@@ -9,6 +8,7 @@ import hudson.model.Hudson;
 import hudson.model.Result;
 import hudson.tasks.Publisher;
 
+import hudson.plugins.collabnet.share.TeamForgeShare;
 import hudson.plugins.collabnet.util.CNFormFieldValidator;
 import hudson.plugins.collabnet.util.CNHudsonUtil;
 import hudson.plugins.collabnet.util.ComboBoxUpdater;
@@ -35,7 +35,6 @@ import com.collabnet.ce.webservices.FrsApp;
 import com.collabnet.ce.webservices.FileStorageApp;
 import com.collabnet.ce.webservices.TrackerApp;
 
-
 public class CNTracker extends Publisher {
     private static String SOAP_SERVICE = "/ce-soap50/services/";
     private static int DEFAULT_PRIORITY = 3;
@@ -45,6 +44,7 @@ public class CNTracker extends Publisher {
     private transient BuildListener listener = null;
     
     // data from jelly
+    private boolean override_auth = true;
     private String username = null;
     private String password = null;
     private String collabNetUrl = null;
@@ -62,6 +62,9 @@ public class CNTracker extends Publisher {
     private transient CollabNetApp cna = null;
 
     public static final DescriptorImpl DESCRIPTOR = new DescriptorImpl();
+
+    private transient static TeamForgeShare.TeamForgeShareDescriptor 
+        shareDescriptor = null;
 
     /**
      * Constructs a new CNTracker instance.
@@ -92,7 +95,7 @@ public class CNTracker extends Publisher {
                      String project, String tracker, String title, 
                      String assign_user, String priority, boolean attach_log, 
                      boolean always_update, boolean close_issue, 
-                     String release) {
+                     String release, boolean override_auth) {
         this.username = username;
         this.password = password;
         this.collabNetUrl = collabNetUrl;
@@ -105,6 +108,7 @@ public class CNTracker extends Publisher {
         this.always_update = always_update;
         this.close_issue = close_issue;
         this.release = release;
+        this.override_auth = override_auth;
     }
 
     /**
@@ -141,24 +145,43 @@ public class CNTracker extends Publisher {
     }
 
     /**
+     * @return whether or not auth is overriden
+     */
+    public boolean overrideAuth() {
+        return this.override_auth;
+    }
+
+    /**
      * @return username to login as.
      */
     public String getUsername() {
-        return this.username;
+        if (this.overrideAuth()) {
+            return this.username;            
+        } else {
+            return getTeamForgeShareDescriptor().getUsername();
+        }
     }
     
     /**
      * @return password to login with.
      */
     public String getPassword() {
-        return this.password;
+        if (this.overrideAuth()) {
+            return this.password;
+        } else {
+            return getTeamForgeShareDescriptor().getPassword();
+        }
     }
 
     /**
      * @return URL of the CollabNet server.
      */
     public String getCollabNetUrl() {
-        return this.collabNetUrl;
+        if (this.overrideAuth()) {
+            return this.collabNetUrl;
+        } else {
+            return getTeamForgeShareDescriptor().getCollabNetUrl();
+        }
     }
     
     /**
@@ -229,6 +252,17 @@ public class CNTracker extends Publisher {
      */
     public String getRelease() {
         return this.release;
+    }
+
+    /**
+     * @return the TeamForge share descriptor.
+     */
+    public static TeamForgeShare.TeamForgeShareDescriptor 
+        getTeamForgeShareDescriptor() {
+        if (shareDescriptor == null) {
+            shareDescriptor = TeamForgeShare.getTeamForgeShareDescriptor();
+        }
+        return shareDescriptor;
     }
 
     /**
@@ -753,7 +787,7 @@ public class CNTracker extends Publisher {
     public static final class DescriptorImpl extends Descriptor<Publisher> {
         private static Logger log = Logger.getLogger("CNTrackerDescriptor");
 
-        DescriptorImpl() {
+        public DescriptorImpl() {
             super(CNTracker.class);
         }
         
@@ -779,6 +813,13 @@ public class CNTracker extends Publisher {
         public String getHelpFile() {
             return getHelpUrl() + "help-main.html";
         }
+
+        /**
+         * @return true if there is auth data that can be inherited.
+         */
+        public boolean canInheritAuth() {
+            return getTeamForgeShareDescriptor().useGlobal();
+        }
         
         /**
          * Creates a new instance of {@link CNTracker} from 
@@ -792,9 +833,32 @@ public class CNTracker extends Publisher {
         @Override
         public CNTracker newInstance(StaplerRequest req, JSONObject formData) 
             throws FormException {
-            return new CNTracker((String)formData.get("username"), 
-                                 (String)formData.get("password"), 
-                                 (String)formData.get("collabneturl"),
+            log.info("CNTracker: newInstance with: " + formData.toString());
+            boolean override_auth = false;
+            String username = null;
+            String password = null;
+            String collabneturl = null;
+            if (formData.has("override_auth")) {
+                override_auth = true;
+                Object authObject = formData.get("override_auth");
+                if (authObject instanceof JSONObject) {
+                    username = (String)((JSONObject) authObject)
+                        .get("username");
+                    password = (String)((JSONObject) authObject)
+                        .get("password");
+                    collabneturl = (String)((JSONObject) authObject)
+                        .get("collabneturl");
+                } else {
+                    throw new RuntimeException("Expected 'overrid_auth' to " +
+                                               "be a JSONObject");
+                }
+            } else if (!this.canInheritAuth()){
+                override_auth = true;
+                username = (String)formData.get("username");
+                password = (String)formData.get("password");
+                collabneturl = (String)formData.get("collabneturl");
+            }
+            return new CNTracker(username, password, collabneturl,
                                  (String)formData.get("project"),
                                  (String)formData.get("tracker"),
                                  StringUtils.
@@ -808,7 +872,8 @@ public class CNTracker extends Publisher {
                                  CommonUtil.getBoolean("close_issue", 
                                                        formData),
                                  StringUtils.
-                                 strip((String)formData.get("release")));
+                                 strip((String)formData.get("release")), 
+                                 override_auth);
         }
         
         /**

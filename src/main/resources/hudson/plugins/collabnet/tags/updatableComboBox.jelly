@@ -86,6 +86,11 @@
             field = document.getElementById("${id}");
             if (field != null) {
 	        new ComboBox("${id}", ${id}_Callback);
+                field.oldonfocus = field.onfocus;
+                field.onfocus = function () {
+                  field.oldonfocus();
+                  ${id}_update();
+                }                
             }
 	  }
           YAHOO.util.Event.onDOMReady(onLoadFor${id});

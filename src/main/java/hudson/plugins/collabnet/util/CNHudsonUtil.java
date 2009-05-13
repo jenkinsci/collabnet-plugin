@@ -5,6 +5,8 @@ import com.collabnet.ce.webservices.FrsApp;
 import com.collabnet.ce.webservices.TrackerApp;
 import com.collabnet.ce.soap50.webservices.tracker.ArtifactSoapDO;
 
+import hudson.plugins.collabnet.share.TeamForgeShare;
+
 import java.rmi.RemoteException;
 import java.util.logging.Logger;
 
@@ -30,6 +32,9 @@ public class CNHudsonUtil {
     public static CollabNetApp getCollabNetApp(String url, 
                                                String username, 
                                                String password) {
+        if (CommonUtil.unset(url)) {
+            return null;
+        }
         try {
             return new CollabNetApp(url, username, password);
         } catch (RemoteException re) {
@@ -46,15 +51,46 @@ public class CNHudsonUtil {
      * password set.  If login fails, null will be returned.
      */
     public static CollabNetApp getCollabNetApp(StaplerRequest request) {
-        String url = request.getParameter("url");
-        String username = request.getParameter("username");
-        String password = request.getParameter("password");
-        
+        String url = null;
+        String username = null;
+        String password = null;
+        String override_auth = request.getParameter("override_auth");
+        TeamForgeShare.TeamForgeShareDescriptor descriptor = 
+            TeamForgeShare.getTeamForgeShareDescriptor();
+        if (descriptor != null && descriptor.useGlobal() && 
+            override_auth != null && override_auth.equals("false")) {
+            url = descriptor.getCollabNetUrl();
+            username = descriptor.getUsername();
+            password = descriptor.getPassword();
+        } else {
+            url = request.getParameter("url");
+            username = request.getParameter("username");
+            password = request.getParameter("password");
+        }
+
         if (CommonUtil.unset(url) || CommonUtil.unset(username) 
             || CommonUtil.unset(password)) {
             return null;
         }
         return getCollabNetApp(url, username, password);
+    }
+
+    /**
+     * @return the username from the stapler request or the global value, 
+     *         if applicable.
+     */
+    public static String getUsername(StaplerRequest request) {
+        String username = null;
+        String override_auth = request.getParameter("override_auth");
+        TeamForgeShare.TeamForgeShareDescriptor descriptor = 
+            TeamForgeShare.getTeamForgeShareDescriptor();
+        if (descriptor != null && descriptor.useGlobal() && 
+            override_auth != null && override_auth.equals("false")) {
+            username = descriptor.getUsername();
+        } else {
+            username = request.getParameter("username");
+        }
+        return username;
     }
 
     /**

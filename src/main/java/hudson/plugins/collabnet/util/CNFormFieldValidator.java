@@ -301,7 +301,7 @@ public abstract class CNFormFieldValidator extends FormFieldValidator {
         }
 
         protected void check() throws IOException, ServletException {
-            String username = request.getParameter("username");
+            String username = CNHudsonUtil.getUsername(request);
             String project = request.getParameter("project");
       
             if (CommonUtil.unset(project)) {

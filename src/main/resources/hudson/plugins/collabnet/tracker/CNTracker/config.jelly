@@ -1,61 +1,56 @@
 <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" 
  xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form" 
- xmlns:c="/hudson/plugins/collabnet/tags">
-  
+ xmlns:c="/hudson/plugins/collabnet/tags" xmlns:local="local">
+
+  <script src="/plugin/collabnet/scripts/cnauth_override.js" type="text/javascript" />
+
   <j:set var="rootHelpURL" value="${descriptor.getHelpUrl()}"/>
 
-  <f:entry title="CollabNet TeamForge URL" 
-   description="For example, https://forge.collab.net" 
-   help="${rootHelpURL}/help-collabnetUrl.html">
-    <f:textbox name="cntracker.collabneturl" 
-     value="${instance.getCollabNetUrl()}" id="cntracker.collabneturl" 
-     checkUrl="'${rootURL}/publisher/CNTracker/collabNetUrlCheck?value=' + 
-       escape(this.value)" 
-     onchange="document.getElementById('cntracker.password').onchange(); "/>
-  </f:entry>
-
-  <f:entry title="Username" help="${rootHelpURL}/help-username.html">
-    <f:textbox name="cntracker.username" value="${instance.username}" 
-     id="cntracker.username" 
-     checkUrl="'${rootURL}/publisher/CNTracker/requiredCheck?name=' +
-       'Username&amp;value=' + escape(this.value)" 
-     onchange="document.getElementById('cntracker.password').onchange();" />
-  </f:entry>
-
-  <f:entry title="Password" help="${rootHelpURL}/help-password.html">
-    <input type="password" name="cntracker.password" 
-     value="${instance.password}" id="cntracker.password" 
-     class='setting-input validated' 
-     checkUrl="'${rootURL}/publisher/CNTracker/passwordCheck?password=' + 
-       escape(this.value) + '&amp;url=' + 
-       escape(document.getElementById('cntracker.collabneturl').value) + 
-       '&amp;username=' + 
-       escape(document.getElementById('cntracker.username').value)" 
-     onchange="cntracker_project_update();
-       document.getElementById('cntracker_project').onchange();" />
-  </f:entry>
-
+  <j:choose>
+    <j:when test="${descriptor.canInheritAuth()}">
+      <f:nested>
+        <table style="width:100%">
+          <j:set var="cntracker_override" value="false" />
+          <j:choose>
+            <j:when test="${instance != null}">
+              <j:set var="cntracker_override" 
+                value="${instance.overrideAuth()}" />
+            </j:when>
+          </j:choose>
+          <c:cnOptionalBlock id="cntracker.override_auth" 
+           name="cntracker.override_auth" 
+           title="Override the Global CollabNet Configuration"
+           checked="${cntracker_override}" 
+           onclick="document.getElementById('cntracker.password').onchange();"
+             >
+           <c:cnAuth prefix="cntracker" 
+            checkUrlRoot="${rootURL}/publisher/CNTracker" 
+            helpUrlRoot="${rootHelpURL}" url="${instance.getCollabNetUrl()}" 
+            username="${instance.username}" password="${instance.password}" 
+            onchange="document.getElementById('cntracker_project').onchange();"
+           />
+          </c:cnOptionalBlock>
+        </table>
+      </f:nested>
+    </j:when>
+    <j:otherwise>
+      <c:cnAuth prefix="cntracker" 
+       checkUrlRoot="${rootURL}/publisher/CNTracker" 
+       helpUrlRoot="${rootHelpURL}" url="${instance.getCollabNetUrl()}" 
+       username="${instance.username}" password="${instance.password}" 
+       onchange="document.getElementById('cntracker_project').onchange();" />
+    </j:otherwise>
+  </j:choose>
+ 
   <f:entry title="Project" help="${rootHelpURL}/help-project.html">
     <c:updatableComboBox name="cntracker.project" value="${instance.project}" 
      id="cntracker_project" clazz="setting-input validated"
      items="${instance.getProjects()}"
      checkUrl="'${rootURL}/publisher/CNTracker/projectCheck?project=' + 
-       escape(this.value) + '&amp;password='+ 
-       escape(document.getElementById('cntracker.password').value) + 
-       '&amp;url=' + 
-       escape(document.getElementById('cntracker.collabneturl').value) + 
-       '&amp;username=' + 
-       escape(document.getElementById('cntracker.username').value)" 
-     updateUrl="'${rootURL}/publisher/CNTracker/getProjects?password='+ 
-       escape(document.getElementById('cntracker.password').value) + 
-       '&amp;url=' + 
-       escape(document.getElementById('cntracker.collabneturl').value) + 
-       '&amp;username=' + 
-       escape(document.getElementById('cntracker.username').value)"
-     onchange="cntracker_tracker_update();
-               cntracker_release_update();
-               cntracker_assign_user_update();
-               document.getElementById('cntracker_tracker').onchange(); 
+       escape(this.value) + '&amp;' + get_auth_param_str('cntracker')" 
+     updateUrl="'${rootURL}/publisher/CNTracker/getProjects?' + 
+       get_auth_param_str('cntracker')"
+     onchange="document.getElementById('cntracker_tracker').onchange(); 
                document.getElementById('cntracker_assign_user').onchange(); 
                document.getElementById('cntracker_release').onchange();" />
   </f:entry>
@@ -67,20 +62,10 @@
      checkUrl="'${rootURL}/publisher/CNTracker/trackerCheck?tracker=' + 
        escape(this.value) +'&amp;project=' + 
        escape(document.getElementById('cntracker_project').value) + 
-       '&amp;password='+ 
-       escape(document.getElementById('cntracker.password').value) + 
-       '&amp;url=' + 
-       escape(document.getElementById('cntracker.collabneturl').value) + 
-       '&amp;username=' + 
-       escape(document.getElementById('cntracker.username').value)" 
+       '&amp;' + get_auth_param_str('cntracker')" 
      updateUrl="'${rootURL}/publisher/CNTracker/getTrackers?project=' + 
        escape(document.getElementById('cntracker_project').value) + 
-       '&amp;password='+ 
-       escape(document.getElementById('cntracker.password').value) + 
-       '&amp;url=' + 
-       escape(document.getElementById('cntracker.collabneturl').value) + 
-       '&amp;username=' + 
-       escape(document.getElementById('cntracker.username').value)" />
+       '&amp;' + get_auth_param_str('cntracker')" />
   </f:entry>
 
   <f:entry title="Issue Title" help="${rootHelpURL}/help-title.html">
@@ -97,20 +82,10 @@
      checkUrl="'${rootURL}/publisher/CNTracker/assignCheck?assign=' + 
        escape(this.value) +'&amp;project=' + 
        escape(document.getElementById('cntracker_project').value) + 
-       '&amp;password='+ 
-       escape(document.getElementById('cntracker.password').value) + 
-       '&amp;url=' + 
-       escape(document.getElementById('cntracker.collabneturl').value) + 
-       '&amp;username=' + 
-       escape(document.getElementById('cntracker.username').value)"
+       '&amp;' + get_auth_param_str('cntracker')"
      updateUrl="'${rootURL}/publisher/CNTracker/getProjectUsers?project=' + 
        escape(document.getElementById('cntracker_project').value) + 
-       '&amp;password='+ 
-       escape(document.getElementById('cntracker.password').value) + 
-       '&amp;url=' + 
-       escape(document.getElementById('cntracker.collabneturl').value) + 
-       '&amp;username=' + 
-       escape(document.getElementById('cntracker.username').value)" />
+       '&amp;' + get_auth_param_str('cntracker')" />
   </f:entry>
 
   <f:entry name="cntracker.priority" title="Priority" 
@@ -188,20 +163,10 @@
      checkUrl="'${rootURL}/publisher/CNTracker/releaseCheck?release=' + 
        escape(this.value) +'&amp;project=' + 
        escape(document.getElementById('cntracker_project').value) + 
-       '&amp;password='+ 
-       escape(document.getElementById('cntracker.password').value) + 
-       '&amp;url=' + 
-       escape(document.getElementById('cntracker.collabneturl').value) + 
-       '&amp;username=' + 
-       escape(document.getElementById('cntracker.username').value) +
+       '&amp;' + get_auth_param_str('cntracker') +
        '&amp;required=false'"
      updateUrl="'${rootURL}/publisher/CNTracker/getReleases?project=' + 
        escape(document.getElementById('cntracker_project').value) + 
-       '&amp;password='+ 
-       escape(document.getElementById('cntracker.password').value) + 
-       '&amp;url=' + 
-       escape(document.getElementById('cntracker.collabneturl').value) + 
-       '&amp;username=' + 
-       escape(document.getElementById('cntracker.username').value)" />
+       '&amp;' + get_auth_param_str('cntracker')" />
   </f:entry>
 </j:jelly>

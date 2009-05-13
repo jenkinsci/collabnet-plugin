@@ -2,56 +2,55 @@
  xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form" 
  xmlns:c="/hudson/plugins/collabnet/tags">
 
+  <script src="/plugin/collabnet/scripts/cnauth_override.js" type="text/javascript" />
+
   <j:set var="rootHelpURL" value="${descriptor.getHelpUrl()}" />
 
-  <f:entry title="CollabNet TeamForge URL" 
-   description="For example, https://forge.collab.net" 
-   help="${rootHelpURL}/help-collabnetUrl.html">
-    <f:textbox name="cndu.collabneturl" value="${instance.getCollabNetUrl()}" 
-     id="cndu.collabneturl" 
-     checkUrl="'${rootURL}/publisher/CNDocumentUploader/collabNetUrlCheck?' +
-       'value='+escape(this.value)" 
-     onchange="document.getElementById('cndu.password').onchange();" />
-  </f:entry>
 
-  <f:entry title="Username" help="${rootHelpURL}/help-username.html">
-    <f:textbox name="cndu.username" value="${instance.username}" 
-     id="cndu.username" 
-     checkUrl="'${rootURL}/publisher/CNDocumentUploader/requiredCheck?' + 
-       'name=Username&amp;value='+escape(this.value)" 
-     onchange="document.getElementById('cndu.password').onchange();" />
-  </f:entry>
-
-  <f:entry title="Password" help="${rootHelpURL}/help-password.html">
-    <input type="password" name="cndu.password" value="${instance.password}" 
-     id="cndu.password" class='setting-input validated' 
-     checkUrl="'${rootURL}/publisher/CNDocumentUploader/passwordCheck?' +
-       'password=' + escape(this.value) + '&amp;url=' + 
-       escape(document.getElementById('cndu.collabneturl').value) + 
-       '&amp;username=' + 
-       escape(document.getElementById('cndu.username').value)" 
-     onchange="cndu_project_update();
-       document.getElementById('cndu_project').onchange();" />
-  </f:entry>
+  <j:choose>
+    <j:when test="${descriptor.canInheritAuth()}">
+      <f:nested>
+        <table style="width:100%">
+          <j:set var="cndoc_override" value="false" />
+          <j:choose>
+            <j:when test="${instance != null}">
+              <j:set var="cndu_override" 
+                value="${instance.overrideAuth()}" />
+            </j:when>
+          </j:choose>
+          <c:cnOptionalBlock id="cndu.override_auth" 
+           name="cndu.override_auth" 
+           title="Override the Global CollabNet Configuration"
+           checked="${cndu_override}" 
+           onclick="document.getElementById('cndu.password').onchange();cndu_project_update();"
+             >
+           <c:cnAuth prefix="cndu" 
+            checkUrlRoot="${rootURL}/publisher/CNDocumentUploader" 
+            helpUrlRoot="${rootHelpURL}" url="${instance.getCollabNetUrl()}" 
+            username="${instance.username}" password="${instance.password}" 
+            onchange="document.getElementById('cndu_project').onchange();"
+           />
+          </c:cnOptionalBlock>
+        </table>
+      </f:nested>
+    </j:when>
+    <j:otherwise>
+      <c:cnAuth prefix="cndu" 
+        checkUrlRoot="${rootURL}/publisher/CNDocumentUploader" 
+        helpUrlRoot="${rootHelpURL}" url="${instance.getCollabNetUrl()}" 
+        username="${instance.username}" password="${instance.password}" 
+        onchange="document.getElementById('cndu_project').onchange();" />
+    </j:otherwise>
+  </j:choose>
 
   <f:entry title="Project" help="${rootHelpURL}/help-project.html">
     <c:updatableComboBox name="cndu.project" value="${instance.project}" 
      id="cndu_project" clazz="setting-input validated"
      items="${instance.getProjects()}"
      checkUrl="'${rootURL}/publisher/CNDocumentUploader/projectCheck?' +
-       'project=' + escape(this.value) + '&amp;password=' + 
-       escape(document.getElementById('cndu.password').value) + 
-       '&amp;url=' + 
-       escape(document.getElementById('cndu.collabneturl').value) + 
-       '&amp;username=' + 
-       escape(document.getElementById('cndu.username').value)"
+       'project=' + escape(this.value) + '&amp;' + get_auth_param_str('cndu')"
      updateUrl="'${rootURL}/publisher/CNDocumentUploader/getProjects?' +
-       'password=' + 
-       escape(document.getElementById('cndu.password').value) + 
-       '&amp;url=' + 
-       escape(document.getElementById('cndu.collabneturl').value) + 
-       '&amp;username=' + 
-       escape(document.getElementById('cndu.username').value)" />
+       get_auth_param_str('cndu')" />
   </f:entry>
 
   <f:entry title="Upload Folder Path" help="${rootHelpURL}/help-uploadPath.html">
@@ -60,11 +59,7 @@
      checkUrl="'${rootURL}/publisher/CNDocumentUploader/pathCheck?path=' + 
        escape(this.value) + '&amp;project=' + 
        escape(document.getElementById('cndu_project').value) + 
-       '&amp;password='+ 
-       escape(document.getElementById('cndu.password').value) + '&amp;url=' + 
-       escape(document.getElementById('cndu.collabneturl').value) + 
-       '&amp;username=' + 
-       escape(document.getElementById('cndu.username').value)" />
+       '&amp;' + get_auth_param_str('cndu')" />
   </f:entry>
 
   <f:entry title="Description" help="${rootHelpURL}/help-description.html">

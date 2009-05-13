@@ -1,0 +1,46 @@
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" 
+ xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
+
+  <f:section title="Global CollabNet Configuration">
+
+  <j:set var="commonHelpURL" value="/plugin/collabnet/common"/>
+  <j:set var="checkURL" 
+   value="${rootURL}/descriptor/${descriptor.clazz.name}/"/>
+
+  <f:optionalBlock name="cntfs.useglobal" 
+   title="Allow Global CollabNet Configuration"
+   checked="${descriptor.useGlobal()}" 
+   help="${commonHelpURL}/help-allowGlobalConfig.html">
+
+    <f:entry title="CollabNet TeamForge URL" 
+     description="For example, https://forge.collab.net" 
+     help="${commonHelpURL}/help-collabnetUrl.html">
+      <f:textbox name="cntfs.collabneturl" 
+       value="${descriptor.getCollabNetUrl()}" id="cntfs.collabneturl" 
+       checkUrl="'${checkURL}collabNetUrlCheck?value=' + 
+         escape(this.value)" 
+       onchange="document.getElementById('cntfs.password').onchange(); "/>
+    </f:entry>
+
+    <f:entry title="Username" help="${commonHelpURL}/help-username.html">
+      <f:textbox name="cntfs.username" value="${descriptor.username}" 
+       id="cntfs.username" 
+       checkUrl="'${checkURL}requiredCheck?name=' +
+         'Username&amp;value=' + escape(this.value)" 
+       onchange="document.getElementById('cntfs.password').onchange();" />
+    </f:entry>
+
+    <f:entry title="Password" help="${commonHelpURL}/help-password.html">
+      <input type="password" name="cntfs.password" 
+       value="${descriptor.password}" id="cntfs.password" 
+       class='setting-input validated' 
+       checkUrl="'${checkURL}passwordCheck?password=' + 
+         escape(this.value) + '&amp;url=' + 
+         escape(document.getElementById('cntfs.collabneturl').value) + 
+         '&amp;username=' + 
+         escape(document.getElementById('cntfs.username').value)" />
+    </f:entry>
+    
+  </f:optionalBlock>
+  </f:section>
+</j:jelly>

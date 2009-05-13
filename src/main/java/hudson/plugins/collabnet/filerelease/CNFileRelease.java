@@ -18,6 +18,7 @@ import hudson.remoting.VirtualChannel;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Publisher;
 
+import hudson.plugins.collabnet.share.TeamForgeShare;
 import hudson.plugins.collabnet.util.CNFormFieldValidator;
 import hudson.plugins.collabnet.util.CNHudsonUtil;
 import hudson.plugins.collabnet.util.ComboBoxUpdater;
@@ -56,6 +57,7 @@ public class CNFileRelease extends Publisher {
     private transient CollabNetApp cna = null;
 
     // Variables from the form
+    private boolean override_auth = true;
     private String url;
     private String username;
     private String password;
@@ -64,6 +66,9 @@ public class CNFileRelease extends Publisher {
     private String release;
     private boolean overwrite;
     private String[] file_patterns;
+
+    private transient static TeamForgeShare.TeamForgeShareDescriptor 
+        shareDescriptor = null;
 
     /**
      * Creates a new CNFileRelease object.
@@ -83,7 +88,8 @@ public class CNFileRelease extends Publisher {
      */
     public CNFileRelease(String url, String username, String password, 
                          String project, String rpackage, String release, 
-                         boolean overwrite, String[] filePatterns) {
+                         boolean overwrite, String[] filePatterns, 
+                         boolean override_auth) {
         this.url = url;
         this.username = username;
         this.password = password;
@@ -92,6 +98,7 @@ public class CNFileRelease extends Publisher {
         this.release = release;
         this.overwrite = overwrite;
         this.file_patterns = filePatterns;
+        this.override_auth = override_auth;
     }
 
     /**
@@ -128,24 +135,43 @@ public class CNFileRelease extends Publisher {
     }
 
     /**
+     * @return whether or not auth is overriden
+     */
+    public boolean overrideAuth() {
+        return this.override_auth;
+    }
+
+    /**
      * @return the url for the CollabNet server.
      */
     public String getCollabNetUrl() {
-        return this.url;
+        if (this.overrideAuth()) {
+            return this.url;
+        } else {
+            return getTeamForgeShareDescriptor().getCollabNetUrl();
+        }
     }
 
     /**
      * @return the username used for logging in.
      */
     public String getUsername() {
-        return this.username;
+        if (this.overrideAuth()) {
+            return this.username;            
+        } else {
+            return getTeamForgeShareDescriptor().getUsername();
+        }
     }
 
     /**
      * @return the password used for logging in.
      */
     public String getPassword() {
-        return this.password;
+        if (this.overrideAuth()) {
+            return this.password;
+        } else {
+            return getTeamForgeShareDescriptor().getPassword();
+        }
     }
 
     /**
@@ -185,6 +211,17 @@ public class CNFileRelease extends Publisher {
         } else {
             return new String[0];
         }
+    }
+
+    /**
+     * @return the TeamForge share descriptor.
+     */
+    public static TeamForgeShare.TeamForgeShareDescriptor 
+        getTeamForgeShareDescriptor() {
+        if (shareDescriptor == null) {
+            shareDescriptor = TeamForgeShare.getTeamForgeShareDescriptor();
+        }
+        return shareDescriptor;
     }
 
     /**
@@ -617,6 +654,13 @@ public class CNFileRelease extends Publisher {
         }
 
         /**
+         * @return true if there is auth data that can be inherited.
+         */
+        public boolean canInheritAuth() {
+            return getTeamForgeShareDescriptor().useGlobal();
+        }
+
+        /**
          * Allows this plugin to be used as a promotion task.
          *
          * @param jobType a class to check for applicability.
@@ -641,6 +685,30 @@ public class CNFileRelease extends Publisher {
         public CNFileRelease newInstance(StaplerRequest req, 
                                          JSONObject formData) 
             throws FormException {
+            boolean override_auth = false;
+            String username = null;
+            String password = null;
+            String collabneturl = null;
+            if (formData.has("override_auth")) {
+                override_auth = true;
+                Object authObject = formData.get("override_auth");
+                if (authObject instanceof JSONObject) {
+                    username = (String)((JSONObject) authObject)
+                        .get("username");
+                    password = (String)((JSONObject) authObject)
+                        .get("password");
+                    collabneturl = (String)((JSONObject) authObject)
+                        .get("collabneturl");
+                } else {
+                    throw new RuntimeException("Expected 'overrid_auth' to " +
+                                               "be a JSONObject");
+                }
+            } else if (!this.canInheritAuth()) {
+                override_auth = true;
+                username = (String)formData.get("username");
+                password = (String)formData.get("password");
+                collabneturl = (String)formData.get("collabneturl");
+            }
             Object fileData = formData.get("files");
             JSONObject[] jpats;
             if (fileData instanceof JSONArray) {
@@ -657,15 +725,15 @@ public class CNFileRelease extends Publisher {
             for (int i = 0; i < jpats.length; i++) {
                 patterns[i] = (String) jpats[i].get("file");
             }            
-            return new CNFileRelease((String)formData.get("collabneturl"), 
-                                     (String)formData.get("username"), 
-                                     (String)formData.get("password"), 
+            return new CNFileRelease(collabneturl, 
+                                     username, 
+                                     password, 
                                      (String)formData.get("project"),  
                                      (String)formData.get("package"), 
                                      (String)formData.get("release"), 
                                      CommonUtil.getBoolean("overwrite", 
                                                            formData),
-                                     patterns);
+                                     patterns, override_auth);
         }
 
         /**

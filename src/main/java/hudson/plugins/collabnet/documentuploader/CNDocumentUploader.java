@@ -17,6 +17,7 @@ import hudson.model.Action;
 import hudson.remoting.VirtualChannel;
 import hudson.tasks.Publisher;
 
+import hudson.plugins.collabnet.share.TeamForgeShare;
 import hudson.plugins.collabnet.util.CNFormFieldValidator;
 import hudson.plugins.collabnet.util.CNHudsonUtil;
 import hudson.plugins.collabnet.util.ComboBoxUpdater;
@@ -53,6 +54,7 @@ public class CNDocumentUploader extends Publisher {
     private transient CollabNetApp cna = null;
 
     // Variables from the form
+    private boolean override_auth = true;
     private String url;
     private String username;
     private String password;
@@ -61,6 +63,9 @@ public class CNDocumentUploader extends Publisher {
     private String description;
     private String[] file_patterns;
     private boolean includeBuildLog;    
+
+    private transient static TeamForgeShare.TeamForgeShareDescriptor 
+        shareDescriptor = null;
 
     /**
      * Creates a new CNDocumentUploader object.
@@ -76,7 +81,7 @@ public class CNDocumentUploader extends Publisher {
     public CNDocumentUploader(String url, String username, String password, 
                               String project, String uploadPath, 
                               String description, String[] filePatterns,
-                              boolean includeBuildLog) {
+                              boolean includeBuildLog, boolean override_auth) {
         this.url = url;
         this.username = username;
         this.password = password;
@@ -85,6 +90,7 @@ public class CNDocumentUploader extends Publisher {
         this.description = description;
         this.file_patterns = filePatterns;
         this.includeBuildLog = includeBuildLog;
+        this.override_auth = override_auth;
     }
 
     /**
@@ -120,24 +126,43 @@ public class CNDocumentUploader extends Publisher {
     }
 
     /**
+     * @return whether or not auth is overriden
+     */
+    public boolean overrideAuth() {
+        return this.override_auth;
+    }
+
+    /**
      * @return the url for the CollabNet server.
      */
     public String getCollabNetUrl() {
-        return this.url;
+        if (this.overrideAuth()) {
+            return this.url;
+        } else {
+            return getTeamForgeShareDescriptor().getCollabNetUrl();
+        }
     }
 
     /**
      * @return the username used for logging in.
      */
     public String getUsername() {
-        return this.username;
+        if (this.overrideAuth()) {
+            return this.username;            
+        } else {
+            return getTeamForgeShareDescriptor().getUsername();
+        }
     }
 
     /**
      * @return the password used for logging in.
      */
     public String getPassword() {
-        return this.password;
+        if (this.overrideAuth()) {
+            return this.password;
+        } else {
+            return getTeamForgeShareDescriptor().getPassword();
+        }
     }
 
     /**
@@ -178,6 +203,17 @@ public class CNDocumentUploader extends Publisher {
     public boolean includeBuildLog() {
         return this.includeBuildLog;
     }
+
+    /**
+     * @return the TeamForge share descriptor.
+     */
+    public static TeamForgeShare.TeamForgeShareDescriptor 
+        getTeamForgeShareDescriptor() {
+        if (shareDescriptor == null) {
+            shareDescriptor = TeamForgeShare.getTeamForgeShareDescriptor();
+        }
+        return shareDescriptor;
+    }    
 
     /**
      * @return the list of all possible projects, given the login data.
@@ -599,6 +635,13 @@ public class CNDocumentUploader extends Publisher {
         }
 
         /**
+         * @return true if there is auth data that can be inherited.
+         */
+        public boolean canInheritAuth() {
+            return getTeamForgeShareDescriptor().useGlobal();
+        }    
+
+        /**
          * Creates a new instance of {@link CNDocumentUploader} from a 
          * submitted form.
          *
@@ -611,6 +654,30 @@ public class CNDocumentUploader extends Publisher {
         public CNDocumentUploader newInstance(StaplerRequest req, 
                                               JSONObject formData) 
             throws FormException {
+            boolean override_auth = false;
+            String username = null;
+            String password = null;
+            String collabneturl = null;
+            if (formData.has("override_auth")) {
+                override_auth = true;
+                Object authObject = formData.get("override_auth");
+                if (authObject instanceof JSONObject) {
+                    username = (String)((JSONObject) authObject)
+                        .get("username");
+                    password = (String)((JSONObject) authObject)
+                        .get("password");
+                    collabneturl = (String)((JSONObject) authObject)
+                        .get("collabneturl");
+                } else {
+                    throw new RuntimeException("Expected 'overrid_auth' to " +
+                                               "be a JSONObject");
+                }
+            } else if (!this.canInheritAuth()) {
+                override_auth = true;
+                username = (String)formData.get("username");
+                password = (String)formData.get("password");
+                collabneturl = (String)formData.get("collabneturl");
+            }
             Object fileData = formData.get("files");
             JSONObject[] jpats;
             if (fileData instanceof JSONArray) {
@@ -630,15 +697,16 @@ public class CNDocumentUploader extends Publisher {
             String path = (String)formData.get("upload_path");
             path = path.replaceAll("/+", "/");
             path = CommonUtil.stripSlashes(path);
-            return new CNDocumentUploader((String)formData.get("collabneturl"),
-                                          (String)formData.get("username"),
-                                          (String)formData.get("password"),
+            return new CNDocumentUploader(collabneturl,
+                                          username,
+                                          password,
                                           (String)formData.get("project"),
                                           path,
                                           (String)formData.get("description"),
                                           patterns,
                                           CommonUtil.getBoolean("buildlog", 
-                                                                  formData));
+                                                                formData),
+                                          override_auth);
         }
 
         /**
