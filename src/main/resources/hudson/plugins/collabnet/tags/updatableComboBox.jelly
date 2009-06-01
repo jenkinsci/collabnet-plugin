@@ -93,6 +93,8 @@
                 }                
             }
 	  }
-          YAHOO.util.Event.onDOMReady(onLoadFor${id});
+          // onDomReady is faster, but causes errors in IE by firing 
+          // too early.
+          YAHOO.util.Event.addListener(window, 'load', onLoadFor${id});
 	</script>
 </j:jelly>
