@@ -94,6 +94,9 @@ public class CNFilter implements Filter {
                 ca.loginWithToken(token);
                 Authentication cnauthentication = 
                     new CNAuthentication(username, ca);
+                // ensure that a session exists before we set context in it
+                // see artf42298
+                ((HttpServletRequest)request).getSession(true);
                 SecurityContextHolder.getContext().
                     setAuthentication(cnauthentication);
             } catch (RemoteException re) {
