@@ -7,6 +7,10 @@ import com.collabnet.cubit.api.CubitConnector;
 
 import java.io.IOException;
 import java.rmi.RemoteException;
+import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
@@ -17,6 +21,7 @@ import java.util.regex.PatternSyntaxException;
 
 import javax.servlet.ServletException;
 
+import hudson.plugins.collabnet.auth.CNConnection;
 import hudson.util.FormFieldValidator;
 
 import org.apache.commons.httpclient.HttpClient;
@@ -533,6 +538,157 @@ public abstract class CNFormFieldValidator extends FormFieldValidator {
         }
     }
 
+    
+    /**
+     * Check that a comma-separated list of users exists.
+     * The check only works for a logged-in site-admin.  Otherwise,
+     * give a warning that we cannot check the users' validity.
+     */
+    public static class UserListCheck extends CNFormFieldValidator {
+        
+        public UserListCheck(StaplerRequest request, 
+                             StaplerResponse response) {
+            super(request, response);
+        }
+
+        protected void check() throws IOException, ServletException {
+            String userStr = request.getParameter("value");
+            if (userStr == null || userStr.equals("")) {
+                ok();
+                return;
+            }
+            CNConnection conn = CNConnection.getInstance();
+            if (conn == null || !conn.isSuperUser()) {
+                warning("Cannot check if users exist unless logged " +
+                        "in as a TeamForge site admin.  Be careful!");
+                return;
+            }
+            Collection<String> invalidUsers = 
+                getInvalidUsers(userStr);
+            if (!invalidUsers.isEmpty()) {
+                error("The following users do not exist: " + 
+                      invalidUsers);
+                return;
+            }
+            ok();
+        }
+
+        /**
+         * @param userStr
+         * @return the collection of users from the array which do not exist.
+         */
+        private Collection<String> getInvalidUsers(String userStr) {
+            String[] users = CommonUtil.splitCommaStr(userStr);
+            CNConnection conn = CNConnection.getInstance();
+            if (conn == null) {
+                return Collections.emptyList();
+            }
+            Collection<String> invalidUsers = new ArrayList<String>();
+            for (String user: users) {
+                if (!conn.isUsernameValid(user)) {
+                    invalidUsers.add(user);
+                }
+            }
+            return invalidUsers;
+        }
+    }
+
+    /**
+     * Check that a comma-separated list of groups exists.
+     * The check only works for a logged-in site-admin.  Also warns
+     * the current user if s/he will be locked out once that user
+     * saves the configuration.
+     */
+    public static class GroupListCheck extends CNFormFieldValidator {
+        
+        public GroupListCheck(StaplerRequest request, 
+                             StaplerResponse response) {
+            super(request, response);
+        }
+
+        protected void check() throws IOException, ServletException {
+            String groupStr = request.getParameter("groups");
+            Collection<String> invalidGroups = 
+                getInvalidGroups(groupStr);
+            if (!invalidGroups.isEmpty()) {
+                error("The following groups do not exist: " + 
+                      invalidGroups);
+                // anyone who can see if groups are invalid will
+                // never be locked out, so we can return here
+                return;
+            }
+            
+            String userStr = request.getParameter("users");
+            if (userStr != null) {
+                if (locksOutCurrentUser(userStr, groupStr)) {
+                    error("The authorization settings would lock " +
+                          "the current user out of this page.  " +
+                          "You may want to add your username to " +
+                          "the user list.");
+                    return;
+                }
+            }
+            
+            ok(); 
+        }
+
+        /**
+         * @param groupStr
+         * @return the collection of groups from the array which do not exist.
+         */
+        private Collection<String> getInvalidGroups(String groupStr) {
+            CNConnection conn = CNConnection.getInstance();
+            if (conn == null) {
+                // cannot connect to check.
+                return Collections.emptyList();
+            }
+            if (!conn.isSuperUser()) {
+                // only super users can see all groups and do this check.
+                return Collections.emptyList();
+            }
+            String[] groups = CommonUtil.splitCommaStr(groupStr);
+            Collection<String> invalidGroups = new ArrayList<String>();
+            for (String group: groups) {
+                if (!conn.isGroupnameValid(group)) {
+                    invalidGroups.add(group);
+                }
+            }
+            return invalidGroups;
+        }
+
+        /**
+         * Return true if the given admin user/groups would mean that 
+         * the current user would be locked out of the system.
+         *
+         * @param userStr
+         * @param groupStr
+         * @return true if the user would not have admin access with these 
+         *         authorizations.
+         */
+        private boolean locksOutCurrentUser(String userStr, String groupStr) {
+            CNConnection conn = CNConnection.getInstance();
+            if (conn == null) {
+                // cannot check
+                return false;
+            }
+            if (conn.isSuperUser()) {
+                return false;
+            }
+            String currentUser = conn.getUsername();
+            String[] users = CommonUtil.splitCommaStr(userStr);
+            for (String user: users) {
+                if (user.equals(currentUser)) {
+                    return false;
+                }
+            }
+            String[] groups = CommonUtil.splitCommaStr(groupStr);
+            if (conn.isMemberOfAny(Arrays.asList(groups))) {
+                return false;
+            }
+            return true;
+        }
+    }
+
 
     /**
      * Class to check for validity of a regex expression.  Expects
@@ -541,7 +697,7 @@ public abstract class CNFormFieldValidator extends FormFieldValidator {
     public static class RegexCheck extends CNFormFieldValidator {
         
         public RegexCheck(StaplerRequest request, 
-                                StaplerResponse response) {
+                          StaplerResponse response) {
             super(request, response);
         }
 
@@ -559,6 +715,7 @@ public abstract class CNFormFieldValidator extends FormFieldValidator {
             ok();
         }
     }
+
 
     /**
      * Class to check if a CUBiT key has the proper format and allows

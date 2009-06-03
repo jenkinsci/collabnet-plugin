@@ -12,6 +12,9 @@ import hudson.security.AuthorizationStrategy;
 import hudson.security.Permission;
 import hudson.util.FormFieldValidator;
 
+import hudson.plugins.collabnet.util.CommonUtil;
+import hudson.plugins.collabnet.util.CNFormFieldValidator;
+
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.ArrayList;
@@ -252,39 +255,16 @@ public class CNAuthorizationStrategy extends AuthorizationStrategy {
         public CNAuthorizationStrategy newInstance(StaplerRequest req, 
                                                   JSONObject formData) 
             throws FormException {
-            String[] readUsers = this.splitCommaStr((String)formData
-                                                    .get("readUsers"));
-            String[] readGroups = this.splitCommaStr((String)formData
-                                                     .get("readGroups"));
-            String[] adminUsers = this.splitCommaStr((String)formData
-                                                     .get("adminUsers"));
-            String[] adminGroups = this.splitCommaStr((String)formData
-                                                      .get("adminGroups"));
+            String[] readUsers = CommonUtil.splitCommaStr((String)formData
+                                                          .get("readUsers"));
+            String[] readGroups = CommonUtil.splitCommaStr((String)formData
+                                                           .get("readGroups"));
+            String[] adminUsers = CommonUtil.splitCommaStr((String)formData
+                                                           .get("adminUsers"));
+            String[] adminGroups = CommonUtil
+                .splitCommaStr((String)formData.get("adminGroups"));
             return new CNAuthorizationStrategy(readUsers, readGroups, 
                                                adminUsers, adminGroups);
-        }
-        
-        /**
-         * Given a comma-delimited string, split it into an array of
-         * strings, removing unneccessary whitespace.  Also will remove
-         * empty values (i.e. only whitespace).
-         * 
-         * @param commaStr 
-         * @return an array of the strings, with leading and trailing 
-         *         whitespace removed.
-         */
-        private String[] splitCommaStr(String commaStr) {
-            Collection<String> results = 
-                new ArrayList<String>(Arrays.asList(commaStr.trim()
-                                                    .split("\\s*,\\s*")));
-            for (Iterator<String> it = results.iterator(); it.hasNext();) {
-                String next = (String)it.next();
-                next = next.trim();
-                if (next.equals("")) {
-                    it.remove();
-                }
-            }
-            return results.toArray(new String[0]);
         }
 
         /**
@@ -360,38 +340,7 @@ public class CNAuthorizationStrategy extends AuthorizationStrategy {
         public void doUserCheck(StaplerRequest req, 
                                 StaplerResponse rsp) 
             throws IOException, ServletException {
-            new FormFieldValidator(req,rsp,true) {
-                protected void check() throws IOException, ServletException {  
-                    String userStr = request.getParameter("value");
-                    Collection<String> invalidUsers = 
-                        getInvalidUsers(userStr);
-                    if (!invalidUsers.isEmpty()) {
-                        error("The following users do not exist: " + 
-                              invalidUsers);
-                        return;
-                    }
-                    ok();           
-                }
-            }.process();
-        }
-
-        /**
-         * @param userStr
-         * @return the collection of users from the array which do not exist.
-         */
-        private Collection<String> getInvalidUsers(String userStr) {
-            String[] users = splitCommaStr(userStr);
-            CNConnection conn = CNConnection.getInstance();
-            if (conn == null) {
-                return Collections.emptyList();
-            }
-            Collection<String> invalidUsers = new ArrayList<String>();
-            for (String user: users) {
-                if (!conn.isUsernameValid(user)) {
-                    invalidUsers.add(user);
-                }
-            }
-            return invalidUsers;
+            new CNFormFieldValidator.UserListCheck(req,rsp).process();
         }
 
         /**
@@ -400,89 +349,7 @@ public class CNAuthorizationStrategy extends AuthorizationStrategy {
         public void doGroupCheck(StaplerRequest req, 
                                 StaplerResponse rsp) 
             throws IOException, ServletException {
-            new FormFieldValidator(req,rsp,true) {
-                protected void check() throws IOException, ServletException {
-                    String groupStr = request.getParameter("groups");
-                    Collection<String> invalidGroups = 
-                        getInvalidGroups(groupStr);
-                    if (!invalidGroups.isEmpty()) {
-                        error("The following groups do not exist: " + 
-                              invalidGroups);
-                        // anyone who can see if groups are invalid will
-                        // never be locked out, so we can return here
-                        return;
-                    }
-
-                    String userStr = request.getParameter("users");
-                    if (userStr != null) {
-                        if (locksOutCurrentUser(userStr, groupStr)) {
-                            error("The authorization settings would lock " +
-                                  "the current user out of this page.  " +
-                                  "You may want to add your username to " +
-                                  "the user list.");
-                            return;
-                        }
-                    }
-
-                    ok(); 
-                }
-            }.process();
+            new CNFormFieldValidator.GroupListCheck(req, rsp).process();
         } 
-
-        /**
-         * @param groupStr
-         * @return the collection of groups from the array which do not exist.
-         */
-        private Collection<String> getInvalidGroups(String groupStr) {
-            CNConnection conn = CNConnection.getInstance();
-            if (conn == null) {
-                // cannot connect to check.
-                return Collections.emptyList();
-            }
-            if (!conn.isSuperUser()) {
-                // only super users can see all groups and do this check.
-                return Collections.emptyList();
-            }
-            String[] groups = splitCommaStr(groupStr);
-            Collection<String> invalidGroups = new ArrayList<String>();
-            for (String group: groups) {
-                if (!conn.isGroupnameValid(group)) {
-                    invalidGroups.add(group);
-                }
-            }
-            return invalidGroups;
-        }
-
-        /**
-         * Return true if the given admin user/groups would mean that 
-         * the current user would be locked out of the system.
-         *
-         * @param userStr
-         * @param groupStr
-         * @return true if the user would not have admin access with these 
-         *         authorizations.
-         */
-        private boolean locksOutCurrentUser(String userStr, String groupStr) {
-            CNConnection conn = CNConnection.getInstance();
-            if (conn == null) {
-                // cannot check
-                return false;
-            }
-            if (conn.isSuperUser()) {
-                return false;
-            }
-            String currentUser = conn.getUsername();
-            String[] users = this.splitCommaStr(userStr);
-            for (String user: users) {
-                if (user.equals(currentUser)) {
-                    return false;
-                }
-            }
-            String[] groups = this.splitCommaStr(groupStr);
-            if (conn.isMemberOfAny(Arrays.asList(groups))) {
-                return false;
-            }
-            return true;
-        }
     }   
 }
