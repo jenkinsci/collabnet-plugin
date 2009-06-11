@@ -14,7 +14,7 @@
   <packaging>hpi</packaging>
 
   <properties>
-    <compile.java.version>1.5</compile.java.version>
+    <compile.java.version>1.6</compile.java.version>
     <hudson.plugin.version>1.23</hudson.plugin.version>
   </properties>
 
@@ -75,7 +75,7 @@
     <dependency>
       <groupId>org.jvnet.hudson.plugins</groupId>
       <artifactId>promoted-builds</artifactId>
-      <version>1.1</version>
+      <version>1.4</version>
     </dependency>
     <dependency>
       <groupId>log4j</groupId>

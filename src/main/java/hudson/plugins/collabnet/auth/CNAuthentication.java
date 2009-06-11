@@ -46,12 +46,10 @@ public class CNAuthentication implements Authentication {
         }
 
         if (isSuper) {
-            log.info("User " + this.principal + " is super.");
             this.authorities = new GrantedAuthority[1];
             this.authorities[0] = 
                 new GrantedAuthorityImpl(CNAuthentication.SUPER_USER);
         } else {
-            log.info("User " + this.principal + " is NOT super.");
             this.authorities = new GrantedAuthority[0];
         }
     }
@@ -106,7 +104,6 @@ public class CNAuthentication implements Authentication {
      * @return true if the user is a member of the given group.
      */
     public boolean isMember(String group) {
-        log.info("isMember: checking group " + group + " from " + this.groups);
         return this.groups.contains(group);
     }
 

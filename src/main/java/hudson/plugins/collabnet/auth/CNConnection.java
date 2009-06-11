@@ -77,7 +77,6 @@ public class CNConnection {
         CNVersion cnversion = null;
         try {
             version = CollabNetApp.getApiVersion(url);
-            log.info("CNConnection: api version is " + version);
         } catch (RemoteException re) {
             log.info("getVersion: failed with RemoteException: " + 
                      re.getMessage());

@@ -275,7 +275,6 @@ public class CNAuthProjectProperty extends JobProperty<Job<?, ?>> {
          * @return an array of project names.
          */
         public String[] getProjects() {
-            log.info("getting projects");
             Collection<String> projects = Collections.emptyList();
             CNConnection conn = CNConnection.getInstance();
             if (conn == null) {

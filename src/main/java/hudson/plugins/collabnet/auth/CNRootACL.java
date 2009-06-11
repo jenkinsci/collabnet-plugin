@@ -54,8 +54,6 @@ public class CNRootACL extends ACL {
      */
     @Override
     public boolean hasPermission(Authentication a, Permission p) {
-        log.info("hasPermission: checking for " + a + " with permission " + p 
-                 + ".");
         if (!(a instanceof CNAuthentication)) {
             // This can happen when we switch to this Auth but haven't logged
             // out yet.

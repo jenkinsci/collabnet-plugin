@@ -138,7 +138,6 @@ public class CNFilter implements Filter {
         rsp.setStatus(HttpServletResponse.SC_MOVED_TEMPORARILY);
         rsp.setHeader("Location", cnauthUrl);
         
-        chain.doFilter(req,rsp);
     }
 
     /**

@@ -58,8 +58,6 @@ public class CNProjectACL extends ACL {
         Collection<CollabNetRole> userRoles = 
             CollabNetRoles.getRoles(conn.getUserRoles(projId, 
                                                       conn.getUsername()));
-        log.info("hasPermission: user " + conn.getUsername() + " has roles: "
-                   + userRoles.toString());
         for(; permission!=null; permission=permission.impliedBy) {
             for (CollabNetRole role: userRoles) {
                 if (role.hasPermission(permission)) {

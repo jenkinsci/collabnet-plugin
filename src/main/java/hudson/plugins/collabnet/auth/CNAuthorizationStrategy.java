@@ -141,7 +141,6 @@ public class CNAuthorizationStrategy extends AuthorizationStrategy {
      * @return the default ACL.
      */
     public ACL getRootACL() {
-        log.info("Getting Root ACL");
         if (this.rootACL == null) {
             this.rootACL = new CNRootACL(this.adminUsers, this.adminGroups, 
                                          this.readUsers, this.readGroups);
@@ -154,8 +153,6 @@ public class CNAuthorizationStrategy extends AuthorizationStrategy {
      *         Otherwise, return the root ACL.
      */
     public ACL getACL(Job <?, ?> job) {
-        log.info("Getting Project ACL for: name: " + job.getName() + 
-                 ", type: " +  job.getClass().getName());
         CNAuthProjectProperty capp = (CNAuthProjectProperty)job.
             getProperty(CNAuthProjectProperty.class);
         if (capp != null) {
@@ -173,27 +170,22 @@ public class CNAuthorizationStrategy extends AuthorizationStrategy {
     }
 
     public ACL getACL(AbstractItem item) {
-        log.info("Getting AbstractItem ACL");
         return this.getRootACL();
     }
 
     public ACL getACL(AbstractProject<?, ?> project) {
-        log.info("Getting AbstractProject ACL");
         return this.getACL((Job)project);
     }
 
     public ACL getACL(View view) {
-        log.info("Getting View ACL");
         return this.getRootACL();
     }
 
     public ACL getACL(Computer computer) {
-        log.info("Getting Computer ACL");
         return this.getRootACL();
     }
 
     public ACL getACL(User user) {
-        log.info("Getting User ACL");
         return this.getRootACL();
     }
 
@@ -301,9 +293,6 @@ public class CNAuthorizationStrategy extends AuthorizationStrategy {
             }
             CNVersion desiredVersion = new CNVersion(GOOD_VERSION);
             if (version.compareTo(desiredVersion) >= 0) {
-                log.info("current version (" + version + ") is greater " +
-                         "than or equal to desired version " + 
-                         desiredVersion); 
                 return true;
             } else {
                 return false;
