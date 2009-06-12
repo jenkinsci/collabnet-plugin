@@ -833,7 +833,6 @@ public class CNTracker extends Publisher {
         @Override
         public CNTracker newInstance(StaplerRequest req, JSONObject formData) 
             throws FormException {
-            log.info("CNTracker: newInstance with: " + formData.toString());
             boolean override_auth = false;
             String username = null;
             String password = null;
@@ -848,9 +847,12 @@ public class CNTracker extends Publisher {
                         .get("password");
                     collabneturl = (String)((JSONObject) authObject)
                         .get("collabneturl");
+                } else if (authObject.equals(Boolean.TRUE)) {
+                    username = (String) formData.get("username");
+                    password = (String) formData.get("password");
+                    collabneturl = (String) formData.get("collabneturl");
                 } else {
-                    throw new RuntimeException("Expected 'overrid_auth' to " +
-                                               "be a JSONObject");
+                    override_auth = false;
                 }
             } else if (!this.canInheritAuth()){
                 override_auth = true;
