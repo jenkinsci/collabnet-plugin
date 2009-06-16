@@ -119,6 +119,7 @@ public class CNProjectACL extends ACL {
                 Collection<Permission> tempPermission = 
                     new ArrayList<Permission>();
                 tempPermission.add(Hudson.READ);
+                tempPermission.add(Item.READ);
                 roles.add(new CollabNetRole("Hudson Read", "Allows users " +
                                             "read-access to Hudson jobs.", 
                                             tempPermission));
@@ -126,6 +127,7 @@ public class CNProjectACL extends ACL {
                 tempPermission.add(AbstractProject.BUILD);
                 tempPermission.add(AbstractProject.ABORT);
                 tempPermission.add(AbstractProject.WORKSPACE);
+                tempPermission.add(Item.BUILD);
                 roles.add(new CollabNetRole("Hudson Build/Cancel", "Allow " +
                                             "users to start a new build, or " +
                                             "to cancel a build.", 
