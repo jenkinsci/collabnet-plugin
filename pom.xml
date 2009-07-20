@@ -7,7 +7,7 @@
     <relativePath>../pom.xml</relativePath>
   </parent>
   <artifactId>collabnet</artifactId>
-  <version>1.1-SNAPSHOT</version>
+  <version>1.1</version>
   <name>&lt;a href="http://www.collab.net/"&gt;CollabNet&lt;/a&gt; Plugins</name>
   <description>CollabNet packages</description>
   <url>http://wiki.hudson-ci.org/display/HUDSON/CollabNet+Plugin</url>
@@ -322,4 +322,10 @@
       </plugin>
     </plugins>
   </build>
+
+  <scm>
+    <connection>scm:svn:https://guest@svn.dev.java.net/svn/hudson/tags/collabnet-1.1</connection>
+    <developerConnection>scm:svn:https://svn.dev.java.net/svn/hudson/tags/collabnet-1.1</developerConnection>
+    <url>https://hudson.dev.java.net/source/browse/hudson/hudson/plugins/collabnet/tags/collabnet-1.1</url>
+  </scm>
 </project>
