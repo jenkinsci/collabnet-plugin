@@ -54,6 +54,11 @@ public class CNRootACL extends ACL {
      */
     @Override
     public boolean hasPermission(Authentication a, Permission p) {
+        if (a.equals(ACL.SYSTEM)) {
+            // We want the SYSTEM user to have full rights.
+            // This is especially important for triggered builds.
+            return true;
+        }
         if (!(a instanceof CNAuthentication)) {
             // This can happen when we switch to this Auth but haven't logged
             // out yet.
