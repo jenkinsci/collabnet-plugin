@@ -2,7 +2,7 @@
  xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form" 
  xmlns:c="/hudson/plugins/collabnet/tags" xmlns:local="local">
 
-  <script src="/plugin/collabnet/scripts/cnauth_override.js" type="text/javascript" />
+  <script src="${rootURL}/plugin/collabnet/scripts/cnauth_override.js" type="text/javascript" />
 
   <j:set var="rootHelpURL" value="${descriptor.getHelpUrl()}"/>
 
