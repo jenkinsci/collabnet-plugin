@@ -516,11 +516,6 @@ public abstract class CNFormFieldValidator extends FormFieldValidator {
                 ok();
                 return;
             }
-            if (!CNHudsonUtil.isUserValid(cna, assign)) {
-                warning("This user cannot be found.");
-                CNHudsonUtil.logoff(cna);
-                return;
-            }
             String projectId = CNHudsonUtil.getProjectId(cna, project);
             if (projectId == null) {
                 ok();

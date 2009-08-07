@@ -571,12 +571,7 @@ public class CNTracker extends Publisher {
      */
     private String getValidAssignUser(String projectId) {
         String valid_user = this.assign_user;
-        if (!CNHudsonUtil.isUserValid(this.cna, this.assign_user)) {
-            this.log("User (" + this.assign_user + ") does not exist.  " +
-                     "Instead any new issues filed will be assigned to " +
-                     "'None'.");
-            valid_user = null;
-        } else if (!CNHudsonUtil.isUserMember(this.cna, this.assign_user, 
+        if (!CNHudsonUtil.isUserMember(this.cna, this.assign_user, 
                                               projectId)) {
             this.log("User (" + this.assign_user + ") is not a member of " +
                      "the project (" + this.project + ").  " + "Instead " +
