@@ -47,8 +47,7 @@ public class CNAuthenticationEntryPoint
             rsp.sendError(SC_FORBIDDEN);
         } else {
             // give the opportunity to include the target URL
-            String loginForm = CNFilter.getCurrentBaseUrl(req) + 
-                req.getContextPath() + getLoginFormUrl();
+            String loginForm = req.getContextPath() + getLoginFormUrl();
             loginForm = MessageFormat.
                 format(loginForm, 
                        URLEncoder.encode(req.getRequestURI(),"UTF-8"));

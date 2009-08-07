@@ -15,10 +15,13 @@ import javax.servlet.ServletResponse;
 import java.net.URLEncoder;
 
 import hudson.model.Hudson;
+import hudson.plugins.collabnet.util.CommonUtil;
 import hudson.security.SecurityRealm;
 
 import org.acegisecurity.Authentication;
 import org.acegisecurity.context.SecurityContextHolder;
+
+import org.apache.commons.lang.StringUtils;
 
 import com.collabnet.ce.webservices.CollabNetApp;
 
@@ -144,7 +147,7 @@ public class CNFilter implements Filter {
      * @param req the servlet request to pull data from, if root url is unset.
      * @param useReferer if true, use the referer to get the base URL.
      * @return the best guess for the current base URL (i.e. just the scheme,
-     *         server, port).
+     *         server, port) plus the contextPath.
      */
     public static String getCurrentBaseUrl(HttpServletRequest req) {
         StringBuilder url = new StringBuilder();
@@ -161,6 +164,7 @@ public class CNFilter implements Filter {
             if (req.getServerPort() != 80) {
                 url.append(':').append(req.getServerPort());
             }
+            url.append(req.getContextPath());
         }
         return url.toString();
     }
@@ -171,10 +175,12 @@ public class CNFilter implements Filter {
      *         to determine the url, if it is present.
      */
     public static String getCurrentUrl(HttpServletRequest req) {
-        StringBuilder url = new StringBuilder(getCurrentBaseUrl(req));
-        if (req.getContextPath() != null) {
-            url.append(req.getContextPath());
-        }
+        String curBaseUrl = getCurrentBaseUrl(req);
+        // remove the contextPath from the url, since it will also
+        // be present in the requestURI.
+        curBaseUrl = CommonUtil.stripSlashes(curBaseUrl);
+        curBaseUrl = StringUtils.removeEnd(curBaseUrl, req.getContextPath());
+        StringBuilder url = new StringBuilder(curBaseUrl);
         if (req.getRequestURI() != null) {
             url.append(req.getRequestURI());
         }
