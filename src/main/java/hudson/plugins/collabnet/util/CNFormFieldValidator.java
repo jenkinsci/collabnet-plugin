@@ -6,7 +6,6 @@ import com.collabnet.ce.webservices.DocumentApp;
 import com.collabnet.cubit.api.CubitConnector;
 
 import java.io.IOException;
-import java.rmi.RemoteException;
 import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -19,10 +18,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
-import javax.servlet.ServletException;
-
 import hudson.plugins.collabnet.auth.CNConnection;
-import hudson.util.FormFieldValidator;
+import hudson.util.FormValidation;
 
 import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.contrib.ssl.EasySSLProtocolSocketFactory;
@@ -32,18 +29,13 @@ import org.apache.commons.httpclient.protocol.ProtocolSocketFactory;
 import org.apache.axis.utils.StringUtils;
 
 import org.kohsuke.stapler.StaplerRequest;
-import org.kohsuke.stapler.StaplerResponse;
 
-public abstract class CNFormFieldValidator extends FormFieldValidator {
+public abstract class CNFormFieldValidator {
     private static Logger log = Logger.getLogger("CNFormFieldValidator");
 
-    protected CNFormFieldValidator(StaplerRequest request, 
-                                   StaplerResponse response) {
         // no special permisssion is required for our checks
         // without proper rights, no data will be returned from 
         // CollabNet server anyhow.
-        super(request, response, false);
-    }
 
     /**
      * Utility function to check that a str contains only valid
@@ -106,26 +98,16 @@ public abstract class CNFormFieldValidator extends FormFieldValidator {
      * StaplerRequest with a value set to the value and a name set to
      * the name of what is being set (used for error msg).
      */
-    public static class RequiredCheck extends CNFormFieldValidator {
-        
-        public RequiredCheck(StaplerRequest request, 
-                             StaplerResponse response) {
-            super(request, response);
+    public static FormValidation requiredCheck(String value, String name) {
+        value = StringUtils.strip(value);
+        if (CommonUtil.unset(name)) {
+            // ideally this should be set
+            name = "above value";
         }
-
-        protected void check() throws IOException, ServletException {
-            String value = StringUtils.strip(request.getParameter("value"));
-            String name = request.getParameter("name");
-            if (CommonUtil.unset(name)) {
-                // ideally this should be set
-                name = "above value";
-            }
-            if (CommonUtil.unset(value)) {
-                error("The " + name + " is required.");
-                return;
-            }    
-            ok();
+        if (CommonUtil.unset(value)) {
+            return FormValidation.error("The " + name + " is required.");
         }
+        return FormValidation.ok();
     }
 
     /**
@@ -134,95 +116,58 @@ public abstract class CNFormFieldValidator extends FormFieldValidator {
      * StaplerRequest with value.  If it's a required value, expects a 
      * value name.
      */
-    public static class InterpretedCheck 
-        extends CNFormFieldValidator {
-        
-        private boolean isRequired;
-
-        public InterpretedCheck(StaplerRequest request,
-                                StaplerResponse response,
-                                boolean isRequired) {
-            super(request, response);
-            this.isRequired = isRequired;
-        }
-        
-        protected void check() throws IOException, ServletException {
-            String str = request.getParameter("value");
-            if (CommonUtil.unset(str)) {
-                if (!this.isRequired) {
-                    ok();
-                    return;
-                } else {
-                    String name = request.getParameter("name");
-                    if (CommonUtil.unset(name)) {
-                        // ideally this should be set
-                        name = "above value";
-                    }
-                    error("The " + name + " is required.");
-                    return;
+    public static FormValidation interpretedCheck(String str, String name, boolean isRequired) {
+        if (CommonUtil.unset(str)) {
+            if (!isRequired) {
+                return FormValidation.ok();
+            } else {
+                if (CommonUtil.unset(name)) {
+                    // ideally this should be set
+                    name = "above value";
                 }
+                return FormValidation.error("The " + name + " is required.");
             }
-            String errmsg;
-            if ((errmsg = checkInterpretedString(str)) != null) {
-                error(errmsg);
-                return;
-            }
-            
-            ok();
         }
+        String errmsg;
+        if ((errmsg = checkInterpretedString(str)) != null) {
+            return FormValidation.error(errmsg);
+        }
+
+        return FormValidation.ok();
     }
 
     /**
      * Class for checking an interpreted string which is unrequired.
      */
-    public static class UnrequiredInterpretedCheck extends InterpretedCheck {
-        
-        public UnrequiredInterpretedCheck(StaplerRequest request,
-                                StaplerResponse response) {
-            super(request, response, false);
-        }
+    public static FormValidation unrequiredInterpretedCheck(String str, String name) {
+        return interpretedCheck(str, name, false);
     }
 
     /**
      * Class for checking an interpreted string which is required.
      */
-    public static class RequiredInterpretedCheck extends InterpretedCheck {
-        
-        public RequiredInterpretedCheck(StaplerRequest request,
-                                StaplerResponse response) {
-            super(request, response, true);
-        }
+    public static FormValidation requiredInterpretedCheck(String str, String name) {
+        return interpretedCheck(str, name, true);
     }
 
     /**
      * Class for checking if a Host URL is correct.  Expects a StaplerRequest 
      * with value set to the url.
      */
-    public static class HostUrlCheck extends CNFormFieldValidator {
-        
-        public HostUrlCheck(StaplerRequest request, 
-                            StaplerResponse response) {
-            super(request, response);
+    public static FormValidation hostUrlCheck(String hostUrl) {
+        if (CommonUtil.unset(hostUrl)) {
+            return FormValidation.error("The Host URL is required.");
         }
-
-        protected void check() throws IOException, ServletException {
-            String hostUrl = request.getParameter("value");
-            if (CommonUtil.unset(hostUrl)) {
-                error("The Host URL is required.");
-                return;
-            }
-            Protocol acceptAllSsl = 
-                new Protocol("https", 
-                             (ProtocolSocketFactory)
-                             new EasySSLProtocolSocketFactory(),
-                             443);
-            Protocol.registerProtocol("https", acceptAllSsl);
-            if (!checkUrl(hostUrl)) {
-                error("Invalid Host URL.");
-                return;
-            }
-            ok(); 
+        Protocol acceptAllSsl =
+            new Protocol("https",
+                         (ProtocolSocketFactory)
+                         new EasySSLProtocolSocketFactory(),
+                         443);
+        Protocol.registerProtocol("https", acceptAllSsl);
+        if (!checkUrl(hostUrl)) {
+            return FormValidation.error("Invalid Host URL.");
         }
+        return FormValidation.ok();
     }
 
     /**
@@ -230,102 +175,70 @@ public abstract class CNFormFieldValidator extends FormFieldValidator {
      * CollabNet server.  Expects a StaplerRequest with value set
      * to the url.
      */
-    public static class SoapUrlCheck extends CNFormFieldValidator {
-        
-        public SoapUrlCheck(StaplerRequest request, 
-                            StaplerResponse response) {
-            super(request, response);
+    public static FormValidation soapUrlCheck(String collabNetUrl) {
+        if (CommonUtil.unset(collabNetUrl)) {
+            return FormValidation.error("The CollabNet TeamForge URL is required.");
         }
+        if (!checkSoapUrl(collabNetUrl)) {
+            return FormValidation.error("Invalid CollabNet TeamForge URL.");
+        }
+        return FormValidation.ok();
+    }
 
-        protected void check() throws IOException, ServletException {
-            String collabNetUrl = request.getParameter("value");
-            if (CommonUtil.unset(collabNetUrl)) {
-                error("The CollabNet TeamForge URL is required.");
-                return;
-            }
-            if (!checkSoapUrl(collabNetUrl)) {
-                error("Invalid CollabNet TeamForge URL.");
-                return;
-                    }
-            ok(); 
-        }
-
-        /**
-         * Check that a URL has the expected SOAP service.
-         *
-         * @param collabNetUrl for the CollabNet server
-         * @return returns true if we can get a wsdl from the url, which
-         *         indicates that it's a working CollabNet server.
-         */
-        private boolean checkSoapUrl(String collabNetUrl) {
-            String soapURL = collabNetUrl + CollabNetApp.SOAP_SERVICE + 
-                "CollabNet?wsdl";
-            return checkUrl(soapURL);
-        }
+    /**
+     * Check that a URL has the expected SOAP service.
+     *
+     * @param collabNetUrl for the CollabNet server
+     * @return returns true if we can get a wsdl from the url, which
+     *         indicates that it's a working CollabNet server.
+     */
+    private static boolean checkSoapUrl(String collabNetUrl) {
+        String soapURL = collabNetUrl + CollabNetApp.SOAP_SERVICE +
+            "CollabNet?wsdl";
+        return checkUrl(soapURL);
     }
 
     /**
      * Class for checking that a login to CollabNet is valid.  Expects
      * a StaplerRequest with url, username, and password set.
      */
-    public static class LoginCheck extends CNFormFieldValidator {
-
-        public LoginCheck(StaplerRequest request, StaplerResponse response) {
-            super(request, response);
+    public static FormValidation loginCheck(StaplerRequest request) {
+        String password = request.getParameter("password");
+        if (CommonUtil.unset(password)) {
+            return FormValidation.error("The password is required.");
         }
-
-        protected void check() throws IOException, ServletException {
-            String password = request.getParameter("password");
-            
-            if (CommonUtil.unset(password)) {
-                error("The password is required.");
-                return;
-            }
-            CollabNetApp cna = CNHudsonUtil.getCollabNetApp(request);
-            if (cna == null) {
-                warning("Login fails with this CollabNet " +
-                        "URL/username/password combination.");
-                CNHudsonUtil.logoff(cna);
-                return;
-            } else {
-                CNHudsonUtil.logoff(cna);
-            }
-            ok();
+        CollabNetApp cna = CNHudsonUtil.getCollabNetApp(request);
+        if (cna == null) {
+            return FormValidation.warning("Login fails with this CollabNet " +
+                    "URL/username/password combination.");
+        } else {
+            CNHudsonUtil.logoff(cna);
         }
+        return FormValidation.ok();
     }
     
     /**
      * Class for checking that a project name is valid.  Expects a 
      * StaplerRequest with url, username, password, and project set.
      */
-    public static class ProjectCheck extends CNFormFieldValidator {
-        
-        public ProjectCheck(StaplerRequest request, 
-                            StaplerResponse response) {
-            super(request, response);
-        }
+    public static FormValidation projectCheck(StaplerRequest request) {
+        String username = CNHudsonUtil.getUsername(request);
+        String project = request.getParameter("project");
 
-        protected void check() throws IOException, ServletException {
-            String username = CNHudsonUtil.getUsername(request);
-            String project = request.getParameter("project");
-      
-            if (CommonUtil.unset(project)) {
-                error("The project is required.");
-                return;
-            }
-            CollabNetApp cna = CNHudsonUtil.getCollabNetApp(request);
-            if (cna != null) {
-                if (CNHudsonUtil.getProjectId(cna, project) == null) {
-                    warning("This project cannot be found, or user " +
-                            username + " does not have permission " +
-                            "to access it.");
-                    CNHudsonUtil.logoff(cna);
-                    return;
-                }
-                CNHudsonUtil.logoff(cna);
-            }
-            ok();
+        if (CommonUtil.unset(project)) {
+            return FormValidation.error("The project is required.");
         }
+        CollabNetApp cna = CNHudsonUtil.getCollabNetApp(request);
+        if (cna != null) {
+            if (CNHudsonUtil.getProjectId(cna, project) == null) {
+                CNHudsonUtil.logoff(cna);
+                return FormValidation.warning("This project cannot be found, or user " +
+                        username + " does not have permission " +
+                        "to access it.");
+            }
+            CNHudsonUtil.logoff(cna);
+        }
+        return FormValidation.ok();
     }
 
     /**
@@ -333,163 +246,121 @@ public abstract class CNFormFieldValidator extends FormFieldValidator {
      * any missing folders.  Expects a StaplerRequest with url, username,
      * password, project, and path.
      */
-    public static class DocumentPathCheck extends CNFormFieldValidator {
-
-        public DocumentPathCheck(StaplerRequest request, 
-                                 StaplerResponse response) {
-            super(request, response);
+    public static FormValidation documentPathCheck(StaplerRequest request) throws IOException {
+        String project = request.getParameter("project");
+        String path = request.getParameter("path");
+        path = path.replaceAll("/+", "/");
+        path = CommonUtil.stripSlashes(path);
+        if (CommonUtil.unset(path)) {
+            return FormValidation.error("The path is required.");
         }
-        
-        protected void check() throws IOException, ServletException {  
-            String project = request.getParameter("project");
-            String path = request.getParameter("path");
-            path = path.replaceAll("/+", "/");
-            path = CommonUtil.stripSlashes(path);
-            if (CommonUtil.unset(path)) {
-                error("The path is required.");
-                return;
-            }
-            String errmsg = null;
-            if ((errmsg = checkInterpretedString(path)) != null) {
-                error(errmsg);
-                return;
-            }
-            CollabNetApp cna = CNHudsonUtil.getCollabNetApp(request);
-            String projectId = CNHudsonUtil.getProjectId(cna, project);
-            if (projectId != null) {
-                DocumentApp da = new DocumentApp(cna);
-                String missing = da.verifyPath(projectId, path);
-                if (missing != null) {
-                    warning("Folder '" + missing + "' could not be " +
-                            "found in path '" + path + "'.  It (and " +
-                            "any subfolders) will " +
-                            "be created dynamically.");
-                    CNHudsonUtil.logoff(cna);
-                    return;
-                }
-            }
-            CNHudsonUtil.logoff(cna);
-            ok();
+        String errmsg = null;
+        if ((errmsg = checkInterpretedString(path)) != null) {
+            return FormValidation.error(errmsg);
         }
+        CollabNetApp cna = CNHudsonUtil.getCollabNetApp(request);
+        String projectId = CNHudsonUtil.getProjectId(cna, project);
+        if (projectId != null) {
+            DocumentApp da = new DocumentApp(cna);
+            String missing = da.verifyPath(projectId, path);
+            if (missing != null) {
+                CNHudsonUtil.logoff(cna);
+                return FormValidation.warning("Folder '" + missing + "' could not be " +
+                        "found in path '" + path + "'.  It (and " +
+                        "any subfolders) will " +
+                        "be created dynamically.");
+            }
+        }
+        CNHudsonUtil.logoff(cna);
+        return FormValidation.ok();
     }
 
     /**
      * Class to check that a package exists.  Expects a StaplerRequest with 
      * a url, username, password, project, and package.
      */
-    public static class PackageCheck extends CNFormFieldValidator {
-
-        public PackageCheck(StaplerRequest request, 
-                            StaplerResponse response) {
-            super(request, response);
+    public static FormValidation packageCheck(StaplerRequest request) {
+        String rpackage = request.getParameter("package");
+        String project = request.getParameter("project");
+        if (CommonUtil.unset(rpackage)) {
+            return FormValidation.error("The package is required.");
         }
-
-        protected void check() throws IOException, ServletException {
-            String rpackage = request.getParameter("package");
-            String project = request.getParameter("project");
-            if (CommonUtil.unset(rpackage)) {
-                error("The package is required.");
-                return;
+        CollabNetApp cna = CNHudsonUtil.getCollabNetApp(request);
+        String projectId = CNHudsonUtil.getProjectId(cna, project);
+        if (projectId != null) {
+            String packageId = CNHudsonUtil.getPackageId(cna, rpackage,
+                                                         projectId);
+            if (packageId == null) {
+                CNHudsonUtil.logoff(cna);
+                return FormValidation.warning("Package could not be found.");
             }
-            CollabNetApp cna = CNHudsonUtil.getCollabNetApp(request);
-            String projectId = CNHudsonUtil.getProjectId(cna, project);
-            if (projectId != null) {
-                String packageId = CNHudsonUtil.getPackageId(cna, rpackage, 
-                                                             projectId);
-                if (packageId == null) {
-                    warning("Package could not be found.");
-                    CNHudsonUtil.logoff(cna);
-                    return;
-                }
-            }
-            CNHudsonUtil.logoff(cna);
-            ok();
         }
+        CNHudsonUtil.logoff(cna);
+        return FormValidation.ok();
     }
 
     /**
      * Class to check that a release exists.  Expects a StaplerRequest with 
      * a url, username, password, project, package (optional), and release.
      */
-    public static class ReleaseCheck extends CNFormFieldValidator {
-        
-        public ReleaseCheck(StaplerRequest request, 
-                            StaplerResponse response) {
-            super(request, response);
-        }
-
-        protected void check() throws IOException, ServletException {
-            String release = request.getParameter("release");
-            String rpackage = request.getParameter("package");
-            String project = request.getParameter("project");
-            String required = request.getParameter("required");
-            if (CommonUtil.unset(release)) {
-                if (required.toLowerCase().equals("true")) {
-                    error("The release is required.");
-                } else {
-                    ok();
-                }
-                return;
+    public static FormValidation releaseCheck(StaplerRequest request) {
+        String release = request.getParameter("release");
+        String rpackage = request.getParameter("package");
+        String project = request.getParameter("project");
+        String required = request.getParameter("required");
+        if (CommonUtil.unset(release)) {
+            if (required.toLowerCase().equals("true")) {
+                return FormValidation.error("The release is required.");
+            } else {
+                return FormValidation.ok();
             }
-            CollabNetApp cna = CNHudsonUtil.getCollabNetApp(request);
-            String projectId = CNHudsonUtil.getProjectId(cna, project);
-            String packageId = CNHudsonUtil.getPackageId(cna, rpackage, 
-                                                         projectId);
-            if (packageId != null) {
-                String releaseId = CNHudsonUtil.getReleaseId(cna, packageId, 
-                                                             release);
-                if (releaseId == null) {
-                    warning("Release could not be found.");
-                    CNHudsonUtil.logoff(cna);
-                    return;
-                }
-            } else if (projectId != null) {
-                String releaseId = CNHudsonUtil.getProjectReleaseId(cna, 
-                                                                    projectId, 
-                                                                    release);
-                if (releaseId == null) {
-                    warning("Release could not be found.");
-                    CNHudsonUtil.logoff(cna);
-                    return;
-                }
-            }
-            CNHudsonUtil.logoff(cna);
-            ok();            
         }
+        CollabNetApp cna = CNHudsonUtil.getCollabNetApp(request);
+        String projectId = CNHudsonUtil.getProjectId(cna, project);
+        String packageId = CNHudsonUtil.getPackageId(cna, rpackage,
+                                                     projectId);
+        if (packageId != null) {
+            String releaseId = CNHudsonUtil.getReleaseId(cna, packageId,
+                                                         release);
+            if (releaseId == null) {
+                CNHudsonUtil.logoff(cna);
+                return FormValidation.warning("Release could not be found.");
+            }
+        } else if (projectId != null) {
+            String releaseId = CNHudsonUtil.getProjectReleaseId(cna,
+                                                                projectId,
+                                                                release);
+            if (releaseId == null) {
+                CNHudsonUtil.logoff(cna);
+                return FormValidation.warning("Release could not be found.");
+            }
+        }
+        CNHudsonUtil.logoff(cna);
+        return FormValidation.ok();
     }
 
     /**
      * Class to check that a tracker exists.  Expects a StaplerRequest with 
      * a url, username, password, project, and tracker.
      */
-    public static class TrackerCheck extends CNFormFieldValidator {
-
-        public TrackerCheck(StaplerRequest request, 
-                            StaplerResponse response) {
-            super(request, response);
+    public static FormValidation trackerCheck(StaplerRequest request) {
+        String tracker = request.getParameter("tracker");
+        String project = request.getParameter("project");
+        if (CommonUtil.unset(tracker)) {
+            return FormValidation.error("The tracker is required.");
         }
-
-        protected void check() throws IOException, ServletException {
-            String tracker = request.getParameter("tracker");
-            String project = request.getParameter("project");
-            if (CommonUtil.unset(tracker)) {
-                error("The tracker is required.");
-                return;
+        CollabNetApp cna = CNHudsonUtil.getCollabNetApp(request);
+        String projectId = CNHudsonUtil.getProjectId(cna, project);
+        if (projectId != null) {
+            String trackerId = CNHudsonUtil.getTrackerId(cna, projectId,
+                                                         tracker);
+            if (trackerId == null) {
+                CNHudsonUtil.logoff(cna);
+                return FormValidation.warning("Tracker could not be found.");
             }
-            CollabNetApp cna = CNHudsonUtil.getCollabNetApp(request);
-            String projectId = CNHudsonUtil.getProjectId(cna, project);
-            if (projectId != null) {
-                String trackerId = CNHudsonUtil.getTrackerId(cna, projectId,
-                                                             tracker);
-                if (trackerId == null) {
-                    warning("Tracker could not be found.");
-                    CNHudsonUtil.logoff(cna);
-                    return;
-                }
-            }
-            CNHudsonUtil.logoff(cna);
-            ok();
         }
+        CNHudsonUtil.logoff(cna);
+        return FormValidation.ok();
     }
 
     /**
@@ -497,40 +368,28 @@ public abstract class CNFormFieldValidator extends FormFieldValidator {
      * Expects a StaplerRequest with login info (url, username, password), 
      * project, and assign (which is the username).
      */
-    public static class AssignCheck extends CNFormFieldValidator {
-
-        public AssignCheck(StaplerRequest request, 
-                            StaplerResponse response) {
-            super(request, response);
+    public static FormValidation assignCheck(StaplerRequest request) {
+        String assign = StringUtils.strip(request.getParameter("assign"));
+        if (CommonUtil.unset(assign)) {
+            return FormValidation.ok();
         }
-
-        protected void check() throws IOException, ServletException {
-            String assign = StringUtils.strip(request.getParameter("assign"));
-            if (CommonUtil.unset(assign)) {
-                ok();
-                return;
-            }
-            String project = request.getParameter("project");
-            CollabNetApp cna = CNHudsonUtil.getCollabNetApp(request);
-            if (cna == null) {
-                ok();
-                return;
-            }
-            String projectId = CNHudsonUtil.getProjectId(cna, project);
-            if (projectId == null) {
-                ok();
-                CNHudsonUtil.logoff(cna);
-                return;
-            }
-            if (!CNHudsonUtil.isUserMember(cna, assign, projectId)) {
-                warning("This user is not a member of the " +
-                        "project.");
-                CNHudsonUtil.logoff(cna);
-                return;
-            }
+        String project = request.getParameter("project");
+        CollabNetApp cna = CNHudsonUtil.getCollabNetApp(request);
+        if (cna == null) {
+            return FormValidation.ok();
+        }
+        String projectId = CNHudsonUtil.getProjectId(cna, project);
+        if (projectId == null) {
             CNHudsonUtil.logoff(cna);
-            ok();
+            return FormValidation.ok();
         }
+        if (!CNHudsonUtil.isUserMember(cna, assign, projectId)) {
+            CNHudsonUtil.logoff(cna);
+            return FormValidation.warning("This user is not a member of the " +
+                    "project.");
+        }
+        CNHudsonUtil.logoff(cna);
+        return FormValidation.ok();
     }
 
     
@@ -539,53 +398,37 @@ public abstract class CNFormFieldValidator extends FormFieldValidator {
      * The check only works for a logged-in site-admin.  Otherwise,
      * give a warning that we cannot check the users' validity.
      */
-    public static class UserListCheck extends CNFormFieldValidator {
-        
-        public UserListCheck(StaplerRequest request, 
-                             StaplerResponse response) {
-            super(request, response);
+    public static FormValidation userListCheck(String userStr) {
+        if (userStr == null || userStr.equals("")) {
+            return FormValidation.ok();
         }
+        CNConnection conn = CNConnection.getInstance();
+        if (conn == null || !conn.isSuperUser()) {
+            return FormValidation.warning("Cannot check if users exist unless logged " +
+                    "in as a TeamForge site admin.  Be careful!");
+        }
+        Collection<String> invalidUsers = getInvalidUsers(conn, userStr);
+        if (!invalidUsers.isEmpty()) {
+            return FormValidation.error("The following users do not exist: " +
+                  invalidUsers);
+        }
+        return FormValidation.ok();
+    }
 
-        protected void check() throws IOException, ServletException {
-            String userStr = request.getParameter("value");
-            if (userStr == null || userStr.equals("")) {
-                ok();
-                return;
+    /**
+     * @param conn
+     * @param userStr
+     * @return the collection of users from the array which do not exist.
+     */
+    private static Collection<String> getInvalidUsers(CNConnection conn, String userStr) {
+        String[] users = CommonUtil.splitCommaStr(userStr);
+        Collection<String> invalidUsers = new ArrayList<String>();
+        for (String user: users) {
+            if (!conn.isUsernameValid(user)) {
+                invalidUsers.add(user);
             }
-            CNConnection conn = CNConnection.getInstance();
-            if (conn == null || !conn.isSuperUser()) {
-                warning("Cannot check if users exist unless logged " +
-                        "in as a TeamForge site admin.  Be careful!");
-                return;
-            }
-            Collection<String> invalidUsers = 
-                getInvalidUsers(userStr);
-            if (!invalidUsers.isEmpty()) {
-                error("The following users do not exist: " + 
-                      invalidUsers);
-                return;
-            }
-            ok();
         }
-
-        /**
-         * @param userStr
-         * @return the collection of users from the array which do not exist.
-         */
-        private Collection<String> getInvalidUsers(String userStr) {
-            String[] users = CommonUtil.splitCommaStr(userStr);
-            CNConnection conn = CNConnection.getInstance();
-            if (conn == null) {
-                return Collections.emptyList();
-            }
-            Collection<String> invalidUsers = new ArrayList<String>();
-            for (String user: users) {
-                if (!conn.isUsernameValid(user)) {
-                    invalidUsers.add(user);
-                }
-            }
-            return invalidUsers;
-        }
+        return invalidUsers;
     }
 
     /**
@@ -594,94 +437,81 @@ public abstract class CNFormFieldValidator extends FormFieldValidator {
      * the current user if s/he will be locked out once that user
      * saves the configuration.
      */
-    public static class GroupListCheck extends CNFormFieldValidator {
-        
-        public GroupListCheck(StaplerRequest request, 
-                             StaplerResponse response) {
-            super(request, response);
+    public static FormValidation groupListCheck(String groupStr, String userStr) {
+        Collection<String> invalidGroups = getInvalidGroups(groupStr);
+        if (!invalidGroups.isEmpty()) {
+            return FormValidation.error("The following groups do not exist: " +
+                  invalidGroups);
+            // anyone who can see if groups are invalid will
+            // never be locked out, so we can return here
         }
 
-        protected void check() throws IOException, ServletException {
-            String groupStr = request.getParameter("groups");
-            Collection<String> invalidGroups = 
-                getInvalidGroups(groupStr);
-            if (!invalidGroups.isEmpty()) {
-                error("The following groups do not exist: " + 
-                      invalidGroups);
-                // anyone who can see if groups are invalid will
-                // never be locked out, so we can return here
-                return;
+        if (userStr != null) {
+            if (locksOutCurrentUser(userStr, groupStr)) {
+                return FormValidation.error("The authorization settings would lock " +
+                      "the current user out of this page.  " +
+                      "You may want to add your username to " +
+                      "the user list.");
             }
-            
-            String userStr = request.getParameter("users");
-            if (userStr != null) {
-                if (locksOutCurrentUser(userStr, groupStr)) {
-                    error("The authorization settings would lock " +
-                          "the current user out of this page.  " +
-                          "You may want to add your username to " +
-                          "the user list.");
-                    return;
-                }
-            }
-            
-            ok(); 
         }
 
-        /**
-         * @param groupStr
-         * @return the collection of groups from the array which do not exist.
-         */
-        private Collection<String> getInvalidGroups(String groupStr) {
-            CNConnection conn = CNConnection.getInstance();
-            if (conn == null) {
-                // cannot connect to check.
-                return Collections.emptyList();
-            }
-            if (!conn.isSuperUser()) {
-                // only super users can see all groups and do this check.
-                return Collections.emptyList();
-            }
-            String[] groups = CommonUtil.splitCommaStr(groupStr);
-            Collection<String> invalidGroups = new ArrayList<String>();
-            for (String group: groups) {
-                if (!conn.isGroupnameValid(group)) {
-                    invalidGroups.add(group);
-                }
-            }
-            return invalidGroups;
-        }
+        return FormValidation.ok();
+    }
 
-        /**
-         * Return true if the given admin user/groups would mean that 
-         * the current user would be locked out of the system.
-         *
-         * @param userStr
-         * @param groupStr
-         * @return true if the user would not have admin access with these 
-         *         authorizations.
-         */
-        private boolean locksOutCurrentUser(String userStr, String groupStr) {
-            CNConnection conn = CNConnection.getInstance();
-            if (conn == null) {
-                // cannot check
-                return false;
-            }
-            if (conn.isSuperUser()) {
-                return false;
-            }
-            String currentUser = conn.getUsername();
-            String[] users = CommonUtil.splitCommaStr(userStr);
-            for (String user: users) {
-                if (user.equals(currentUser)) {
-                    return false;
-                }
-            }
-            String[] groups = CommonUtil.splitCommaStr(groupStr);
-            if (conn.isMemberOfAny(Arrays.asList(groups))) {
-                return false;
-            }
-            return true;
+    /**
+     * @param groupStr
+     * @return the collection of groups from the array which do not exist.
+     */
+    private static Collection<String> getInvalidGroups(String groupStr) {
+        CNConnection conn = CNConnection.getInstance();
+        if (conn == null) {
+            // cannot connect to check.
+            return Collections.emptyList();
         }
+        if (!conn.isSuperUser()) {
+            // only super users can see all groups and do this check.
+            return Collections.emptyList();
+        }
+        String[] groups = CommonUtil.splitCommaStr(groupStr);
+        Collection<String> invalidGroups = new ArrayList<String>();
+        for (String group: groups) {
+            if (!conn.isGroupnameValid(group)) {
+                invalidGroups.add(group);
+            }
+        }
+        return invalidGroups;
+    }
+
+    /**
+     * Return true if the given admin user/groups would mean that
+     * the current user would be locked out of the system.
+     *
+     * @param userStr
+     * @param groupStr
+     * @return true if the user would not have admin access with these
+     *         authorizations.
+     */
+    private static boolean locksOutCurrentUser(String userStr, String groupStr) {
+        CNConnection conn = CNConnection.getInstance();
+        if (conn == null) {
+            // cannot check
+            return false;
+        }
+        if (conn.isSuperUser()) {
+            return false;
+        }
+        String currentUser = conn.getUsername();
+        String[] users = CommonUtil.splitCommaStr(userStr);
+        for (String user: users) {
+            if (user.equals(currentUser)) {
+                return false;
+            }
+        }
+        String[] groups = CommonUtil.splitCommaStr(groupStr);
+        if (conn.isMemberOfAny(Arrays.asList(groups))) {
+            return false;
+        }
+        return true;
     }
 
 
@@ -689,26 +519,16 @@ public abstract class CNFormFieldValidator extends FormFieldValidator {
      * Class to check for validity of a regex expression.  Expects
      * a StaplerRequest with value set.  
      */
-    public static class RegexCheck extends CNFormFieldValidator {
-        
-        public RegexCheck(StaplerRequest request, 
-                          StaplerResponse response) {
-            super(request, response);
-        }
-
-        protected void check() throws IOException, ServletException {
-            String regex = request.getParameter("value");
-            if(!CommonUtil.unset(regex)) {
-                try {
-                    Pattern.compile(regex);
-                } catch (PatternSyntaxException ex){
-                    error("The regular expression is not syntactically "
-                          + "correct.");
-                    return;
-                }
+    public static FormValidation regexCheck(String regex) {
+        if(!CommonUtil.unset(regex)) {
+            try {
+                Pattern.compile(regex);
+            } catch (PatternSyntaxException ex){
+                return FormValidation.error("The regular expression is not syntactically "
+                      + "correct.");
             }
-            ok();
         }
+        return FormValidation.ok();
     }
 
 
@@ -717,78 +537,67 @@ public abstract class CNFormFieldValidator extends FormFieldValidator {
      * login.  Expects a StaplerRequest with value (key), hostURL, and user
      * set.
      */
-    public static class CubitKeyCheck extends CNFormFieldValidator {
-        
-        public CubitKeyCheck(StaplerRequest request, 
-                             StaplerResponse response) {
-            super(request, response);
+    public static FormValidation cubitKeyCheck(StaplerRequest request) {
+        String key = request.getParameter("value");
+        String hostURL = request.getParameter("hostURL");
+        String user = request.getParameter("user");
+        if (CommonUtil.unset(key)) {
+            return FormValidation.error("The user API key is required.");
         }
-
-        protected void check() throws IOException, ServletException {
-            String key = request.getParameter("value");
-            String hostURL = request.getParameter("hostURL");
-            String user = request.getParameter("user");
-            if (CommonUtil.unset(key)) {
-                error("The user API key is required.");
-                return;
-            }
-            if (!key.matches("\\p{XDigit}{8}-\\p{XDigit}{4}"
-                             + "-\\p{XDigit}{4}-\\p{XDigit}{4}"
-                             + "-\\p{XDigit}{12}")) {
-                if (key.startsWith(" ")) {
-                    error("The key's format is invalid.  "
-                          + "There is a leading space.");
-                } else if (key.endsWith(" ")) {
-                    error("The key's format is invalid.  "
-                          + "There is a trailing space.");
-                } else {
-                    error("The key's format is invalid.");
-                }
-                return;
-            }
-            if (!CommonUtil.unset(hostURL) && !CommonUtil.unset(user)) {
-                boolean success = false;
-                try {
-                    success = signedStatus(hostURL, user, key);
-                } catch (IllegalArgumentException iae) {
-                    // failure
-                    success = false;
-                }
-                if (!success) {
-                    warning("This host URL, username, and user API "
-                            + "key combination cannot successfully "
-                            + "sign in.");
-                    return;
-                }
-            }
-            ok();
-        }
-
-        /**
-         * Utility function to check that host, user, and key work.
-         *
-         * @param host URL.
-         * @param user to login as.
-         * @param key to login with.
-         * @return true if the status is good.
-         */
-        private boolean signedStatus(String host, String user, String key) {
-            key = key.toLowerCase();
-            CubitConnector conn = new CubitConnector(host, user, key);
-            String status;
-            try {
-                status = conn.callCubitApi("status_signed", 
-                                              new HashMap<String, String>(), 
-                                              true);
-            } catch (IOException e) {
-                return false;
-            }
-            Pattern pat = Pattern.compile(".*OK.*", Pattern.DOTALL);
-            if (pat.matcher(status).matches()) {
-                return true;
+        if (!key.matches("\\p{XDigit}{8}-\\p{XDigit}{4}"
+                         + "-\\p{XDigit}{4}-\\p{XDigit}{4}"
+                         + "-\\p{XDigit}{12}")) {
+            if (key.startsWith(" ")) {
+                return FormValidation.error("The key's format is invalid.  "
+                      + "There is a leading space.");
+            } else if (key.endsWith(" ")) {
+                return FormValidation.error("The key's format is invalid.  "
+                      + "There is a trailing space.");
             } else {
-                return false;
+                return FormValidation.error("The key's format is invalid.");
             }
+        }
+        if (!CommonUtil.unset(hostURL) && !CommonUtil.unset(user)) {
+            boolean success = false;
+            try {
+                success = signedStatus(hostURL, user, key);
+            } catch (IllegalArgumentException iae) {
+                // failure
+                success = false;
+            }
+            if (!success) {
+                return FormValidation.warning("This host URL, username, and user API "
+                        + "key combination cannot successfully "
+                        + "sign in.");
+            }
+        }
+        return FormValidation.ok();
+    }
+
+    /**
+     * Utility function to check that host, user, and key work.
+     *
+     * @param host URL.
+     * @param user to login as.
+     * @param key to login with.
+     * @return true if the status is good.
+     */
+    private static boolean signedStatus(String host, String user, String key) {
+        key = key.toLowerCase();
+        CubitConnector conn = new CubitConnector(host, user, key);
+        String status;
+        try {
+            status = conn.callCubitApi("status_signed",
+                                          new HashMap<String, String>(),
+                                          true);
+        } catch (IOException e) {
+            return false;
+        }
+        Pattern pat = Pattern.compile(".*OK.*", Pattern.DOTALL);
+        if (pat.matcher(status).matches()) {
+            return true;
+        } else {
+            return false;
         }
     }
 }

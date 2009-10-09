@@ -1,19 +1,22 @@
 package hudson.plugins.collabnet.pblupload;
 
+import hudson.Extension;
 import hudson.FilePath;
 import hudson.Launcher;
 import hudson.FilePath.FileCallable;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
 import hudson.model.BuildListener;
-import hudson.model.Descriptor;
 import hudson.model.Hudson;
 import hudson.model.Result;
+import hudson.model.TaskListener;
 import hudson.plugins.promoted_builds.Promotion;
 import hudson.remoting.VirtualChannel;
 import hudson.tasks.BuildStepDescriptor;
+import hudson.tasks.BuildStepMonitor;
+import hudson.tasks.Notifier;
 import hudson.tasks.Publisher;
-import hudson.util.FormFieldValidator;
+import hudson.util.FormValidation;
 
 import hudson.plugins.collabnet.util.CommonUtil;
 import hudson.plugins.collabnet.util.CNFormFieldValidator;
@@ -25,15 +28,12 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-
-import javax.servlet.ServletException;
 
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 
+import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
-import org.kohsuke.stapler.StaplerResponse;
 
 import com.collabnet.cubit.api.CubitConnector;
 
@@ -41,7 +41,7 @@ import com.collabnet.cubit.api.CubitConnector;
  * The PblUploader is used to upload files to the Project Build Library (Pbl) 
  * of a Lab Management manager node.
  */
-public class PblUploader extends Publisher implements java.io.Serializable {
+public class PblUploader extends Notifier implements java.io.Serializable {
     private static final String LEFT_NAV_DISPLAY_MESSAGE = "Download from CollabNet Project Build Library";
     private static final String IMAGE_URL = "/plugin/collabnet/images/48x48/";   
     private static final long serialVersionUID = 1L;
@@ -65,11 +65,6 @@ public class PblUploader extends Publisher implements java.io.Serializable {
     // set at the beginning of perform.
     private transient BuildListener listener = null;
     
-    /**
-     * Descriptor should be singleton.
-     */
-    public static final DescriptorImpl DESCRIPTOR = new DescriptorImpl();
-
     /**
      * Constructs a new PblUploader instance.
      * 
@@ -261,6 +256,11 @@ public class PblUploader extends Publisher implements java.io.Serializable {
         }
     }
 
+    @Override
+    public BuildStepMonitor getRequiredMonitorService() {
+        return BuildStepMonitor.BUILD;
+    }
+
     /**
      * Upload the files to the PBL.  This is the hudson builds entry point into this plugin
      * 
@@ -316,7 +316,8 @@ public class PblUploader extends Publisher implements java.io.Serializable {
      * @return List of file patterns, after being interpreted with empty strings
      * removed. 
      */
-    private List<String> getProcessedFilePatterns(AbstractBuild<?, ?> build){
+    private List<String> getProcessedFilePatterns(AbstractBuild<?, ?> build)
+            throws IOException, InterruptedException {
         List<String> output = new ArrayList<String>();
         for (String uninterp_fp : this.getFilePatterns()) {
             String file_pattern = "";
@@ -376,7 +377,7 @@ public class PblUploader extends Publisher implements java.io.Serializable {
      */
     private boolean uploadFiles(AbstractBuild<?, ?> build) {
         try {
-            FilePath workspace = build.getProject().getWorkspace();
+            FilePath workspace = build.getWorkspace();
             int num_files = 0;
             int failures = 0;
             this.log("");
@@ -417,7 +418,8 @@ public class PblUploader extends Publisher implements java.io.Serializable {
     /**
      * @return the URL for where our upload will end up.
      */
-    private String getRemoteURL(AbstractBuild<?, ?> build) {
+    private String getRemoteURL(AbstractBuild<?, ?> build)
+            throws IOException, InterruptedException {
         return addTrailSlash(getHostUrl())+"pbl/" + addTrailSlash(this.getProject()) 
             + this.getPubOrPriv() + "/"
             + this.getInterpreted(build, this.getPath());           
@@ -445,8 +447,8 @@ public class PblUploader extends Publisher implements java.io.Serializable {
      *         directory structure.
      */
     private String createUploadPath(AbstractBuild<?, ?> build, 
-                                    FilePath workspace, 
-                                    FilePath uploadFilePath) {
+                                    FilePath workspace, FilePath uploadFilePath)
+                                    throws IOException, InterruptedException {
         String fileDestinationPath = this.getInterpreted(build, this.getPath());
         if (this.getPreserveLocal()){
             String localPath = this.getRelativePath(workspace, uploadFilePath);
@@ -477,19 +479,21 @@ public class PblUploader extends Publisher implements java.io.Serializable {
      * @return the interpreted string.
      * @throws IllegalArgumentException if the env var is not found.
      */
-    private String getInterpreted(AbstractBuild<?, ?> build, String str) {
+    private String getInterpreted(AbstractBuild<?, ?> build, String str)
+            throws IOException, InterruptedException {
         Map<String, String> envVars = null;
         if (Hudson.getInstance().getPlugin("promoted-builds") != null
             && build.getClass().equals(Promotion.class)) {
             // if this is a promoted build, get the env vars from
             // the original build
             Promotion promotion = Promotion.class.cast(build);
-            envVars = promotion.getTarget().getEnvVars();
+            envVars = promotion.getTarget().getEnvironment(TaskListener.NULL);
         } else {
-            envVars = build.getEnvVars();
+            envVars = build.getEnvironment(TaskListener.NULL);
         }
         try {
-            return CommonUtil.getInterpreted(build.getEnvVars(), str);
+            //XXX should this use envVars instead of build.getEnv.... ?
+            return CommonUtil.getInterpreted(build.getEnvironment(TaskListener.NULL), str);
         } catch (IllegalArgumentException iae) {
             this.log(iae.getMessage());
             throw iae;
@@ -622,6 +626,7 @@ public class PblUploader extends Publisher implements java.io.Serializable {
         CubitConnector.ResponseCodeAndBody result = uploadFilePath.
             act(new FileCallable<CubitConnector.ResponseCodeAndBody>() {
 			private static final long serialVersionUID = 1L;
+                        @Override
 			public CubitConnector.ResponseCodeAndBody invoke(File file, VirtualChannel channel) 
             throws FileNotFoundException, IOException
             {
@@ -647,23 +652,17 @@ public class PblUploader extends Publisher implements java.io.Serializable {
     }
 
     /**
-     * @return the descriptor.
-     */
-    public Descriptor<Publisher> getDescriptor() {
-        return DESCRIPTOR;
-    }
-
-    /**
      * Descriptor for {@link PblUploader}. Used as a singleton. The class is
      * marked as public so that it can be accessed from views.
      * 
      */
+    @Extension
     public static final class DescriptorImpl 
         extends BuildStepDescriptor<Publisher> {
 
         private static int unique = 0;
 
-        DescriptorImpl() {
+        public DescriptorImpl() {
             super(PblUploader.class);
         }
 
@@ -767,94 +766,62 @@ public class PblUploader extends Publisher implements java.io.Serializable {
         /**
          * Form validation for the host_url
          *
-         * @param req StaplerRequest which contains parameters from 
-         *            the config.jelly.
-         * @param rsp contains http response data (unused).
-         * @throws IOException
-         * @throws ServletException
+         * @param value url
          */
-        public void doHostUrlCheck(StaplerRequest req, 
-                                   StaplerResponse rsp) 
-            throws IOException, ServletException {
-            new CNFormFieldValidator.HostUrlCheck(req,rsp).process();
+        public FormValidation doHostUrlCheck(@QueryParameter String value) {
+            return CNFormFieldValidator.hostUrlCheck(value);
         }
 
         /**
          * Form validation for the user and project
          *
-         * @param req StaplerRequest which contains parameters from 
-         *            the config.jelly.
-         * @param rsp contains http response data (unused).
-         * @throws IOException
-         * @throws ServletException
+         * @param value
+         * @param name of field
          */
-        public void doRequiredCheck(StaplerRequest req, 
-                                       StaplerResponse rsp) 
-            throws IOException, ServletException {
-            new CNFormFieldValidator.RequiredCheck(req,rsp).process();
+        public FormValidation doRequiredCheck(
+                @QueryParameter String value, @QueryParameter String name) {
+            return CNFormFieldValidator.requiredCheck(value, name);
         }
 
         /**
          * Form validation for the API key.
          *
-         * @param req StaplerRequest which contains parameters from 
-         *            the config.jelly.
-         * @param rsp contains http response data (unused).
-         * @throws IOException
-         * @throws ServletException
+         * @param req StaplerRequest which contains parameters from the config.jelly.
          */
-        public void doKeyCheck(StaplerRequest req, 
-                                       StaplerResponse rsp) 
-            throws IOException, ServletException {
-            new CNFormFieldValidator.CubitKeyCheck(req, rsp).process();
+        public FormValidation doKeyCheck(StaplerRequest req) {
+            return CNFormFieldValidator.cubitKeyCheck(req);
         }
 
         /**
          * Form validation for the path.
          *
-         * @param req StaplerRequest which contains parameters from 
-         *            the config.jelly.
-         * @param rsp contains http response data (unused).
-         * @throws IOException
-         * @throws ServletException
+         * @param value
+         * @param name of field
          */
-        public void doRequiredInterpretedCheck(StaplerRequest req, 
-                                               StaplerResponse rsp) 
-            throws IOException, ServletException {
-            new CNFormFieldValidator.RequiredInterpretedCheck(req,rsp)
-                .process();
+        public FormValidation doRequiredInterpretedCheck(
+                @QueryParameter String value, @QueryParameter String name) {
+            return CNFormFieldValidator.requiredInterpretedCheck(value, name);
         }
 
         
         /**
          * Form validation for the path.
          *
-         * @param req StaplerRequest which contains parameters from 
-         *            the config.jelly.
-         * @param rsp contains http response data (unused).
-         * @throws IOException
-         * @throws ServletException
+         * @param value
          */
-        public void doRegexPrefixCheck(StaplerRequest req, 
-                                       StaplerResponse rsp) 
-        throws IOException, ServletException {
-            new CNFormFieldValidator.RegexCheck(req, rsp).process();
+        public FormValidation doRegexPrefixCheck(@QueryParameter String value) {
+            return CNFormFieldValidator.regexCheck(value);
         }
         
         /**
          * Form validation for the comment and description.
          *
-         * @param req StaplerRequest which contains parameters from 
-         *            the config.jelly.
-         * @param rsp contains http response data (unused).
-         * @throws IOException
-         * @throws ServletException
+         * @param value
+         * @param name of field
          */
-        public void doUnRequiredInterpretedCheck(StaplerRequest req, 
-                                       StaplerResponse rsp) 
-            throws IOException, ServletException {
-            new CNFormFieldValidator.UnrequiredInterpretedCheck(req,rsp)
-                .process();
+        public FormValidation doUnRequiredInterpretedCheck(
+                @QueryParameter String value, @QueryParameter String name) {
+            return CNFormFieldValidator.unrequiredInterpretedCheck(value, name);
         }
     }
 }

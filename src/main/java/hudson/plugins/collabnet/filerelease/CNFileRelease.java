@@ -6,17 +6,21 @@ import com.collabnet.ce.webservices.CollabNetApp;
 import com.collabnet.ce.webservices.FrsApp;
 import com.collabnet.ce.webservices.FileStorageApp;
 
+import hudson.Extension;
 import hudson.Launcher;
 import hudson.FilePath;
 import hudson.FilePath.FileCallable;
 import hudson.model.AbstractBuild;
 import hudson.model.BuildListener;
-import hudson.model.Descriptor;
 import hudson.model.Hudson;
 import hudson.model.Result;
+import hudson.model.TaskListener;
 import hudson.remoting.VirtualChannel;
 import hudson.tasks.BuildStepDescriptor;
+import hudson.tasks.BuildStepMonitor;
+import hudson.tasks.Notifier;
 import hudson.tasks.Publisher;
+import hudson.util.FormValidation;
 
 import hudson.plugins.collabnet.share.TeamForgeShare;
 import hudson.plugins.collabnet.util.CNFormFieldValidator;
@@ -33,11 +37,11 @@ import java.util.Collection;
 import java.util.Map;
 
 import javax.activation.MimetypesFileTypeMap;
-import javax.servlet.ServletException;
 
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 
+import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.StaplerResponse;
 
@@ -46,7 +50,7 @@ import org.kohsuke.stapler.StaplerResponse;
  * Hudson plugin to update files from the Hudson workspace 
  * to the CollabNet File Release System.
  */
-public class CNFileRelease extends Publisher {
+public class CNFileRelease extends Notifier {
     // listener is used for logging and will only be
     // set at the beginning of perform.
     private transient BuildListener listener = null;
@@ -267,6 +271,11 @@ public class CNFileRelease extends Publisher {
         return releases.toArray(new String[0]);
     }
 
+    @Override
+    public BuildStepMonitor getRequiredMonitorService() {
+        return BuildStepMonitor.BUILD;
+    }
+
     /**
      * The function does the work of uploading files for the release.
      *
@@ -276,8 +285,9 @@ public class CNFileRelease extends Publisher {
      *                 for logging.
      * @return true if successful, false if a critical error occurred.
      */
+    @Override
     public boolean perform(AbstractBuild<?, ?> build, Launcher launcher, 
-                           BuildListener listener) {
+                           BuildListener listener) throws IOException, InterruptedException {
         this.setupLogging(listener);
         this.cna = CNHudsonUtil.getCollabNetApp(this.getCollabNetUrl(), 
                                                 this.getUsername(), 
@@ -358,8 +368,8 @@ public class CNFileRelease extends Publisher {
      * @param releaseId where the files will be uploaded.
      * @return the number of files successfully uploaded.
      */
-    public int uploadFiles(AbstractBuild<?, ?> build, 
-                            final String releaseId) {
+    public int uploadFiles(AbstractBuild<?, ?> build,
+            final String releaseId) throws IOException, InterruptedException {
         int numUploaded = 0;
         final FileStorageApp sfsa = new FileStorageApp(this.cna);
         final FrsApp fa = new FrsApp(this.cna);
@@ -413,6 +423,7 @@ public class CNFileRelease extends Publisher {
                 try {
                     String path = uploadFilePath.
                         act(new FileCallable<String>() {
+                            @Override
                             public String invoke(File f, 
                                                  VirtualChannel channel) 
                             throws IOException, RemoteException {
@@ -453,7 +464,7 @@ public class CNFileRelease extends Publisher {
      */
     private FilePath[] getFilePaths(AbstractBuild<?, ?> build, 
                                     String pattern) {
-        FilePath workspace = build.getProject().getWorkspace();
+        FilePath workspace = build.getWorkspace();
         FilePath[] uploadFilePaths = new FilePath[0];
         try {
             uploadFilePaths = workspace.list(pattern);
@@ -575,16 +586,17 @@ public class CNFileRelease extends Publisher {
      * @return the interpreted string.
      * @throws IllegalArgumentException if the env var is not found.
      */
-    private String getInterpreted(AbstractBuild<?, ?> build, String str) {
+    private String getInterpreted(AbstractBuild<?, ?> build, String str)
+            throws IOException, InterruptedException {
         Map<String, String> envVars = null;
         if (Hudson.getInstance().getPlugin("promoted-builds") != null
             && build.getClass().equals(Promotion.class)) {
             // if this is a promoted build, get the env vars from
             // the original build
             Promotion promotion = Promotion.class.cast(build);
-            envVars = promotion.getTarget().getEnvVars();
+            envVars = promotion.getTarget().getEnvironment(TaskListener.NULL);
         } else {
-            envVars = build.getEnvVars();
+            envVars = build.getEnvironment(TaskListener.NULL);
         }
         try {
             return CommonUtil.getInterpreted(envVars, str);
@@ -595,26 +607,15 @@ public class CNFileRelease extends Publisher {
     }
 
     /**
-     * @return the descriptor for CNFileRelease.
-     */
-    public Descriptor<Publisher> getDescriptor() {
-        return DESCRIPTOR;
-    }
-
-    /**
-     * Descriptor should be singleton.
-     */
-    public static final DescriptorImpl DESCRIPTOR = new DescriptorImpl();
-
-    /**
      * The CNFileRelease Descriptor class.
      */
+    @Extension
     public static final class DescriptorImpl 
         extends BuildStepDescriptor<Publisher> {
 
         private static int unique = 0;
 
-        DescriptorImpl() {
+        public DescriptorImpl() {
             super(CNFileRelease.class);
         }
 
@@ -634,6 +635,7 @@ public class CNFileRelease extends Publisher {
         /**
          * @return string to display for configuration screen.
          */
+        @Override
         public String getDisplayName() {
             return "CollabNet File Release";
         }
@@ -666,6 +668,7 @@ public class CNFileRelease extends Publisher {
          * @param jobType a class to check for applicability.
          * @return true if CNFileRelease is applicable to this job.
          */
+        @Override
         public boolean isApplicable(java.lang.Class<? 
                                     extends hudson.model.AbstractProject> 
                                     jobType) {
@@ -682,6 +685,7 @@ public class CNFileRelease extends Publisher {
          *         configuration form vars.
          * @throws FormException
          */
+        @Override
         public CNFileRelease newInstance(StaplerRequest req, 
                                          JSONObject formData) 
             throws FormException {
@@ -742,105 +746,68 @@ public class CNFileRelease extends Publisher {
         /**
          * Form validation for the CollabNet URL.
          *
-         * @param req StaplerRequest which contains parameters from 
-         *            the config.jelly.
-         * @param rsp contains http response data (unused).
-         * @throws IOException
-         * @throws ServletException
+         * @param value url
          */
-        public void doCollabNetUrlCheck(StaplerRequest req, 
-                                        StaplerResponse rsp) 
-            throws IOException, ServletException {
-            new CNFormFieldValidator.SoapUrlCheck(req, rsp).process();
+        public FormValidation doCollabNetUrlCheck(@QueryParameter String value) {
+            return CNFormFieldValidator.soapUrlCheck(value);
         }
         
         /**
          * Check that a password is present and allows login.
          *
          * @param req contains parameters from the config.jelly.
-         * @param rsp contains http response data (unused).
-         * @throws IOException
-         * @throws ServletException
          */
-        public void doPasswordCheck(StaplerRequest req, 
-                                    StaplerResponse rsp) 
-            throws IOException, ServletException {
-            new CNFormFieldValidator.LoginCheck(req, rsp).process();
+        public FormValidation doPasswordCheck(StaplerRequest req) {
+            return CNFormFieldValidator.loginCheck(req);
         }
         
         /**
          * Form validation for the project field.
          *
-         * @param req contains parameters from 
-         *            the config.jelly.
-         * @param rsp contains http response data (unused).
-         * @throws IOException
-         * @throws ServletException
+         * @param req contains parameters from the config.jelly.
          */
-        public void doProjectCheck(StaplerRequest req, 
-                                   StaplerResponse rsp) 
-            throws IOException, ServletException {
-            new CNFormFieldValidator.ProjectCheck(req, rsp).process();
+        public FormValidation doProjectCheck(StaplerRequest req) {
+            return CNFormFieldValidator.projectCheck(req);
         }
 
         /**
          * Form validation for username.
          *
-         * @param req contains parameters from config.jelly.
-         * @param rsp contains http response data (unused).
-         * @throws IOException
-         * @throws ServletException
+         * @param value
+         * @param name of field
          */
-        public void doRequiredCheck(StaplerRequest req, 
-                                    StaplerResponse rsp) 
-            throws IOException, ServletException {
-            new CNFormFieldValidator.RequiredCheck(req, rsp).process();
+        public FormValidation doRequiredCheck(
+                @QueryParameter String value, @QueryParameter String name) {
+            return CNFormFieldValidator.requiredCheck(value, name);
         }
 
         /**
          * Form validation for package.
          *
-         * @param req StaplerRequest which contains parameters from 
-         *            the config.jelly.
-         * @param rsp contains http response data (unused).
-         * @throws IOException
-         * @throws ServletException
+         * @param req StaplerRequest which contains parameters from the config.jelly.
          */
-        public void doPackageCheck(StaplerRequest req, 
-                                   StaplerResponse rsp) 
-            throws IOException, ServletException {
-            new CNFormFieldValidator.PackageCheck(req, rsp).process();      
+        public FormValidation doPackageCheck(StaplerRequest req) {
+            return CNFormFieldValidator.packageCheck(req);
         }
 
         /**
          * Form validation for release.
          *
-         * @param req StaplerRequest which contains parameters from 
-         *            the config.jelly.
-         * @param rsp contains http response data (unused).
-         * @throws IOException
-         * @throws ServletException
+         * @param req StaplerRequest which contains parameters from the config.jelly.
          */
-        public void doReleaseCheck(StaplerRequest req, 
-                                   StaplerResponse rsp) 
-            throws IOException, ServletException {
-            new CNFormFieldValidator.ReleaseCheck(req, rsp).process();        
+        public FormValidation doReleaseCheck(StaplerRequest req) {
+            return CNFormFieldValidator.releaseCheck(req);
         }
 
         /**
          * Form validation for the file patterns.
          *
-         * @param req StaplerRequest which contains parameters from 
-         *            the config.jelly.
-         * @param rsp contains http response data (unused).
-         * @throws IOException
-         * @throws ServletException
+         * @param value
+         * @param name of field
          */
-        public void doUnRequiredInterpretedCheck(StaplerRequest req, 
-                                                 StaplerResponse rsp) 
-            throws IOException, ServletException {
-            new CNFormFieldValidator.UnrequiredInterpretedCheck(req, rsp)
-                .process();
+        public FormValidation doUnRequiredInterpretedCheck(
+                @QueryParameter String value, @QueryParameter String name) {
+            return CNFormFieldValidator.unrequiredInterpretedCheck(value, name);
         }
         
         /**

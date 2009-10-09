@@ -13,14 +13,12 @@ import com.gargoylesoftware.htmlunit.html.HtmlTextInput;
 
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
-import hudson.model.Cause;
+import hudson.model.TaskListener;
 
 import hudson.plugins.collabnet.util.HudsonConstants;
 import hudson.plugins.collabnet.util.Util;
 
 import hudson.plugins.collabnet.util.CommonUtil;
-
-import java.util.List;
 
 import org.jvnet.hudson.test.HudsonTestCase;
 
@@ -54,8 +52,6 @@ public class DocUploadTest extends HudsonTestCase {
     @Override
     protected void setUp() throws Exception {
         super.setUp();
-        DocumentUploaderPlugin doc = new DocumentUploaderPlugin();
-        doc.start();
         this.job = this.createFreeStyleProject();
         HtmlPage configurePage = setupProjectForDocUpload();
         this.submitForm(configurePage, HudsonConstants.CONFIGURE_FORM_NAME);
@@ -102,7 +98,7 @@ public class DocUploadTest extends HudsonTestCase {
         DocumentApp da = new DocumentApp(cna);
         String folderId = da.
             findOrCreatePath(projectId, CommonUtil.
-                             getInterpreted(build.getEnvVars(), TEST_PATH));
+                             getInterpreted(build.getEnvironment(TaskListener.NULL), TEST_PATH));
         assert(folderId != null);
         String docId = da.findDocumentId(folderId, "log");
         assert(docId != null);

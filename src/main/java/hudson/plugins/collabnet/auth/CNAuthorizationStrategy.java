@@ -1,5 +1,6 @@
 package hudson.plugins.collabnet.auth;
 
+import hudson.Extension;
 import hudson.model.AbstractProject;
 import hudson.model.AbstractItem;
 import hudson.model.Computer;
@@ -9,26 +10,20 @@ import hudson.model.User;
 import hudson.model.View;
 import hudson.security.ACL;
 import hudson.security.AuthorizationStrategy;
-import hudson.security.Permission;
-import hudson.util.FormFieldValidator;
+import hudson.util.FormValidation;
 
 import hudson.plugins.collabnet.util.CommonUtil;
 import hudson.plugins.collabnet.util.CNFormFieldValidator;
 
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.logging.Logger;
 
-import javax.servlet.ServletException;
-
 import net.sf.json.JSONObject;
 
-import org.acegisecurity.Authentication;
-
+import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.StaplerResponse;
 
@@ -133,6 +128,7 @@ public class CNAuthorizationStrategy extends AuthorizationStrategy {
      * @return the names of all groups/roles used in this authorization
      *         strategy.
      */
+    @Override
     public Collection<String> getGroups() {
         return CNProjectACL.CollabNetRoles.getNames();
     }
@@ -140,6 +136,7 @@ public class CNAuthorizationStrategy extends AuthorizationStrategy {
     /**
      * @return the default ACL.
      */
+    @Override
     public ACL getRootACL() {
         if (this.rootACL == null) {
             this.rootACL = new CNRootACL(this.adminUsers, this.adminGroups, 
@@ -152,6 +149,7 @@ public class CNAuthorizationStrategy extends AuthorizationStrategy {
      * @return the ACL specific to the CSFE project, if available.
      *         Otherwise, return the root ACL.
      */
+    @Override
     public ACL getACL(Job <?, ?> job) {
         CNAuthProjectProperty capp = (CNAuthProjectProperty)job.
             getProperty(CNAuthProjectProperty.class);
@@ -169,6 +167,7 @@ public class CNAuthorizationStrategy extends AuthorizationStrategy {
         }
     }
 
+    @Override
     public ACL getACL(AbstractItem item) {
         return this.getRootACL();
     }
@@ -177,33 +176,25 @@ public class CNAuthorizationStrategy extends AuthorizationStrategy {
         return this.getACL((Job)project);
     }
 
+    @Override
     public ACL getACL(View view) {
         return this.getRootACL();
     }
 
+    @Override
     public ACL getACL(Computer computer) {
         return this.getRootACL();
     }
 
+    @Override
     public ACL getACL(User user) {
         return this.getRootACL();
     }
 
     /**
-     * @return the descriptor for CNAuthorizationStrategy
-     */
-    public Descriptor<AuthorizationStrategy> getDescriptor() {
-        return DESCRIPTOR;
-    }
-
-    /**
-     * Descriptor should be singleton.
-     */
-    public static final DescriptorImpl DESCRIPTOR = new DescriptorImpl();
-    
-    /**
      * The CNAuthorizationStrategy Descriptor class.
      */
+    @Extension
     public static final class DescriptorImpl 
         extends Descriptor<AuthorizationStrategy> {
 
@@ -211,13 +202,14 @@ public class CNAuthorizationStrategy extends AuthorizationStrategy {
         // we require for authorization to work correctly
         public static String GOOD_VERSION = "5.2.0.0";
 
-        DescriptorImpl() {
+        public DescriptorImpl() {
             super(CNAuthorizationStrategy.class);
         }
 
         /**
          * @return string to display for configuration screen.
          */
+        @Override
         public String getDisplayName() {
             return "CollabNet Authorization";
         }
@@ -326,19 +318,16 @@ public class CNAuthorizationStrategy extends AuthorizationStrategy {
         /**
          * Check that the users are valid.
          */
-        public void doUserCheck(StaplerRequest req, 
-                                StaplerResponse rsp) 
-            throws IOException, ServletException {
-            new CNFormFieldValidator.UserListCheck(req,rsp).process();
+        public FormValidation doUserCheck(@QueryParameter String value) {
+            return CNFormFieldValidator.userListCheck(value);
         }
 
         /**
          * Check that the groups are valid.
          */
-        public void doGroupCheck(StaplerRequest req, 
-                                StaplerResponse rsp) 
-            throws IOException, ServletException {
-            new CNFormFieldValidator.GroupListCheck(req, rsp).process();
+        public FormValidation doGroupCheck(@QueryParameter String groups,
+                @QueryParameter String users) {
+            return CNFormFieldValidator.groupListCheck(groups, users);
         } 
     }   
 }

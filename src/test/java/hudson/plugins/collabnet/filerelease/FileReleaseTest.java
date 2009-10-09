@@ -50,8 +50,6 @@ public class FileReleaseTest extends HudsonTestCase {
     @Override 
     public void setUp() throws Exception {
         super.setUp();
-        FileReleasePlugin fr = new FileReleasePlugin();
-        fr.start();
         this.job = this.createFreeStyleProject();
         HtmlPage configurePage = setupProjectForFRUpload();
         this.submitForm(configurePage, HudsonConstants.CONFIGURE_FORM_NAME);

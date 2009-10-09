@@ -10,6 +10,7 @@ import com.gargoylesoftware.htmlunit.html.HtmlPage;
 
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
+import hudson.model.TaskListener;
 
 import hudson.plugins.collabnet.util.CommonUtil;
 import hudson.plugins.collabnet.util.HudsonConstants;
@@ -56,8 +57,6 @@ public class PblUploadTest extends HudsonTestCase {
     @Override
     public void setUp() throws Exception {
         super.setUp();
-        PblUploadPlugin pup = new PblUploadPlugin();
-        pup.start();
         this.job = this.createFreeStyleProject();
         HtmlPage configurePage = setupProjectForPblUpload();
         this.submitForm(configurePage, HudsonConstants.CONFIGURE_FORM_NAME);
@@ -178,7 +177,7 @@ public class PblUploadTest extends HudsonTestCase {
         args.put("userid", USERNAME);
         args.put("desc", "Changed desc for test");
         args.put("comment", "Changing desc to test upload");
-        args.put("path", CommonUtil.getInterpreted(build.getEnvVars(), PATH) 
+        args.put("path", CommonUtil.getInterpreted(build.getEnvironment(TaskListener.NULL), PATH)
                  + "/" + FILE);
         args.put("proj", PROJECT);
         args.put("sig", KEY);

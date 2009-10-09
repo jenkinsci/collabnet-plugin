@@ -1,12 +1,17 @@
 package hudson.plugins.collabnet.tracker;
 
+import hudson.Extension;
 import hudson.Launcher;
 import hudson.model.AbstractBuild;
 import hudson.model.BuildListener;
 import hudson.model.Descriptor;
 import hudson.model.Hudson;
 import hudson.model.Result;
+import hudson.model.TaskListener;
+import hudson.tasks.BuildStepMonitor;
+import hudson.tasks.Notifier;
 import hudson.tasks.Publisher;
+import hudson.util.FormValidation;
 
 import hudson.plugins.collabnet.share.TeamForgeShare;
 import hudson.plugins.collabnet.util.CNFormFieldValidator;
@@ -15,27 +20,24 @@ import hudson.plugins.collabnet.util.ComboBoxUpdater;
 import hudson.plugins.collabnet.util.CommonUtil;
 
 import java.io.IOException;
-import java.lang.InterruptedException;
 import java.rmi.RemoteException;
 import java.util.Collection;
 import java.util.logging.Logger;
-
-import javax.servlet.ServletException;
 
 import net.sf.json.JSONObject;
 
 import org.apache.axis.utils.StringUtils;
 
+import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.StaplerResponse;
 
 import com.collabnet.ce.soap50.webservices.tracker.ArtifactSoapDO;
 import com.collabnet.ce.webservices.CollabNetApp;
-import com.collabnet.ce.webservices.FrsApp;
 import com.collabnet.ce.webservices.FileStorageApp;
 import com.collabnet.ce.webservices.TrackerApp;
 
-public class CNTracker extends Publisher {
+public class CNTracker extends Notifier {
     private static String SOAP_SERVICE = "/ce-soap50/services/";
     private static int DEFAULT_PRIORITY = 3;
 
@@ -60,8 +62,6 @@ public class CNTracker extends Publisher {
 
     // collabNet object
     private transient CollabNetApp cna = null;
-
-    public static final DescriptorImpl DESCRIPTOR = new DescriptorImpl();
 
     private transient static TeamForgeShare.TeamForgeShareDescriptor 
         shareDescriptor = null;
@@ -319,12 +319,10 @@ public class CNTracker extends Publisher {
         CNHudsonUtil.logoff(cna);
         return releases.toArray(new String[0]);
     }
-    
-    /**
-     * @return the descriptor.
-     */
-    public Descriptor<Publisher> getDescriptor() {
-        return DESCRIPTOR;
+
+    @Override
+    public BuildStepMonitor getRequiredMonitorService() {
+        return BuildStepMonitor.BUILD;
     }
     
     /**
@@ -493,8 +491,8 @@ public class CNTracker extends Publisher {
      * @return the artifact soap data object, if one exists which matches
      *         the title.  Otherwise, null.
      */
-    public ArtifactSoapDO findTrackerArtifact(String trackerId, 
-                                              AbstractBuild<?, ?> build) {
+    public ArtifactSoapDO findTrackerArtifact(String trackerId,
+            AbstractBuild<?, ?> build) throws IOException, InterruptedException {
         if (this.cna == null) {
             this.log("Cannot call findTrackerArtifact, not logged in!");
             return null;
@@ -524,7 +522,8 @@ public class CNTracker extends Publisher {
                                                    String trackerId, 
                                                    String status,
                                                    String description,
-                                                   AbstractBuild <?, ?> build) {
+                                                   AbstractBuild <?, ?> build)
+                                                   throws IOException, InterruptedException {
         if (this.cna == null) {
             this.log("Cannot call createNewTrackerArtifact, not logged in!");
             return null;
@@ -587,8 +586,8 @@ public class CNTracker extends Publisher {
      * @param issue the existing issue.
      * @param build the current Hudson build.
      */
-    public void updateFailingBuild(ArtifactSoapDO issue, 
-                                   AbstractBuild<?, ?> build) {
+    public void updateFailingBuild(ArtifactSoapDO issue,
+            AbstractBuild<?, ?> build) throws IOException, InterruptedException {
         if (this.cna == null) {
             this.log("Cannot call updateFailingBuild, not logged in!");
             return;
@@ -636,8 +635,8 @@ public class CNTracker extends Publisher {
      * @param issue the existing issue.
      * @param build the current Hudson build.
      */
-    public void updateSucceedingBuild(ArtifactSoapDO issue, 
-                                      AbstractBuild<?, ?> build) {
+    public void updateSucceedingBuild(ArtifactSoapDO issue,
+            AbstractBuild<?, ?> build) throws IOException, InterruptedException {
         if (this.cna == null) {
             this.log("Cannot call updateSucceedingBuild, not logged in!");
             return;
@@ -677,8 +676,8 @@ public class CNTracker extends Publisher {
      * @param issue the existing issue.
      * @param build the current Hudson build.
      */
-    public void closeSucceedingBuild(ArtifactSoapDO issue, 
-                                     AbstractBuild<?, ?> build) {
+    public void closeSucceedingBuild(ArtifactSoapDO issue,
+            AbstractBuild<?, ?> build) throws IOException, InterruptedException {
         if (this.cna == null) {
             this.log("Cannot call updateSucceedingBuild, not logged in!");
             return;
@@ -770,15 +769,17 @@ public class CNTracker extends Publisher {
      * @return the interpreted string.
      * @throws IllegalArgumentException if the env var is not found.
      */
-    private String getInterpreted(AbstractBuild<?, ?> build, String str) {
+    private String getInterpreted(AbstractBuild<?, ?> build, String str)
+            throws IOException, InterruptedException {
         try {
-            return CommonUtil.getInterpreted(build.getEnvVars(), str);
+            return CommonUtil.getInterpreted(build.getEnvironment(TaskListener.NULL), str);
         } catch (IllegalArgumentException iae) {
             this.log(iae.getMessage());
             throw iae;
         }
     }
-    
+
+    @Extension
     public static final class DescriptorImpl extends Descriptor<Publisher> {
         private static Logger log = Logger.getLogger("CNTrackerDescriptor");
 
@@ -876,122 +877,77 @@ public class CNTracker extends Publisher {
         /**
          * Form validation for the CollabNet URL.
          *
-         * @param req StaplerRequest which contains parameters from 
-         *            the config.jelly.
-         * @param rsp contains http response data.
-         * @throws IOException
-         * @throws ServletException
+         * @param value url
          */
-        public void doCollabNetUrlCheck(StaplerRequest req, 
-                                        StaplerResponse rsp) 
-            throws IOException, ServletException {
-            new CNFormFieldValidator.SoapUrlCheck(req, rsp).process();
+        public FormValidation doCollabNetUrlCheck(@QueryParameter String value) {
+            return CNFormFieldValidator.soapUrlCheck(value);
         }
         
         /**
          * Check that a password is present and allows login.
          *
-         * @param req StaplerRequest which contains parameters from 
-         *            the config.jelly.
-         * @param rsp contains http response data.
-         * @throws IOException
-         * @throws ServletException
+         * @param req StaplerRequest which contains parameters from the config.jelly.
          */
-        public void doPasswordCheck(StaplerRequest req, 
-                                    StaplerResponse rsp) 
-            throws IOException, ServletException {
-            new CNFormFieldValidator.LoginCheck(req, rsp).process();
+        public FormValidation doPasswordCheck(StaplerRequest req) {
+            return CNFormFieldValidator.loginCheck(req);
         }
         
         /**
          * Form validation for the project field.
          *
-         * @param req StaplerRequest which contains parameters from 
-         *            the config.jelly.
-         * @param rsp contains http response data.
-         * @throws IOException
-         * @throws ServletException
+         * @param req StaplerRequest which contains parameters from the config.jelly.
          */
-        public void doProjectCheck(StaplerRequest req, 
-                                   StaplerResponse rsp) 
-            throws IOException, ServletException {
-            new CNFormFieldValidator.ProjectCheck(req, rsp).process();
+        public FormValidation doProjectCheck(StaplerRequest req) {
+            return CNFormFieldValidator.projectCheck(req);
         }
         
         /**
          * Form validation for the tracker field.
          *
-         * @param req StaplerRequest which contains parameters from 
-         *            the config.jelly.
-         * @param rsp contains http response data.
-         * @throws IOException
-         * @throws ServletException
+         * @param req StaplerRequest which contains parameters from the config.jelly.
          */
-        public void doTrackerCheck(StaplerRequest req, 
-                                   StaplerResponse rsp) 
-            throws IOException, ServletException {
-            new CNFormFieldValidator.TrackerCheck(req, rsp).process();
+        public FormValidation doTrackerCheck(StaplerRequest req) {
+            return CNFormFieldValidator.trackerCheck(req);
         }
         
         /**
          * Form validation for "assign issue to".
          *
-         * @param req StaplerRequest which contains parameters from 
-         *            the config.jelly.
-         * @param rsp contains http response data.
-         * @throws IOException
-         * @throws ServletException
+         * @param req StaplerRequest which contains parameters from the config.jelly.
          */
-        public void doAssignCheck(StaplerRequest req, 
-                                  StaplerResponse rsp) 
-            throws IOException, ServletException {
-            new CNFormFieldValidator.AssignCheck(req, rsp).process();
+        public FormValidation doAssignCheck(StaplerRequest req) {
+            return CNFormFieldValidator.assignCheck(req);
         }
         
         /**
          * Form validation for username.
          *
-         * @param req StaplerRequest which contains parameters from 
-         *            the config.jelly.
-         * @param rsp contains http response data.
-         * @throws IOException
-         * @throws ServletException
+         * @param value
+         * @param name of field
          */
-        public void doRequiredCheck(StaplerRequest req, 
-                                    StaplerResponse rsp) 
-            throws IOException, ServletException {
-            new CNFormFieldValidator.RequiredCheck(req, rsp).process();
+        public FormValidation doRequiredCheck(
+                @QueryParameter String value, @QueryParameter String name) {
+            return CNFormFieldValidator.requiredCheck(value, name);
         }
         
         /**
          * Form validation for the comment and description.
          *
-         * @param req StaplerRequest which contains parameters from 
-         *            the config.jelly.
-         * @param rsp contains http response data.
-         * @throws IOException
-         * @throws ServletException
+         * @param value
+         * @param name of field
          */
-        public void doRequiredInterpretedCheck(StaplerRequest req, 
-                                               StaplerResponse rsp) 
-            throws IOException, ServletException {
-            new CNFormFieldValidator.RequiredInterpretedCheck(req, rsp)
-                .process();
+        public FormValidation doRequiredInterpretedCheck(
+                @QueryParameter String value, @QueryParameter String name) {
+            return CNFormFieldValidator.requiredInterpretedCheck(value, name);
         }
         
         /**
          * Form validation for the release field.
          *
-         * @param req StaplerRequest which contains parameters from 
-         *            the config.jelly.
-         * @param rsp contains http response data.
-         * @throws IOException
-         * @throws ServletException
+         * @param req StaplerRequest which contains parameters from the config.jelly.
          */
-        public void doReleaseCheck(StaplerRequest req, 
-                                   StaplerResponse rsp) 
-            throws IOException, ServletException {
-            new CNFormFieldValidator.ReleaseCheck(req, rsp).process();        
+        public FormValidation doReleaseCheck(StaplerRequest req) {
+            return CNFormFieldValidator.releaseCheck(req);
         }
 
         /**********************************************

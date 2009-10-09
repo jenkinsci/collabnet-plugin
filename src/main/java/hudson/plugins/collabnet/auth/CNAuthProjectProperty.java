@@ -1,25 +1,24 @@
 package hudson.plugins.collabnet.auth;
 
+import hudson.Extension;
 import hudson.model.Hudson;
 import hudson.model.Item;
 import hudson.model.Job;
 import hudson.model.JobProperty;
 import hudson.model.JobPropertyDescriptor;
 import hudson.security.Permission;
-import hudson.util.FormFieldValidator;
+import hudson.util.FormValidation;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.logging.Logger;
-import javax.servlet.ServletException;
 
 import net.sf.json.JSONObject;
 
+import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
-import org.kohsuke.stapler.StaplerResponse;
 
 /**
  * Job property to associate a Hudson job with a CollabNet Project for
@@ -124,23 +123,12 @@ public class CNAuthProjectProperty extends JobProperty<Job<?, ?>> {
     }
 
     /**
-     * @return the descriptor for CNAuthProjectProperty
-     */
-    public JobPropertyDescriptor getDescriptor() {
-        return DESCRIPTOR;
-    }
-
-    /**
-     * Descriptor should be singleton.
-     */
-    public static final DescriptorImpl DESCRIPTOR = new DescriptorImpl();
-
-    /**
      * Descriptor class.
      */
+    @Extension
     public static class DescriptorImpl extends JobPropertyDescriptor {
 
-        protected DescriptorImpl() {
+        public DescriptorImpl() {
             super(CNAuthProjectProperty.class);
         }
 
@@ -170,6 +158,7 @@ public class CNAuthProjectProperty extends JobProperty<Job<?, ?>> {
         /**
          * @return string to display.
          */
+        @Override
         public String getDisplayName() {
             return "Associated CollabNet Project";
         }
@@ -188,85 +177,68 @@ public class CNAuthProjectProperty extends JobProperty<Job<?, ?>> {
         /**
          * Form validation for the project field.
          *
-         * @param req StaplerRequest which contains parameters from 
-         *            the config.jelly.
-         * @param rsp contains http response data (unused).
-         * @throws IOException
-         * @throws ServletException
+         * @param project
          */
-        public void doProjectCheck(StaplerRequest req, 
-                                   StaplerResponse rsp) 
-            throws IOException, ServletException {
-            new FormFieldValidator(req,rsp,false) {
-                protected void check() throws IOException, ServletException {
-                    String project = request.getParameter("project");
-                    if (project == null || project.equals("")) {
-                        warning("If left empty, only Hudson admins have " +
-                                "more than READ permissions in the project.");
-                        return;
-                    }
-                    CNConnection conn = CNConnection.getInstance();
-                    if (conn == null) {
-                        warning("Cannot check project name, improper" +
-                                " authentication type.");
-                        return;
-                    }
-                    String projectId = conn.getProjectId(project);
-                    boolean superUser = conn.isSuperUser();
-                    boolean hudsonAdmin = Hudson.getInstance().getACL()
-                        .hasPermission(Hudson.ADMINISTER);
-                    if (projectId == null) {
-                        if (superUser) {
-                            error("This project does not exist.");
-                            return;
-                        } else {
-                            error("The current user does not have access " +
-                                  "to this project.  If this project is " +
-                                  "chosen, the current user will be locked " +
-                                  "out of this Hudson job.");
-                            return;
-                        }
-                    }
-                    if (superUser) {
-                        // all other errors should not be valid for a 
-                        // superuser, since superusers are Hudson Admins
-                        // (so all-powerful in the Hudson realm) and also
-                        // all-powerful in the CollabNet server.
-                        ok();
-                        return;
-                    }
-                    if (!conn.isProjectAdmin(projectId)) {
-                        warning("The current user is not a project admin in " +
-                             "the project, so he/she cannot create or " +
-                             "grant roles.");
-                    }
-                    if (hudsonAdmin) {
-                        // no more errors apply to the Hudson Admin, since
-                        // admins will never be locked out of this page.
-                        ok();
-                        return;
-                    }
-                    // check that the user will have configure permissions
-                    // on this page
-                    CNProjectACL acl = new CNProjectACL(project);
-                    if (!acl.hasPermission(CNAuthProjectProperty
-                                           .CONFIGURE_PROPERTY)) {
-                        CollabNetRole roleNeeded = 
-                            CNProjectACL.CollabNetRoles
-                            .getGrantingRole(CNAuthProjectProperty
-                                             .CONFIGURE_PROPERTY);
-                        warning("The current user does not have the '" + 
-                             roleNeeded.getName() + "' role in the " +
-                             "project, which is required to configure " +
-                             "this Hudson job.  If this project is chosen," +
-                             " the current user will not have the power " +
-                             "to change the project later, unless he/she " +
-                             "is given this role.");
-                    }
-                    
-                    ok();
+        public FormValidation doProjectCheck(@QueryParameter String project) {
+            if (project == null || project.equals("")) {
+                return FormValidation.warning("If left empty, only Hudson admins have " +
+                        "more than READ permissions in the project.");
+            }
+            CNConnection conn = CNConnection.getInstance();
+            if (conn == null) {
+                return FormValidation.warning("Cannot check project name, improper" +
+                        " authentication type.");
+            }
+            String projectId = conn.getProjectId(project);
+            boolean superUser = conn.isSuperUser();
+            boolean hudsonAdmin = Hudson.getInstance().getACL()
+                .hasPermission(Hudson.ADMINISTER);
+            if (projectId == null) {
+                if (superUser) {
+                    return FormValidation.error("This project does not exist.");
+                } else {
+                    return FormValidation.error("The current user does not have access " +
+                          "to this project.  If this project is " +
+                          "chosen, the current user will be locked " +
+                          "out of this Hudson job.");
                 }
-            }.process();
+            }
+            if (superUser) {
+                // all other errors should not be valid for a
+                // superuser, since superusers are Hudson Admins
+                // (so all-powerful in the Hudson realm) and also
+                // all-powerful in the CollabNet server.
+                return FormValidation.ok();
+            }
+            if (!conn.isProjectAdmin(projectId)) {
+                return FormValidation.warning("The current user is not a project admin in " +
+                     "the project, so he/she cannot create or " +
+                     "grant roles.");
+            }
+            if (hudsonAdmin) {
+                // no more errors apply to the Hudson Admin, since
+                // admins will never be locked out of this page.
+                return FormValidation.ok();
+            }
+            // check that the user will have configure permissions
+            // on this page
+            CNProjectACL acl = new CNProjectACL(project);
+            if (!acl.hasPermission(CNAuthProjectProperty
+                                   .CONFIGURE_PROPERTY)) {
+                CollabNetRole roleNeeded =
+                    CNProjectACL.CollabNetRoles
+                    .getGrantingRole(CNAuthProjectProperty
+                                     .CONFIGURE_PROPERTY);
+                return FormValidation.warning("The current user does not have the '" +
+                     roleNeeded.getName() + "' role in the " +
+                     "project, which is required to configure " +
+                     "this Hudson job.  If this project is chosen," +
+                     " the current user will not have the power " +
+                     "to change the project later, unless he/she " +
+                     "is given this role.");
+            }
+
+            return FormValidation.ok();
         }
 
         /**

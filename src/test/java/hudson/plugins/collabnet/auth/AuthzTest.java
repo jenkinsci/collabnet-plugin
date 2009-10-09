@@ -5,7 +5,6 @@ import com.gargoylesoftware.htmlunit.html.HtmlForm;
 import com.gargoylesoftware.htmlunit.html.HtmlPage;
 import com.gargoylesoftware.htmlunit.html.HtmlRadioButtonInput;
 
-import hudson.plugins.collabnet.auth.AuthPlugin;
 import hudson.plugins.collabnet.util.HudsonConstants;
 import hudson.plugins.collabnet.util.Util;
 
@@ -44,8 +43,6 @@ public class AuthzTest extends HudsonTestCase {
     @Override
     protected void setUp() throws Exception {
         super.setUp();
-        AuthPlugin auth = new AuthPlugin();
-        auth.start();
         HtmlPage configurePage = new WebClient().
             goTo(HudsonConstants.CONFIGURE_PAGE);
         configurePage = (HtmlPage) AuthnTest.

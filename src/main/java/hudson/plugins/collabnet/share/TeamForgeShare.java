@@ -1,23 +1,18 @@
 package hudson.plugins.collabnet.share;
 
 import hudson.Extension;
-import hudson.ExtensionPoint;
 import hudson.model.Hudson;
-import hudson.model.Describable;
-import hudson.model.Descriptor;
 import hudson.model.Job;
 import hudson.model.JobProperty;
 import hudson.model.JobPropertyDescriptor;
 
 import hudson.plugins.collabnet.util.CNFormFieldValidator;
 
-import java.io.IOException;
+import hudson.util.FormValidation;
 import java.util.logging.Logger;
 
-import javax.servlet.ServletException;
-
+import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
-import org.kohsuke.stapler.StaplerResponse;
 
 import net.sf.json.JSONObject;
 
@@ -33,6 +28,7 @@ public class TeamForgeShare extends JobProperty<Job<?, ?>> {
     /**
      * {@inheritDoc}
      */
+    @Override
     public TeamForgeShareDescriptor getDescriptor() {
         return (TeamForgeShareDescriptor)Hudson.getInstance().
             getDescriptor(getClass());
@@ -61,6 +57,7 @@ public class TeamForgeShare extends JobProperty<Job<?, ?>> {
             load();
         }
 
+        @Override
         public String getDisplayName() {
             return "Global CollabNet Teamforge Configuration";
         }
@@ -111,46 +108,30 @@ public class TeamForgeShare extends JobProperty<Job<?, ?>> {
         /**
          * Form validation for the CollabNet URL.
          *
-         * @param req StaplerRequest which contains parameters from 
-         *            the config.jelly.
-         * @param rsp contains http response data.
-         * @throws IOException
-         * @throws ServletException
+         * @param value url
          */
-        public void doCollabNetUrlCheck(StaplerRequest req, 
-                                        StaplerResponse rsp) 
-            throws IOException, ServletException {
-            new CNFormFieldValidator.SoapUrlCheck(req, rsp).process();
+        public FormValidation doCollabNetUrlCheck(@QueryParameter String value) {
+            return CNFormFieldValidator.soapUrlCheck(value);
         }
 
         /**
          * Form validation for username.
          *
-         * @param req StaplerRequest which contains parameters from 
-         *            the config.jelly.
-         * @param rsp contains http response data.
-         * @throws IOException
-         * @throws ServletException
+         * @param value
+         * @param name of field
          */
-        public void doRequiredCheck(StaplerRequest req, 
-                                    StaplerResponse rsp) 
-            throws IOException, ServletException {
-            new CNFormFieldValidator.RequiredCheck(req, rsp).process();
+        public FormValidation doRequiredCheck(
+                @QueryParameter String value, @QueryParameter String name) {
+            return CNFormFieldValidator.requiredCheck(value, name);
         }
         
         /**
          * Check that a password is present and allows login.
          *
-         * @param req StaplerRequest which contains parameters from 
-         *            the config.jelly.
-         * @param rsp contains http response data.
-         * @throws IOException
-         * @throws ServletException
+         * @param req StaplerRequest which contains parameters from the config.jelly.
          */
-        public void doPasswordCheck(StaplerRequest req, 
-                                    StaplerResponse rsp) 
-            throws IOException, ServletException {
-            new CNFormFieldValidator.LoginCheck(req, rsp).process();
+        public FormValidation doPasswordCheck(StaplerRequest req) {
+            return CNFormFieldValidator.loginCheck(req);
         }
         
     }

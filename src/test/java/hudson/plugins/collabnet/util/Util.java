@@ -25,7 +25,6 @@ import java.io.IOException;
 import java.util.Iterator;
 import java.util.List;
 
-import org.jvnet.hudson.test.HudsonTestCase;
 import org.jvnet.hudson.test.HudsonTestCase.WebClient;
 
 /**
@@ -267,12 +266,13 @@ public class Util {
                                              String filename, 
                                              final String fileContent) 
         throws Exception {
-        FilePath workspace = job.getWorkspace();
+        FilePath workspace = job.getSomeWorkspace();
         if (!workspace.exists()) {
             workspace.mkdirs();
         }
         FilePath file = workspace.child(filename);
         file.act(new FileCallable<Void>() {
+            @Override
             public Void invoke(File f, VirtualChannel channel) 
                 throws IOException {
                 FileWriter fw = new FileWriter(f);

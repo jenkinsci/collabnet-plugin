@@ -12,7 +12,6 @@ import com.gargoylesoftware.htmlunit.html.HtmlTextInput;
 
 import java.util.List;
 
-import hudson.plugins.collabnet.auth.AuthPlugin;
 import hudson.plugins.collabnet.util.HudsonConstants;
 import hudson.plugins.collabnet.util.Util;
 
@@ -39,8 +38,6 @@ public class AuthnTest extends HudsonTestCase {
     @Override
     protected void setUp() throws Exception {
         super.setUp();
-        AuthPlugin auth = new AuthPlugin();
-        auth.start();
         HtmlPage configurePage = new WebClient().
             goTo(HudsonConstants.CONFIGURE_PAGE);
         configurePage = (HtmlPage) configureCNAuthentication(configurePage);

@@ -6,6 +6,7 @@ import com.collabnet.ce.webservices.CollabNetApp;
 import com.collabnet.ce.webservices.DocumentApp;
 import com.collabnet.ce.webservices.FileStorageApp;
 
+import hudson.Extension;
 import hudson.Launcher;
 import hudson.FilePath;
 import hudson.FilePath.FileCallable;
@@ -14,8 +15,12 @@ import hudson.model.BuildListener;
 import hudson.model.Descriptor;
 import hudson.model.Result;
 import hudson.model.Action;
+import hudson.model.TaskListener;
 import hudson.remoting.VirtualChannel;
+import hudson.tasks.BuildStepMonitor;
+import hudson.tasks.Notifier;
 import hudson.tasks.Publisher;
+import hudson.util.FormValidation;
 
 import hudson.plugins.collabnet.share.TeamForgeShare;
 import hudson.plugins.collabnet.util.CNFormFieldValidator;
@@ -35,6 +40,7 @@ import javax.servlet.ServletException;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 
+import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.StaplerResponse;
 
@@ -42,7 +48,7 @@ import org.kohsuke.stapler.StaplerResponse;
  * Hudson plugin to upload the Hudson build log 
  * to the CollabNet Documents.
  */
-public class CNDocumentUploader extends Publisher {
+public class CNDocumentUploader extends Notifier {
     private static Logger logger = Logger.getLogger("CNDocumentUploader");
     private static final String IMAGE_URL = "/plugin/collabnet/images/48x48/";
 	
@@ -228,6 +234,11 @@ public class CNDocumentUploader extends Publisher {
         return projects.toArray(new String[0]);
     }
 
+    @Override
+    public BuildStepMonitor getRequiredMonitorService() {
+        return BuildStepMonitor.BUILD;
+    }
+
     /**
      * The function does the work of uploading the build log.
      *
@@ -237,8 +248,9 @@ public class CNDocumentUploader extends Publisher {
      *                 for logging.
      * @return true if successful, false if a critical error occurred.
      */
+    @Override
     public boolean perform(AbstractBuild<?, ?> build, Launcher launcher, 
-                           BuildListener listener) {
+                           BuildListener listener) throws IOException, InterruptedException {
         this.setupLogging(listener);
         this.cna = CNHudsonUtil.getCollabNetApp(this.getCollabNetUrl(), 
                                                 this.getUsername(), 
@@ -327,7 +339,8 @@ public class CNDocumentUploader extends Publisher {
      * @param build the current Hudson build.
      * @return the number of files successfully uploaded.
      */
-    public int uploadFiles(String folderId, AbstractBuild<?, ?> build) {
+    public int uploadFiles(String folderId, AbstractBuild<?, ?> build)
+            throws IOException, InterruptedException {
         int numUploaded = 0;
         String path = this.getInterpreted(build, this.getUploadPath());
         this.log("Uploading files to project '" + this.getProject() + 
@@ -417,7 +430,7 @@ public class CNDocumentUploader extends Publisher {
      */
     private FilePath[] getFilePaths(AbstractBuild<?, ?> build, 
                                     String pattern) {
-        FilePath workspace = build.getProject().getWorkspace();
+        FilePath workspace = build.getWorkspace();
         FilePath[] uploadFilePaths = new FilePath[0];
         try {
             uploadFilePaths = workspace.list(pattern);
@@ -448,7 +461,7 @@ public class CNDocumentUploader extends Publisher {
     private String updateOrCreateDoc(String folderId, String fileId, 
                                      String fileName, String mimeType, 
                                      AbstractBuild<?, ?> build) 
-        throws RemoteException {
+        throws RemoteException, IOException, InterruptedException {
         DocumentApp da = new DocumentApp(this.cna);
         String docId = da.findDocumentId(folderId, fileName);
         if (docId != null) {
@@ -475,6 +488,7 @@ public class CNDocumentUploader extends Publisher {
         String mimeType = "text/plain";
         try {
             mimeType = filePath.act(new FileCallable<String>() {
+                @Override
                 public String invoke(File f, VirtualChannel channel) 
                 throws IOException, RemoteException {
                     if (f.getName().endsWith("log")) {
@@ -536,6 +550,7 @@ public class CNDocumentUploader extends Publisher {
         final FileStorageApp sfsa = new FileStorageApp(this.cna);
         try {
             id = filePath.act(new FileCallable<String>() {
+                @Override
                 public String invoke(File f, VirtualChannel channel) 
                 throws IOException, RemoteException {      
                     return sfsa.uploadFile(f);
@@ -583,9 +598,10 @@ public class CNDocumentUploader extends Publisher {
      * @return the interpreted string.
      * @throws IllegalArgumentException if the env var is not found.
      */
-    private String getInterpreted(AbstractBuild<?, ?> build, String str) {
+    private String getInterpreted(AbstractBuild<?, ?> build, String str)
+            throws IOException, InterruptedException {
         try {
-            return CommonUtil.getInterpreted(build.getEnvVars(), str);
+            return CommonUtil.getInterpreted(build.getEnvironment(TaskListener.NULL), str);
         } catch (IllegalArgumentException iae) {
             this.log(iae.getMessage());
             throw iae;
@@ -593,29 +609,19 @@ public class CNDocumentUploader extends Publisher {
     }
 
     /**
-     * @return the descriptor for CNDocumentUploader.
-     */
-    public Descriptor<Publisher> getDescriptor() {
-        return DESCRIPTOR;
-    }
-
-    /**
-     * Descriptor should be singleton.
-     */
-    public static final DescriptorImpl DESCRIPTOR = new DescriptorImpl();
-
-    /**
      * The CNDocumentUploader Descriptor class.
      */
+    @Extension
     public static final class DescriptorImpl extends Descriptor<Publisher> {
 
-        DescriptorImpl() {
+        public DescriptorImpl() {
             super(CNDocumentUploader.class);
         }
 
         /**
          * @return string to display for configuration screen.
          */
+        @Override
         public String getDisplayName() {
             return "CollabNet Document Uploader";
         }
@@ -630,6 +636,7 @@ public class CNDocumentUploader extends Publisher {
         /**
          * @return a relative url to the main help file.
          */
+        @Override
         public String getHelpFile() {
             return getHelpUrl() +"/help-main.html";
         }
@@ -715,44 +722,30 @@ public class CNDocumentUploader extends Publisher {
         /**
          * Form validation for the CollabNet URL.
          *
-         * @param req StaplerRequest which contains parameters from 
-         *            the config.jelly.
-         * @param rsp contains http response data (unused).
-         * @throws IOException
-         * @throws ServletException
+         * @param value url
          */
-        public void doCollabNetUrlCheck(StaplerRequest req, 
-                                        StaplerResponse rsp) 
-            throws IOException, ServletException {
-            new CNFormFieldValidator.SoapUrlCheck(req, rsp).process();
+        public FormValidation doCollabNetUrlCheck(@QueryParameter String value) {
+            return CNFormFieldValidator.soapUrlCheck(value);
         }
 
         /**
          * Form validation for username.
          *
-         * @param req contains parameters from config.jelly.
-         * @param rsp contains http response data (unused).
-         * @throws IOException
-         * @throws ServletException
+         * @param value to check
+         * @param name of field
          */
-        public void doRequiredCheck(StaplerRequest req, 
-                                    StaplerResponse rsp) 
-            throws IOException, ServletException {
-            new CNFormFieldValidator.RequiredCheck(req, rsp).process();
+        public FormValidation doRequiredCheck(@QueryParameter String value,
+                @QueryParameter String name) {
+            return CNFormFieldValidator.requiredCheck(value, name);
         }
         
         /**
          * Check that a password is present and allows login.
          *
-         * @param req contains parameters from the config.jelly.
-         * @param rsp contains http response data (unused).
-         * @throws IOException
-         * @throws ServletException
+         * @param password
          */
-        public void doPasswordCheck(StaplerRequest req, 
-                                    StaplerResponse rsp) 
-            throws IOException, ServletException {
-            new CNFormFieldValidator.LoginCheck(req, rsp).process();
+        public FormValidation doPasswordCheck(StaplerRequest req) {
+            return CNFormFieldValidator.loginCheck(req);
         }
         
         /**
@@ -764,10 +757,8 @@ public class CNDocumentUploader extends Publisher {
          * @throws IOException
          * @throws ServletException
          */
-        public void doProjectCheck(StaplerRequest req, 
-                                   StaplerResponse rsp) 
-            throws IOException, ServletException {
-            new CNFormFieldValidator.ProjectCheck(req, rsp).process();
+        public FormValidation doProjectCheck(StaplerRequest req) {
+            return CNFormFieldValidator.projectCheck(req);
         }
 
         /**
@@ -779,10 +770,8 @@ public class CNDocumentUploader extends Publisher {
          * @throws IOException
          * @throws ServletException
          */
-        public void doPathCheck(StaplerRequest req, 
-                                   StaplerResponse rsp) 
-            throws IOException, ServletException {
-            new CNFormFieldValidator.DocumentPathCheck(req, rsp).process();
+        public FormValidation doPathCheck(StaplerRequest req) throws IOException {
+            return CNFormFieldValidator.documentPathCheck(req);
         }
 
         /**
@@ -794,11 +783,9 @@ public class CNDocumentUploader extends Publisher {
          * @throws IOException
          * @throws ServletException
          */
-        public void doUnRequiredInterpretedCheck(StaplerRequest req, 
-                                                 StaplerResponse rsp) 
-            throws IOException, ServletException {
-            new CNFormFieldValidator.UnrequiredInterpretedCheck(req, rsp)
-                .process();
+        public FormValidation doUnRequiredInterpretedCheck(
+                @QueryParameter String value, @QueryParameter String name) {
+            return CNFormFieldValidator.unrequiredInterpretedCheck(value, name);
         }
 
         /**

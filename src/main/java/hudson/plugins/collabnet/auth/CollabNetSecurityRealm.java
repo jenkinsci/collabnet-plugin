@@ -2,9 +2,11 @@ package hudson.plugins.collabnet.auth;
 
 import groovy.lang.Binding;
 
+import hudson.Extension;
 import hudson.model.Descriptor;
+import hudson.model.Hudson;
 import hudson.security.SecurityRealm;
-import hudson.util.FormFieldValidator;
+import hudson.util.FormValidation;
 import hudson.util.spring.BeanBuilder;
 
 import java.io.IOException;
@@ -17,8 +19,8 @@ import net.sf.json.JSONObject;
 
 import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.methods.GetMethod;
+import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
-import org.kohsuke.stapler.StaplerResponse;
 import org.springframework.web.context.WebApplicationContext;
 
 import com.collabnet.ce.webservices.CollabNetApp;
@@ -35,6 +37,7 @@ public class CollabNetSecurityRealm extends SecurityRealm {
         return this.collabNetUrl;
     }
 
+    @Override
     public SecurityRealm.SecurityComponents createSecurityComponents() {
         return new SecurityRealm.SecurityComponents(new CollabNetAuthManager
                                                     (this.getCollabNetUrl()));
@@ -56,33 +59,21 @@ public class CollabNetSecurityRealm extends SecurityRealm {
         WebApplicationContext context = builder.createApplicationContext();
         return (Filter) context.getBean("filter");
     }
-
-
-    /**
-     * @return the descriptor for CollabNetSecurityRealm
-     */
-    public Descriptor<SecurityRealm> getDescriptor() {
-        return DESCRIPTOR;
-    }
-
-    /**
-     * Descriptor should be singleton.
-     */
-    public static final DescriptorImpl DESCRIPTOR = new DescriptorImpl();
     
 
     /**
      * The CollabNetSecurityRealm Descriptor class.
      */
-    public static final class DescriptorImpl 
-        extends Descriptor<SecurityRealm> {
-        DescriptorImpl() {
+    @Extension
+    public static final class DescriptorImpl extends Descriptor<SecurityRealm> {
+        public DescriptorImpl() {
             super(CollabNetSecurityRealm.class);
         }
 
         /**
          * @return string to display for configuration screen.
          */
+        @Override
         public String getDisplayName() {
             return "CollabNet Security Realm";
         }
@@ -119,29 +110,18 @@ public class CollabNetSecurityRealm extends SecurityRealm {
         /**
          * Form validation for the CollabNet URL.
          *
-         * @param req StaplerRequest which contains parameters from 
-         *            the config.jelly.
-         * @param rsp contains http response data (unused).
-         * @throws IOException
-         * @throws ServletException
+         * @param value url
          */
-        public void doCollabNetUrlCheck(StaplerRequest req, 
-                                        StaplerResponse rsp) 
-            throws IOException, ServletException {
-            new FormFieldValidator(req,rsp,true) {
-                protected void check() throws IOException, ServletException {  
-                    String collabNetUrl = request.getParameter("value");
-                    if (collabNetUrl == null || collabNetUrl.equals("")) {
-                        error("The CollabNet URL is required.");
-                        return;
-                    }
-                    if (!checkSoapUrl(collabNetUrl)) {
-                        error("Invalid CollabNet URL.");
-                        return;
-                    }
-                    ok();           
-                }
-            }.process();
+        public FormValidation doCollabNetUrlCheck(@QueryParameter String value) {
+            if (!Hudson.getInstance().hasPermission(Hudson.ADMINISTER)) return FormValidation.ok();
+            String collabNetUrl = value;
+            if (collabNetUrl == null || collabNetUrl.equals("")) {
+                return FormValidation.error("The CollabNet URL is required.");
+            }
+            if (!checkSoapUrl(collabNetUrl)) {
+                return FormValidation.error("Invalid CollabNet URL.");
+            }
+            return FormValidation.ok();
         }
         
         /**

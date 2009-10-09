@@ -26,7 +26,7 @@ public class BuildCompleteListener <R extends Run> extends RunListener<R> {
     }
 
     public void waitForBuildToComplete(int max_wait) {
-        this.register();
+        RunListener.all().add(this);
         synchronized(this) {
             // check that the build is not already complete
             Run lastRun = this.job.getLastCompletedBuild();

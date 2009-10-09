@@ -10,13 +10,12 @@ import com.gargoylesoftware.htmlunit.html.HtmlForm;
 import com.gargoylesoftware.htmlunit.html.HtmlPage;
 
 import hudson.model.AbstractBuild;
-import hudson.model.AbstractProject;
 import hudson.model.Descriptor;
 import hudson.model.Project;
+import hudson.model.TaskListener;
 import hudson.tasks.Builder;
 import hudson.tasks.Shell;
 import hudson.util.DescribableList;
-import hudson.util.DescriptorList;
 
 import hudson.plugins.collabnet.util.CommonUtil;
 import hudson.plugins.collabnet.util.CNHudsonUtil;
@@ -61,8 +60,6 @@ public class TrackerTest extends HudsonTestCase {
     @Override
     public void setUp() throws Exception {
         super.setUp();
-        TrackerPlugin tp = new TrackerPlugin();
-        tp.start();
         this.job = this.createFreeStyleProject();
         HtmlPage configurePage = setupPageForTracker();
         this.submitForm(configurePage, HudsonConstants.CONFIGURE_FORM_NAME);
@@ -121,7 +118,7 @@ public class TrackerTest extends HudsonTestCase {
     }
 
     private ArtifactSoapDO getArtifact(AbstractBuild build) throws Exception {
-        String title = CommonUtil.getInterpreted(build.getEnvVars(), 
+        String title = CommonUtil.getInterpreted(build.getEnvironment(TaskListener.NULL),
                                                  ISSUE_TITLE);
         CollabNetApp cna = CNHudsonUtil.getCollabNetApp(CN_URL, TEST_USER, 
                                                         TEST_PW);

@@ -10,13 +10,10 @@ import com.gargoylesoftware.htmlunit.html.HtmlTextInput;
 import hudson.model.FreeStyleBuild;
 import hudson.model.FreeStyleProject;
 
-import hudson.plugins.collabnet.auth.AuthPlugin;
 import hudson.plugins.collabnet.util.BuildCompleteListener;
 import hudson.plugins.collabnet.util.HudsonConstants;
 import hudson.plugins.collabnet.util.Util;
 import hudson.plugins.collabnet.util.WithLocalPlugin;
-
-import java.util.List;
 
 import org.jvnet.hudson.test.HudsonTestCase;
 
@@ -41,8 +38,6 @@ public class ProjectAuthTest extends HudsonTestCase {
     @Override
     protected void setUp() throws Exception {
         super.setUp();
-        AuthPlugin auth = new AuthPlugin();
-        auth.start();
         HtmlPage configurePage = new WebClient().goTo(HudsonConstants.
                                                       CONFIGURE_PAGE);
         configurePage = (HtmlPage) AuthnTest.
