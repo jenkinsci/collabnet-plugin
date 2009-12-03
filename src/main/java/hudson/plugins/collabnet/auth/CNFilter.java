@@ -52,14 +52,19 @@ public class CNFilter implements Filter {
         Authentication auth = Hudson.getAuthentication();
         // check if we're in the CollabNetSecurity Realm
         SecurityRealm securityRealm = Hudson.getInstance().getSecurityRealm();
+        Boolean ssoDisabled = Boolean.TRUE;
+        if (securityRealm instanceof CollabNetSecurityRealm) {
+            ssoDisabled = ((CollabNetSecurityRealm) securityRealm)
+                .getSsoDisabled();
+        }
         if (Hudson.getInstance().isUseSecurity() && 
             (!auth.isAuthenticated() || 
              auth.getPrincipal().equals("anonymous")) 
-            && securityRealm instanceof CollabNetSecurityRealm) {
-            this.attemptSFLogin((CollabNetSecurityRealm)securityRealm, 
+            && !ssoDisabled) {
+            this.attemptSFLogin((CollabNetSecurityRealm)securityRealm,
                                 request, response);
         } else if (Hudson.getInstance().isUseSecurity() && 
-                   securityRealm instanceof CollabNetSecurityRealm &&
+                   !ssoDisabled &&
                    auth instanceof CNAuthentication &&
                    !((CNAuthentication) auth).isCNAuthed()) {
             this.doSFAuth((CNAuthentication) auth, 
@@ -108,7 +113,7 @@ public class CNFilter implements Filter {
                            re.getMessage());
             }
         } 
-    }
+    }    
     
     /**
      * Redirect to the CollabNet Server to login there, and then 

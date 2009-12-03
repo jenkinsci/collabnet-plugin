@@ -28,13 +28,19 @@ import com.collabnet.ce.webservices.CollabNetApp;
 
 public class CollabNetSecurityRealm extends SecurityRealm {
     private String collabNetUrl;
+    private Boolean ssoDisabled = Boolean.FALSE;
 
-    public CollabNetSecurityRealm(String collabNetUrl) {
+    public CollabNetSecurityRealm(String collabNetUrl, Boolean ssoDisabled) {
         this.collabNetUrl = collabNetUrl;
+        this.ssoDisabled = ssoDisabled;
     }
 
     public String getCollabNetUrl() {
         return this.collabNetUrl;
+    }
+
+    public Boolean getSsoDisabled() {
+        return this.ssoDisabled;
     }
 
     @Override
@@ -104,7 +110,9 @@ public class CollabNetSecurityRealm extends SecurityRealm {
                                                   JSONObject formData) 
             throws FormException {
             return new CollabNetSecurityRealm((String)formData.
-                                              get("collabneturl"));
+                                              get("collabneturl"),
+                                              (Boolean)formData.
+                                              get("ssodisabled"));
         }
 
         /**

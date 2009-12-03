@@ -12,5 +12,10 @@
        'collabNetUrlCheck?value=' + escape(this.value)" 
      onchange="authentication_update(escape(this.value));"/>
   </f:entry>
+  <f:entry title="Disable Single Sign-On" 
+     help="${rootHelpURL}/help-disableSSO.html">
+    <f:checkbox name="cnauth.ssodisabled" 
+       checked="${instance.getSsoDisabled()}"/>
+  </f:entry>
 
 </j:jelly>
