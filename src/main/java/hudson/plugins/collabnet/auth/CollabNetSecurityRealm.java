@@ -13,7 +13,6 @@ import java.io.IOException;
 
 import javax.servlet.Filter;
 import javax.servlet.FilterConfig;
-import javax.servlet.ServletException;
 
 import net.sf.json.JSONObject;
 
@@ -28,19 +27,37 @@ import com.collabnet.ce.webservices.CollabNetApp;
 
 public class CollabNetSecurityRealm extends SecurityRealm {
     private String collabNetUrl;
-    private Boolean ssoDisabled = Boolean.FALSE;
 
-    public CollabNetSecurityRealm(String collabNetUrl, Boolean ssoDisabled) {
+    /* viewing hudson page from CTF linked app should login to hudson */
+    private boolean mEnableSSOAuthFromCTF;
+
+    /* logging in to hudson should login to CTF */
+    private boolean mEnableSSOAuthToCTF;
+
+    public CollabNetSecurityRealm(String collabNetUrl, Boolean enableAuthFromCTF, Boolean enableAuthToCTF) {
         this.collabNetUrl = collabNetUrl;
-        this.ssoDisabled = ssoDisabled;
+        this.mEnableSSOAuthFromCTF = Boolean.TRUE.equals(enableAuthFromCTF);
+        this.mEnableSSOAuthToCTF = Boolean.TRUE.equals(enableAuthToCTF);
     }
 
     public String getCollabNetUrl() {
         return this.collabNetUrl;
     }
 
-    public Boolean getSsoDisabled() {
-        return this.ssoDisabled;
+    /**
+     * Single sign on preference governing making hudson read CTF's SSO token
+     * @return true to enable
+     */
+    public boolean getEnableSSOAuthFromCTF() {
+        return mEnableSSOAuthFromCTF;
+    }
+
+    /**
+     * Single sign on preference governing making hudson login to CTF upon authenticating
+     * @return true to enable
+     */
+    public boolean getEnableSSOAuthToCTF() {
+        return mEnableSSOAuthToCTF;
     }
 
     @Override
@@ -65,7 +82,6 @@ public class CollabNetSecurityRealm extends SecurityRealm {
         WebApplicationContext context = builder.createApplicationContext();
         return (Filter) context.getBean("filter");
     }
-    
 
     /**
      * The CollabNetSecurityRealm Descriptor class.
@@ -109,10 +125,10 @@ public class CollabNetSecurityRealm extends SecurityRealm {
         public CollabNetSecurityRealm newInstance(StaplerRequest req, 
                                                   JSONObject formData) 
             throws FormException {
-            return new CollabNetSecurityRealm((String)formData.
-                                              get("collabneturl"),
-                                              (Boolean)formData.
-                                              get("ssodisabled"));
+            return new CollabNetSecurityRealm(
+                (String)formData.get("collabneturl"),
+                (Boolean)formData.get("enablessofrom"),
+                (Boolean)formData.get("enablessoto"));
         }
 
         /**

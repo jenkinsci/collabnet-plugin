@@ -41,39 +41,37 @@ public class CNFilter implements Filter {
      * 2. If we have not yet logged into the CollabNet server, redirect
      *    to the CollabNet server and login.
      *
-     * @param request
-     * @param reponse
+     * @param request the servlet request
+     * @param response the servlet response
      * @param chain remaining filters to handle.
      */
-    public void doFilter(ServletRequest request, ServletResponse response, 
-                         FilterChain chain) throws IOException, 
-                                                   ServletException {
+    public void doFilter(ServletRequest request, ServletResponse response,
+                         FilterChain chain) throws IOException, ServletException {
+
         // check if we're already authenticated
         Authentication auth = Hudson.getAuthentication();
         // check if we're in the CollabNetSecurity Realm
         SecurityRealm securityRealm = Hudson.getInstance().getSecurityRealm();
-        Boolean ssoDisabled = Boolean.TRUE;
+        boolean enableSSOFromCTF = false;
+        boolean enableSSOToCTF = false;
         if (securityRealm instanceof CollabNetSecurityRealm) {
-            ssoDisabled = ((CollabNetSecurityRealm) securityRealm)
-                .getSsoDisabled();
+            CollabNetSecurityRealm cnRealm = (CollabNetSecurityRealm) securityRealm;
+            enableSSOFromCTF = cnRealm.getEnableSSOAuthFromCTF();
+            enableSSOToCTF = cnRealm.getEnableSSOAuthToCTF();
         }
-        if (Hudson.getInstance().isUseSecurity() && 
-            (!auth.isAuthenticated() || 
-             auth.getPrincipal().equals("anonymous")) 
-            && !ssoDisabled) {
-            this.attemptSFLogin((CollabNetSecurityRealm)securityRealm,
-                                request, response);
-        } else if (Hudson.getInstance().isUseSecurity() && 
-                   !ssoDisabled &&
-                   auth instanceof CNAuthentication &&
-                   !((CNAuthentication) auth).isCNAuthed()) {
-            this.doSFAuth((CNAuthentication) auth, 
-                          (CollabNetSecurityRealm)securityRealm,
-                          (HttpServletRequest) request, 
-                          (HttpServletResponse) response, chain);
-            return;            
-        } 
- 
+
+        if (Hudson.getInstance().isUseSecurity()) {
+            if (enableSSOFromCTF && (!auth.isAuthenticated() || auth.getPrincipal().equals("anonymous"))) {
+                loginHudsonUsingCTFSSO((CollabNetSecurityRealm)securityRealm, (HttpServletRequest) request);
+            } else if (enableSSOToCTF && auth instanceof CNAuthentication) {
+                CNAuthentication cnauth = (CNAuthentication) auth;
+                if (!cnauth.isCNAuthed()) {
+                    loginToCTF(cnauth, (CollabNetSecurityRealm)securityRealm,
+                        (HttpServletRequest) request, (HttpServletResponse) response);
+                    return;
+                }
+            }
+        }
         chain.doFilter(request, response);
     }
 
@@ -86,13 +84,10 @@ public class CNFilter implements Filter {
      * The token is a one-time token that can be used to initiate a SOAP
      * session and set authentication.
      *
-     * @param securityRealm
-     * @param request
-     * @param response
+     * @param securityRealm the security realm
+     * @param request the huttp servlet reuqest
      */
-    private void attemptSFLogin(CollabNetSecurityRealm securityRealm, 
-                                ServletRequest request, 
-                                ServletResponse response) {
+    private void loginHudsonUsingCTFSSO(CollabNetSecurityRealm securityRealm, HttpServletRequest request) {
         String url = securityRealm.getCollabNetUrl();
         String username = request.getParameter("sfUsername");
         String token = request.getParameter("sfLoginToken");
@@ -104,7 +99,7 @@ public class CNFilter implements Filter {
                     new CNAuthentication(username, ca);
                 // ensure that a session exists before we set context in it
                 // see artf42298
-                ((HttpServletRequest)request).getSession(true);
+                request.getSession(true);
                 SecurityContextHolder.getContext().
                     setAuthentication(cnauthentication);
             } catch (RemoteException re) {
@@ -119,38 +114,35 @@ public class CNFilter implements Filter {
      * Redirect to the CollabNet Server to login there, and then 
      * redirect back to our original location.
      *
-     * @param auth
-     * @param securityRealm
-     * @param req
-     * @param rsp
-     * @param chain
+     * @param cnauth the CNAuthentication object
+     * @param securityRealm the security realm
+     * @param request the http request
+     * @param response the http response
      * @throws IOException
      * @throws ServletException
      */
-    private void doSFAuth(CNAuthentication auth, 
-                          CollabNetSecurityRealm securityRealm, 
-                          HttpServletRequest req, HttpServletResponse rsp, 
-                          FilterChain chain) throws IOException, 
-                                                    ServletException {
-        auth.setCNAuthed(true);
-        String reqUrl = getCurrentUrl(req);
+    private void loginToCTF(CNAuthentication cnauth, CollabNetSecurityRealm securityRealm,
+                          HttpServletRequest request, HttpServletResponse response)
+        throws IOException, ServletException {
+
+        cnauth.setCNAuthed(true);
+        String reqUrl = getCurrentUrl(request);
         String collabNetUrl = securityRealm.getCollabNetUrl();
-        String username = (String)auth.getPrincipal();
-        String id = ((CNAuthentication) auth).getSessionId();
+        String username = (String)cnauth.getPrincipal();
+        String id = cnauth.getSessionId();
         String cnauthUrl = collabNetUrl + "/sf/sfmain/do/soapredirect?id=" 
             + URLEncoder.encode(id, "UTF-8") + "&user=" + 
             URLEncoder.encode(username,"UTF-8")+"&redirectUrl=" + 
             URLEncoder.encode(reqUrl,"UTF-8");
 
         // prepare a redirect
-        rsp.setStatus(HttpServletResponse.SC_MOVED_TEMPORARILY);
-        rsp.setHeader("Location", cnauthUrl);
+        response.setStatus(HttpServletResponse.SC_MOVED_TEMPORARILY);
+        response.setHeader("Location", cnauthUrl);
         
     }
 
     /**
      * @param req the servlet request to pull data from, if root url is unset.
-     * @param useReferer if true, use the referer to get the base URL.
      * @return the best guess for the current base URL (i.e. just the scheme,
      *         server, port) plus the contextPath.
      */
@@ -197,5 +189,5 @@ public class CNFilter implements Filter {
         
     // destroy is currently a no-op
     public void destroy() {
-    } 
+    }
 }
