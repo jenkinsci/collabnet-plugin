@@ -2,6 +2,7 @@ package hudson.plugins.collabnet.util;
 
 import com.collabnet.ce.webservices.CollabNetApp;
 import com.collabnet.ce.webservices.FrsApp;
+import com.collabnet.ce.webservices.ScmApp;
 import com.collabnet.ce.webservices.TrackerApp;
 
 import java.io.IOException;
@@ -170,6 +171,43 @@ public abstract class ComboBoxUpdater {
                 }
             }
             return CommonUtil.sanitizeForJS(releases);
+        }
+    }
+
+    /**
+     * Class to update a list of repos.  Requires the login info (url,
+     * username, password) and project be set.
+     */
+    public static class ReposUpdater extends ComboBoxUpdater {
+        
+        public ReposUpdater(StaplerRequest req, StaplerResponse rsp) {
+            super(req, rsp);
+        }
+
+        protected Collection<String> getList() {
+            CollabNetApp cna = CNHudsonUtil.getCollabNetApp(this.request);
+            String project = request.getParameter("project");
+            String projectId = CNHudsonUtil.getProjectId(cna, project);
+            Collection<String> list = getRepoList(cna, projectId);
+            CNHudsonUtil.logoff(cna);
+            return list;
+        }
+
+        /**
+         * @return a list of repos which has been sanitized.
+         */
+        public static Collection<String> getRepoList(CollabNetApp cna, 
+                                                     String projectId) {
+            Collection<String> repos = Collections.emptyList();
+            if (cna != null) {
+                ScmApp sa = new ScmApp(cna);
+                try {
+                    repos = sa.getRepos(projectId);
+                } catch (RemoteException re) {
+                    CommonUtil.logRE(log, "getRepoList", re);
+                }
+            }
+            return CommonUtil.sanitizeForJS(repos);
         }
     }
 

@@ -2,7 +2,9 @@ package hudson.plugins.collabnet.util;
 
 import com.collabnet.ce.webservices.CollabNetApp;
 import com.collabnet.ce.webservices.FrsApp;
+import com.collabnet.ce.webservices.ScmApp;
 import com.collabnet.ce.webservices.TrackerApp;
+import com.collabnet.ce.soap50.webservices.scm.Repository2SoapDO;
 import com.collabnet.ce.soap50.webservices.tracker.ArtifactSoapDO;
 
 import hudson.plugins.collabnet.share.TeamForgeShare;
@@ -146,7 +148,7 @@ public class CNHudsonUtil {
             } catch (RemoteException re) {
                 CommonUtil.logRE(log, "getProjectId", re);
             }
-        }
+        } 
         return projectId;
     }
 
@@ -332,5 +334,80 @@ public class CNHudsonUtil {
             CommonUtil.logRE(log, "userMember", re);
         }
         return member;
+    }
+
+    /**
+     * @param cna for accessing the webservice methods.
+     * @param projectName
+     * @param repoName
+     */
+    public static String getScmViewerUrl(CollabNetApp cna, String projectName, 
+                                         String repoName) {
+        String url = null;
+        Repository2SoapDO repoData = CNHudsonUtil.getRepoData(cna, projectName,
+                                                              repoName);
+        if (repoData != null) {
+            url = repoData.getScmViewerUrl();
+        } 
+        return url;
+    }
+
+    /**
+     * @param cna for accessing the webservice methods.
+     * @param projectName
+     * @param repoName
+     */
+    public static String getSystemId(CollabNetApp cna, String projectName, 
+                                     String repoName) {
+        String systemId = null;
+        Repository2SoapDO repoData = CNHudsonUtil.getRepoData(cna, projectName,
+                                                              repoName);
+        if (repoData != null) {
+            systemId = repoData.getSystemId();
+        }
+        return systemId;
+    }
+    
+    /**
+     * @param cna for accessing the webservice methods.
+     * @param projectName
+     * @param repoName
+     */
+    private static Repository2SoapDO getRepoData(CollabNetApp cna, 
+                                                 String projectName,
+                                                 String repoName) {
+        Repository2SoapDO repoData = null;
+        String projectId = CNHudsonUtil.getProjectId(cna, projectName);
+        if (projectId == null) {
+            return null;
+        }
+        String repoId = CNHudsonUtil.getRepoId(cna, projectId, repoName);
+        if (repoId == null) {
+            return null;
+        }
+        ScmApp sa = new ScmApp(cna);
+        try {
+            repoData = sa.getRepoData(repoId);
+        } catch (RemoteException re) {
+            CommonUtil.logRE(log, "getScmViewerUrl", re);
+        }
+        return repoData;
+    }
+
+    /**
+     * @param cna for accessing the webservice methods.
+     * @param projectId
+     * @param repoName
+     */
+    public static String getRepoId(CollabNetApp cna, String projectId, 
+                                   String repoName) {
+        String repoId = null;
+        ScmApp sa = new ScmApp(cna);
+        try {
+            repoId = sa.getRepoId(projectId, repoName);
+        } catch (RemoteException re) {
+            CommonUtil.logRE(log, "getRepoId", re);
+        }
+        return repoId;
     }
 }

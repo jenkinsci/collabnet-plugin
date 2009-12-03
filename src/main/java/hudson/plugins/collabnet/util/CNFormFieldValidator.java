@@ -340,6 +340,30 @@ public abstract class CNFormFieldValidator {
     }
 
     /**
+     * Class to check that a repo exists.  Expects a StaplerRequest with 
+     * a url, username, password, and project.
+     */
+    public static FormValidation repoCheck(StaplerRequest request) {
+        String project = request.getParameter("project");
+        String repoName = request.getParameter("repo");
+        CollabNetApp cna = CNHudsonUtil.getCollabNetApp(request);
+        String projectId = CNHudsonUtil.getProjectId(cna, project);
+        if (CommonUtil.unset(repoName)) {
+            return FormValidation.error("The repository name is required.");
+        }
+        if (projectId != null) {
+            String repoId = CNHudsonUtil.getRepoId(cna, projectId, repoName);
+            if (repoId == null) {
+                CNHudsonUtil.logoff(cna);
+                return FormValidation.warning("Repository could not be " +
+                                              "found.");
+            }
+        }
+        CNHudsonUtil.logoff(cna);
+        return FormValidation.ok();
+    }
+
+    /**
      * Class to check that a tracker exists.  Expects a StaplerRequest with 
      * a url, username, password, project, and tracker.
      */
