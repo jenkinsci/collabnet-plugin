@@ -82,7 +82,7 @@ public class CNFileRelease extends Notifier {
      * @param password for the logging-in user.
      * @param project where the files will be uploaded.  The project 
      *                contains the package.
-     * @param package where the files will be uploaded.  The package contains 
+     * @param rpackage where the files will be uploaded.  The package contains
      *                the release.
      * @param release where the files will be uploaded.
      * @param overwrite whether or not to overwrite existing files.
@@ -238,7 +238,7 @@ public class CNFileRelease extends Notifier {
         Collection<String> projects = ComboBoxUpdater.ProjectsUpdater
             .getProjectList(cna);
         CNHudsonUtil.logoff(cna);
-        return projects.toArray(new String[0]);
+        return projects.toArray(new String[projects.size()]);
     }
 
     /**
@@ -253,7 +253,7 @@ public class CNFileRelease extends Notifier {
         Collection<String> packages = ComboBoxUpdater.PackagesUpdater
             .getPackageList(cna, projectId);
         CNHudsonUtil.logoff(cna);
-        return packages.toArray(new String[0]);
+        return packages.toArray(new String[packages.size()]);
     }
 
     /**
@@ -268,7 +268,7 @@ public class CNFileRelease extends Notifier {
         Collection<String> releases = ComboBoxUpdater.ReleasesUpdater
             .getReleaseList(cna, packageId);
         CNHudsonUtil.logoff(cna);
-        return releases.toArray(new String[0]);
+        return releases.toArray(new String[releases.size()]);
     }
 
     @Override
@@ -318,7 +318,7 @@ public class CNFileRelease extends Notifier {
     /**
      * Get the ResultAction for this build.
      *
-     * @param success true if successful, false otherwise.
+     * @param numUploaded
      * @return CnfrResultAction.
      */
     public CnfrResultAction createAction(int numUploaded, String releaseId) {
@@ -331,7 +331,7 @@ public class CNFileRelease extends Notifier {
     }
 
     /**
-     * @param releaseId
+     * @param releaseId the release id
      * @return a link to the file release or the collabnet url if we don't
      *         have a releaseId.
      */
@@ -353,7 +353,7 @@ public class CNFileRelease extends Notifier {
     }
 
     /** 
-     * @param filePath path to uploaded frs file.
+     * @param path path to uploaded frs file.
      * @return url to uploaded frs file.
      */
     private String getFileUrl(String path) {
@@ -367,6 +367,8 @@ public class CNFileRelease extends Notifier {
      * @param build current Hudson build.
      * @param releaseId where the files will be uploaded.
      * @return the number of files successfully uploaded.
+     * @throws IOException
+     * @throws InterruptedException
      */
     public int uploadFiles(AbstractBuild<?, ?> build,
             final String releaseId) throws IOException, InterruptedException {
@@ -443,7 +445,8 @@ public class CNFileRelease extends Notifier {
                     this.log("upload file", re);
                 } catch (IOException ioe) {
                     this.log("Could not upload file due to IOException: " 
-                             + ioe.getMessage());
+                             + ioe.toString());
+                    ioe.printStackTrace(this.listener.error("error"));
                 } catch (InterruptedException ie) {
                     this.log("Could not upload file due to " +
                              "InterruptedException: " + ie.getMessage());
@@ -747,6 +750,7 @@ public class CNFileRelease extends Notifier {
          * Form validation for the CollabNet URL.
          *
          * @param value url
+         * @return the form validation
          */
         public FormValidation doCollabNetUrlCheck(@QueryParameter String value) {
             return CNFormFieldValidator.soapUrlCheck(value);
@@ -756,6 +760,7 @@ public class CNFileRelease extends Notifier {
          * Check that a password is present and allows login.
          *
          * @param req contains parameters from the config.jelly.
+         * @return the form validation
          */
         public FormValidation doPasswordCheck(StaplerRequest req) {
             return CNFormFieldValidator.loginCheck(req);
@@ -765,6 +770,7 @@ public class CNFileRelease extends Notifier {
          * Form validation for the project field.
          *
          * @param req contains parameters from the config.jelly.
+         * @return the form validation
          */
         public FormValidation doProjectCheck(StaplerRequest req) {
             return CNFormFieldValidator.projectCheck(req);
@@ -775,6 +781,7 @@ public class CNFileRelease extends Notifier {
          *
          * @param value
          * @param name of field
+         * @return the form validation
          */
         public FormValidation doRequiredCheck(
                 @QueryParameter String value, @QueryParameter String name) {
@@ -785,6 +792,7 @@ public class CNFileRelease extends Notifier {
          * Form validation for package.
          *
          * @param req StaplerRequest which contains parameters from the config.jelly.
+         * @return the form validation
          */
         public FormValidation doPackageCheck(StaplerRequest req) {
             return CNFormFieldValidator.packageCheck(req);
@@ -794,6 +802,7 @@ public class CNFileRelease extends Notifier {
          * Form validation for release.
          *
          * @param req StaplerRequest which contains parameters from the config.jelly.
+         * @return the form validation
          */
         public FormValidation doReleaseCheck(StaplerRequest req) {
             return CNFormFieldValidator.releaseCheck(req);
@@ -804,6 +813,7 @@ public class CNFileRelease extends Notifier {
          *
          * @param value
          * @param name of field
+         * @return the form validation
          */
         public FormValidation doUnRequiredInterpretedCheck(
                 @QueryParameter String value, @QueryParameter String name) {
