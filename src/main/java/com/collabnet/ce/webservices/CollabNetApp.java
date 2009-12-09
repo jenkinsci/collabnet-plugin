@@ -43,8 +43,9 @@ public class CollabNetApp {
      * @param url of the CollabNet server.
      * @param username to login as.
      * @param password to login with.
+     * @throws RemoteException if we fail to login with the username/password
      */
-    public CollabNetApp(String url, String username, String password) 
+    public CollabNetApp(String url, String username, String password)
         throws RemoteException {
         this.url = url;
         this.username = username;
@@ -143,6 +144,15 @@ public class CollabNetApp {
      */
     public static String getApiVersion(String url) throws RemoteException {
         return getICollabNetSoap(url).getApiVersion();
+    }
+
+    /**
+     * @return the api version number string for CTF.
+     *
+     * @throws RemoteException if the call fails for some unknown reason
+     */
+    public String getApiVersion() throws RemoteException {
+        return this.icns.getApiVersion();
     }
 
     /**
@@ -312,7 +322,7 @@ public class CollabNetApp {
     /**
      * Get the usernames of all users.
      *
-     * @param String projectId
+     * @param projectId the project id
      * @return collection of usernames
      * @throws RemoteException
      */
@@ -331,7 +341,7 @@ public class CollabNetApp {
     /**
      * Get the usernames of all project admins.
      *
-     * @param String projectId
+     * @param projectId the project id
      * @return collection of admin usernames
      * @throws RemoteException
      */
@@ -370,7 +380,7 @@ public class CollabNetApp {
      * no error is thrown.
      * Only works for SuperUsers.
      *
-     * @param groups collection of group names.
+     * @param groupNames collection of group names.
      * @return a collection of user names.
      * @throws RemoteException
      */
@@ -409,8 +419,6 @@ public class CollabNetApp {
     
     /**
      * Throws a CollabNetAppException if there is no current sessionId.
-     *
-     * @throws CollabNetAppException.
      */
     public void checkValidSessionId() {
         if (this.sessionId == null) {

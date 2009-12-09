@@ -1,34 +1,26 @@
 package hudson.plugins.collabnet.browser;
 
 import com.collabnet.ce.webservices.CollabNetApp;
-
-import java.io.IOException;
-import java.net.URL;
-import java.net.MalformedURLException;
-import java.util.Collection;
-
-import javax.servlet.ServletException;
-
 import hudson.Extension;
 import hudson.model.Descriptor;
-import hudson.scm.RepositoryBrowser;
-import hudson.scm.SubversionChangeLogSet;
-import hudson.scm.SubversionRepositoryBrowser;
-import hudson.util.FormValidation;
-
 import hudson.plugins.collabnet.share.TeamForgeShare;
 import hudson.plugins.collabnet.util.CNFormFieldValidator;
 import hudson.plugins.collabnet.util.CNHudsonUtil;
 import hudson.plugins.collabnet.util.ComboBoxUpdater;
-
-import java.util.logging.Logger;
-
-import net.sf.json.JSONObject;
-
+import hudson.scm.RepositoryBrowser;
+import hudson.scm.SubversionChangeLogSet;
+import hudson.scm.SubversionRepositoryBrowser;
+import hudson.util.FormValidation;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.StaplerResponse;
+
+import javax.servlet.ServletException;
+import java.io.IOException;
+import java.net.URL;
+import java.util.Collection;
+import java.util.logging.Logger;
 
 public class TeamForge extends SubversionRepositoryBrowser {
     private static Logger log = Logger.getLogger("TeamForge");
@@ -210,11 +202,15 @@ public class TeamForge extends SubversionRepositoryBrowser {
         throws IOException {
         int revision = changeSet.getRevision();
         StringBuffer link = new StringBuffer(this.getViewerUrl())
-            .append("&view=revision&system=")
+            .append("?view=revision&system=")
             .append(this.getSystemId()).append("&revision=").append(revision);
         return new URL(link.toString());
     }
 
+    /**
+     * Get the viewer url to display to the user.
+     * @return the viewer url
+     */
     private String getViewerUrl() {
         CollabNetApp cna = CNHudsonUtil.getCollabNetApp(this.getCollabNetUrl(), 
                                                         this.getUsername(), 
@@ -267,11 +263,9 @@ public class TeamForge extends SubversionRepositoryBrowser {
         /**
          * Form validation for the CollabNet URL.
          *
-         * @param req StaplerRequest which contains parameters from 
-         *            the config.jelly.
+         * @param value the value
          */
-        public FormValidation 
-            doCollabNetUrlCheck(@QueryParameter String value) {
+        public FormValidation doCollabNetUrlCheck(@QueryParameter String value) {
             return CNFormFieldValidator.soapUrlCheck(value);
         }
 

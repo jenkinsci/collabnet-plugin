@@ -7,11 +7,15 @@ import com.collabnet.ce.webservices.TrackerApp;
 import com.collabnet.ce.soap50.webservices.scm.Repository2SoapDO;
 import com.collabnet.ce.soap50.webservices.tracker.ArtifactSoapDO;
 
+import hudson.model.Hudson;
+import hudson.plugins.collabnet.auth.CollabNetSecurityRealm;
 import hudson.plugins.collabnet.share.TeamForgeShare;
 
 import java.rmi.RemoteException;
 import java.util.logging.Logger;
 
+import hudson.security.SecurityRealm;
+import org.acegisecurity.Authentication;
 import org.kohsuke.stapler.StaplerRequest;
 
 /**
@@ -113,7 +117,7 @@ public class CNHudsonUtil {
     /**
      * Get the packageId for the package name.
      *
-     * @param fa for accessing the FileReleaseSystem webservices.
+     * @param cna the collab net app instance to use
      * @param rpackage name of the package.
      * @param projectId the project id.
      * @return the package id if found, null otherwise.
@@ -338,17 +342,39 @@ public class CNHudsonUtil {
 
     /**
      * @param cna for accessing the webservice methods.
-     * @param projectName
-     * @param repoName
+     * @param projectName name of the project
+     * @param repoName name of the repository
      */
     public static String getScmViewerUrl(CollabNetApp cna, String projectName, 
                                          String repoName) {
         String url = null;
         Repository2SoapDO repoData = CNHudsonUtil.getRepoData(cna, projectName,
                                                               repoName);
-        if (repoData != null) {
-            url = repoData.getScmViewerUrl();
-        } 
+        String apiVersion = null;
+        try {
+            apiVersion = cna.getApiVersion();
+        } catch (RemoteException re) {
+            CommonUtil.logRE(log, "getScmViewerUrl", re);
+        }
+
+        if (apiVersion != null && apiVersion.startsWith("5.3.")) {
+            // starting with CTF 5.3, you can use the new viewRepositorySource method that will work with SSO
+            SecurityRealm securityRealm = Hudson.getInstance().getSecurityRealm();
+            if (securityRealm instanceof CollabNetSecurityRealm) {
+                CollabNetSecurityRealm cnRealm = (CollabNetSecurityRealm) securityRealm;
+                url = cnRealm.getCollabNetUrl();
+            }
+
+            if (repoData != null) {
+                url = url + "/sf/scm/do/viewRepositorySource/" + repoData.getPath();
+            }
+        } else {
+            // use the defined scm viewer url if repo is available
+            if (repoData != null) {
+                url = repoData.getScmViewerUrl();
+            }
+        }
+
         return url;
     }
 
