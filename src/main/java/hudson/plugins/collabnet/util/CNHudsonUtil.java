@@ -1,22 +1,19 @@
 package hudson.plugins.collabnet.util;
 
+import com.collabnet.ce.soap50.webservices.scm.Repository2SoapDO;
+import com.collabnet.ce.soap50.webservices.tracker.ArtifactSoapDO;
 import com.collabnet.ce.webservices.CollabNetApp;
 import com.collabnet.ce.webservices.FrsApp;
 import com.collabnet.ce.webservices.ScmApp;
 import com.collabnet.ce.webservices.TrackerApp;
-import com.collabnet.ce.soap50.webservices.scm.Repository2SoapDO;
-import com.collabnet.ce.soap50.webservices.tracker.ArtifactSoapDO;
-
 import hudson.model.Hudson;
 import hudson.plugins.collabnet.auth.CollabNetSecurityRealm;
 import hudson.plugins.collabnet.share.TeamForgeShare;
+import hudson.security.SecurityRealm;
+import org.kohsuke.stapler.StaplerRequest;
 
 import java.rmi.RemoteException;
 import java.util.logging.Logger;
-
-import hudson.security.SecurityRealm;
-import org.acegisecurity.Authentication;
-import org.kohsuke.stapler.StaplerRequest;
 
 /**
  * Class for methods that are useful across Hudson plugins.
@@ -348,16 +345,16 @@ public class CNHudsonUtil {
     public static String getScmViewerUrl(CollabNetApp cna, String projectName, 
                                          String repoName) {
         String url = null;
-        Repository2SoapDO repoData = CNHudsonUtil.getRepoData(cna, projectName,
-                                                              repoName);
-        String apiVersion = null;
+        Repository2SoapDO repoData = CNHudsonUtil.getRepoData(cna, projectName, repoName);
+
+        int apiVersion[] = null;
         try {
-            apiVersion = cna.getApiVersion();
+            apiVersion = getVersionArray(cna.getApiVersion());
         } catch (RemoteException re) {
             CommonUtil.logRE(log, "getScmViewerUrl", re);
         }
 
-        if (apiVersion != null && apiVersion.startsWith("5.3.")) {
+        if (isSupportedVersion(new int[] {5, 3, 0, 0}, new int[] {6, 0, 0, 0}, apiVersion)) {
             // starting with CTF 5.3, you can use the new viewRepositorySource method that will work with SSO
             SecurityRealm securityRealm = Hudson.getInstance().getSecurityRealm();
             if (securityRealm instanceof CollabNetSecurityRealm) {
@@ -376,6 +373,77 @@ public class CNHudsonUtil {
         }
 
         return url;
+    }
+
+    /**
+     *
+     * @param apiVersionStr
+     * @return
+     */
+    private static int[] getVersionArray(String apiVersionStr) {
+        int[] versionNums = null;
+        if (apiVersionStr != null) {
+            String[] versionArr = apiVersionStr.split("\\.");
+            versionNums = new int[versionArr.length];
+            for (int i = 0; i < versionArr.length; i++) {
+                versionNums[i] = Integer.parseInt(versionArr[i]);
+            }
+        }
+        return versionNums;
+    }
+
+    /**
+     * Check if the actual version is within the range of the start/end support version
+     * @param startSupportVersion the start version, inclusive. null to ignore check.
+     * @param endSupportVersion the ending version, not inclusive. null to ignore check.
+     * @param actualVersion the actual version
+     * @return true if actual version is between start version (inclusive) and end version (non inclusive)
+     */
+    private static boolean isSupportedVersion(int[] startSupportVersion, int[] endSupportVersion, int[] actualVersion) {
+        if (actualVersion == null || actualVersion.length != 4) {
+            log.warning("Unable to determine api version: isSupportedVersion returning false");
+            return false;
+        }
+
+        if (startSupportVersion != null) {
+            if (startSupportVersion.length != 4) {
+                return false;
+            }
+            if (compareVersion(actualVersion, startSupportVersion) == -1) {
+                // means actual version is before the start support version
+                return false;
+            }
+        }
+
+        if (endSupportVersion != null) {
+            if (endSupportVersion.length != 4) {
+                return false;
+            }
+            if (compareVersion(actualVersion, endSupportVersion) != -1) {
+                // means actual version is either after or the same as endSupport version
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * Compare two equal length version array
+     * @param version1 first version
+     * @param version2 second version
+     * @return -1 if version1 is less than version2, 0 if they are the same, and 1 if version1 is greater than version2
+     */
+    private static int compareVersion(int[] version1, int[] version2) {
+        for (int i=0; i < version1.length; i++) {
+            int v1 = version1[i];
+            int v2 = version2[i];
+            if (v1 > v2) {
+                return 1;
+            } else if (v1 < v2) {
+                return -1;
+            }
+        }
+        return 0;
     }
 
     /**
