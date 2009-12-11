@@ -32,6 +32,7 @@ import hudson.plugins.promoted_builds.Promotion;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.Serializable;
 import java.rmi.RemoteException;
 import java.util.Collection;
 import java.util.Map;
@@ -50,7 +51,7 @@ import org.kohsuke.stapler.StaplerResponse;
  * Hudson plugin to update files from the Hudson workspace 
  * to the CollabNet File Release System.
  */
-public class CNFileRelease extends Notifier {
+public class CNFileRelease extends Notifier implements Serializable {
     // listener is used for logging and will only be
     // set at the beginning of perform.
     private transient BuildListener listener = null;
@@ -373,7 +374,6 @@ public class CNFileRelease extends Notifier {
     public int uploadFiles(AbstractBuild<?, ?> build,
             final String releaseId) throws IOException, InterruptedException {
         int numUploaded = 0;
-        final FileStorageApp sfsa = new FileStorageApp(this.cna);
         final FrsApp fa = new FrsApp(this.cna);
         this.log("Uploading file to project '" + this.getProject() + 
                  "', package '" + this.getPackage() + "', release '" + 
@@ -423,23 +423,23 @@ public class CNFileRelease extends Notifier {
                     }
                 }
                 try {
-                    String path = uploadFilePath.
-                        act(new FileCallable<String>() {
-                            @Override
-                            public String invoke(File f, 
-                                                 VirtualChannel channel) 
-                            throws IOException, RemoteException {
-                                String fileId = sfsa.uploadFile(f);
-                                FrsFileSoapDO fileSoap = fa.
-                                createFrsFile(releaseId, 
-                                              f.getName(), 
-                                              CNFileRelease.getMimeType(f), 
-                                              fileId);
-                                return fileSoap.getPath();
-                            }
-                        });
-                    this.log("Uploaded file " + uploadFilePath.getName() + 
-                             " -> " + this.getFileUrl(path));
+                    final String url = getCollabNetUrl();
+                    final String username = getUsername();
+                    final String password = getPassword();
+                    String path = uploadFilePath.act(new FileCallable<String>() {
+                        @Override
+                        public String invoke(File f, VirtualChannel channel)
+                            throws IOException {
+                            CollabNetApp cnApp = CNHudsonUtil.getCollabNetApp(url, username, password);
+                            FileStorageApp fsApp = new FileStorageApp(cnApp);
+                            FrsApp frsApp = new FrsApp(cnApp);
+                            String fileId = fsApp.uploadFile(f);
+                            FrsFileSoapDO fileSoap = frsApp.createFrsFile(releaseId, f.getName(),
+                                CNFileRelease.getMimeType(f), fileId);
+                            return fileSoap.getPath();
+                        }
+                    });
+                    this.log("Uploaded file " + uploadFilePath.getName() + " -> " + this.getFileUrl(path));
                     numUploaded++;
                 } catch (RemoteException re) {
                     this.log("upload file", re);
