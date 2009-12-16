@@ -5,6 +5,7 @@ import groovy.lang.Binding;
 import hudson.Extension;
 import hudson.model.Descriptor;
 import hudson.model.Hudson;
+import hudson.plugins.collabnet.util.CNHudsonUtil;
 import hudson.security.SecurityRealm;
 import hudson.util.FormValidation;
 import hudson.util.spring.BeanBuilder;
@@ -35,7 +36,7 @@ public class CollabNetSecurityRealm extends SecurityRealm {
     private boolean mEnableSSOAuthToCTF;
 
     public CollabNetSecurityRealm(String collabNetUrl, Boolean enableAuthFromCTF, Boolean enableAuthToCTF) {
-        this.collabNetUrl = collabNetUrl;
+        this.collabNetUrl = CNHudsonUtil.sanitizeCollabNetUrl(collabNetUrl);
         this.mEnableSSOAuthFromCTF = Boolean.TRUE.equals(enableAuthFromCTF);
         this.mEnableSSOAuthToCTF = Boolean.TRUE.equals(enableAuthToCTF);
     }

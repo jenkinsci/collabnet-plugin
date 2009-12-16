@@ -95,7 +95,7 @@ public class CNFileRelease extends Notifier implements Serializable {
                          String project, String rpackage, String release, 
                          boolean overwrite, String[] filePatterns, 
                          boolean override_auth) {
-        this.url = url;
+        this.url = CNHudsonUtil.sanitizeCollabNetUrl(url);
         this.username = username;
         this.password = password;
         this.project = project;

@@ -339,39 +339,32 @@ public class CNHudsonUtil {
 
     /**
      * @param cna for accessing the webservice methods.
+     * @param collabnetUrl the collabnet url
      * @param projectName name of the project
      * @param repoName name of the repository
+     * @return the scm viewer url
      */
-    public static String getScmViewerUrl(CollabNetApp cna, String projectName, 
-                                         String repoName) {
+    public static String getScmViewerUrl(CollabNetApp cna, String collabnetUrl, String projectName, String repoName) {
         String url = null;
         Repository2SoapDO repoData = CNHudsonUtil.getRepoData(cna, projectName, repoName);
+        if (repoData != null) {
+            // normally, just use the defined scm viewer url
+            url = repoData.getScmViewerUrl();
 
-        int apiVersion[] = null;
-        try {
-            apiVersion = getVersionArray(cna.getApiVersion());
-        } catch (RemoteException re) {
-            CommonUtil.logRE(log, "getScmViewerUrl", re);
-        }
+            if (cna != null) {
+                int apiVersion[] = null;
+                try {
+                    apiVersion = getVersionArray(cna.getApiVersion());
+                } catch (RemoteException re) {
+                    CommonUtil.logRE(log, "getScmViewerUrl", re);
+                }
 
-        if (isSupportedVersion(new int[] {5, 3, 0, 0}, new int[] {6, 0, 0, 0}, apiVersion)) {
-            // starting with CTF 5.3, you can use the new viewRepositorySource method that will work with SSO
-            SecurityRealm securityRealm = Hudson.getInstance().getSecurityRealm();
-            if (securityRealm instanceof CollabNetSecurityRealm) {
-                CollabNetSecurityRealm cnRealm = (CollabNetSecurityRealm) securityRealm;
-                url = cnRealm.getCollabNetUrl();
-            }
-
-            if (repoData != null) {
-                url = url + "/sf/scm/do/viewRepositorySource/" + repoData.getPath();
-            }
-        } else {
-            // use the defined scm viewer url if repo is available
-            if (repoData != null) {
-                url = repoData.getScmViewerUrl();
+                if (isSupportedVersion(new int[] {5, 3, 0, 0}, new int[] {6, 0, 0, 0}, apiVersion)) {
+                    // starting with CTF 5.3, you can use the new viewRepositorySource method that does auth for viewvc
+                    url = collabnetUrl + "/sf/scm/do/viewRepositorySource/" + repoData.getPath();
+                }
             }
         }
-
         return url;
     }
 
@@ -503,5 +496,18 @@ public class CNHudsonUtil {
             CommonUtil.logRE(log, "getRepoId", re);
         }
         return repoId;
+    }
+
+    /**
+     * Sanitizes a CollabNet url and make it appropriate to be used by this plugin.
+     * @param url original url
+     * @return sanitized collabnet url
+     */
+    public static String sanitizeCollabNetUrl(String url) {
+        // strip the trailing "/" from the collabnet url, as this causes browser to log off session (artf51846)
+        if (url != null && url.endsWith("/")) {
+            url = url.substring(0, url.length() - 1);
+        }
+        return url;
     }
 }

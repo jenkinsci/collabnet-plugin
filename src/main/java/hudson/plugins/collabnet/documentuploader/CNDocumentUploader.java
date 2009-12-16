@@ -88,7 +88,7 @@ public class CNDocumentUploader extends Notifier {
                               String project, String uploadPath, 
                               String description, String[] filePatterns,
                               boolean includeBuildLog, boolean override_auth) {
-        this.url = url;
+        this.url = CNHudsonUtil.sanitizeCollabNetUrl(url);
         this.username = username;
         this.password = password;
         this.project = project;

@@ -98,7 +98,7 @@ public class CNTracker extends Notifier {
                      String release, boolean override_auth) {
         this.username = username;
         this.password = password;
-        this.collabNetUrl = collabNetUrl;
+        this.collabNetUrl = CNHudsonUtil.sanitizeCollabNetUrl(collabNetUrl);
         this.project = project;
         this.tracker = tracker;
         this.title = title;

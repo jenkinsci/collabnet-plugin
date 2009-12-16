@@ -52,7 +52,7 @@ public class TeamForge extends SubversionRepositoryBrowser {
                 this.overrideAuth = false;
             } else {
                 this.overrideAuth = true;
-                this.collabneturl = collabneturl;
+                this.collabneturl = CNHudsonUtil.sanitizeCollabNetUrl(collabneturl);
                 this.username = username;
                 this.password = password;
             }
@@ -66,7 +66,7 @@ public class TeamForge extends SubversionRepositoryBrowser {
      */
     public TeamForge(String collabneturl, String username, String password, 
                      String project, String repo, boolean overrideAuth) {
-        this.collabneturl = collabneturl;
+        this.collabneturl = CNHudsonUtil.sanitizeCollabNetUrl(collabneturl);
         this.username = username;
         this.password = password;
         this.project = project;
@@ -215,7 +215,7 @@ public class TeamForge extends SubversionRepositoryBrowser {
         CollabNetApp cna = CNHudsonUtil.getCollabNetApp(this.getCollabNetUrl(), 
                                                         this.getUsername(), 
                                                         this.getPassword());
-        return CNHudsonUtil.getScmViewerUrl(cna, this.getProject(), 
+        return CNHudsonUtil.getScmViewerUrl(cna, getCollabNetUrl(), this.getProject(), 
                                             this.getRepo());
     }
 

@@ -8,6 +8,7 @@ import hudson.model.JobPropertyDescriptor;
 
 import hudson.plugins.collabnet.util.CNFormFieldValidator;
 
+import hudson.plugins.collabnet.util.CNHudsonUtil;
 import hudson.util.FormValidation;
 import java.util.logging.Logger;
 
@@ -76,7 +77,7 @@ public class TeamForgeShare extends JobProperty<Job<?, ?>> {
             if (json.has("useglobal")) {
                 this.useGlobal = true;
                 JSONObject config = json.getJSONObject("useglobal");
-                collabNetUrl = config.getString("collabneturl");
+                collabNetUrl = CNHudsonUtil.sanitizeCollabNetUrl(config.getString("collabneturl"));
                 username = config.getString("username");
                 password = config.getString("password");
             } else {
