@@ -1,7 +1,7 @@
 package hudson.plugins.collabnet.auth;
 
+import com.collabnet.ce.webservices.CollabNetApp;
 import groovy.lang.Binding;
-
 import hudson.Extension;
 import hudson.model.Descriptor;
 import hudson.model.Hudson;
@@ -9,21 +9,17 @@ import hudson.plugins.collabnet.util.CNHudsonUtil;
 import hudson.security.SecurityRealm;
 import hudson.util.FormValidation;
 import hudson.util.spring.BeanBuilder;
-
-import java.io.IOException;
-
-import javax.servlet.Filter;
-import javax.servlet.FilterConfig;
-
 import net.sf.json.JSONObject;
-
 import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 import org.springframework.web.context.WebApplicationContext;
 
-import com.collabnet.ce.webservices.CollabNetApp;
+import javax.servlet.Filter;
+import javax.servlet.FilterConfig;
+import java.io.IOException;
+import java.rmi.RemoteException;
 
 
 public class CollabNetSecurityRealm extends SecurityRealm {
@@ -35,10 +31,25 @@ public class CollabNetSecurityRealm extends SecurityRealm {
     /* logging in to hudson should login to CTF */
     private boolean mEnableSSOAuthToCTF;
 
+    private boolean mEnableSSORedirect = true;
+
     public CollabNetSecurityRealm(String collabNetUrl, Boolean enableAuthFromCTF, Boolean enableAuthToCTF) {
         this.collabNetUrl = CNHudsonUtil.sanitizeCollabNetUrl(collabNetUrl);
         this.mEnableSSOAuthFromCTF = Boolean.TRUE.equals(enableAuthFromCTF);
         this.mEnableSSOAuthToCTF = Boolean.TRUE.equals(enableAuthToCTF);
+
+        CollabNetApp cn = new CollabNetApp(this.collabNetUrl);
+        int apiVersion[] = null;
+        try {
+            apiVersion = CNHudsonUtil.getVersionArray(cn.getApiVersion());
+        } catch (RemoteException re) {
+            // ignore
+        }
+
+        if (CNHudsonUtil.compareVersion(apiVersion, new int[] {5, 3, 0, 0}) >= 0) {
+            // starting with CTF 5.3, redirect no longer works after login
+            mEnableSSORedirect = false;
+        }
     }
 
     public String getCollabNetUrl() {
@@ -59,6 +70,14 @@ public class CollabNetSecurityRealm extends SecurityRealm {
      */
     public boolean getEnableSSOAuthToCTF() {
         return mEnableSSOAuthToCTF;
+    }
+
+    /**
+     * Whether after singole singon into CTF, we should automatically redirect back to Hudson.
+     * @return true to enable
+     */
+    public boolean getEnableSSORedirect() {
+        return mEnableSSORedirect;
     }
 
     @Override

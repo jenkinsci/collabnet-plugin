@@ -369,11 +369,11 @@ public class CNHudsonUtil {
     }
 
     /**
-     *
+     * Turn version string into an array, where each version is in its own index/pos.
      * @param apiVersionStr
      * @return
      */
-    private static int[] getVersionArray(String apiVersionStr) {
+    public static int[] getVersionArray(String apiVersionStr) {
         int[] versionNums = null;
         if (apiVersionStr != null) {
             String[] versionArr = apiVersionStr.split("\\.");
@@ -392,7 +392,7 @@ public class CNHudsonUtil {
      * @param actualVersion the actual version
      * @return true if actual version is between start version (inclusive) and end version (non inclusive)
      */
-    private static boolean isSupportedVersion(int[] startSupportVersion, int[] endSupportVersion, int[] actualVersion) {
+    public static boolean isSupportedVersion(int[] startSupportVersion, int[] endSupportVersion, int[] actualVersion) {
         if (actualVersion == null || actualVersion.length != 4) {
             log.warning("Unable to determine api version: isSupportedVersion returning false");
             return false;
@@ -426,7 +426,7 @@ public class CNHudsonUtil {
      * @param version2 second version
      * @return -1 if version1 is less than version2, 0 if they are the same, and 1 if version1 is greater than version2
      */
-    private static int compareVersion(int[] version1, int[] version2) {
+    public static int compareVersion(int[] version1, int[] version2) {
         for (int i=0; i < version1.length; i++) {
             int v1 = version1[i];
             int v2 = version2[i];

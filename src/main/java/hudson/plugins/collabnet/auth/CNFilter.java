@@ -132,8 +132,12 @@ public class CNFilter implements Filter {
         String id = cnauth.getSessionId();
         String cnauthUrl = collabNetUrl + "/sf/sfmain/do/soapredirect?id=" 
             + URLEncoder.encode(id, "UTF-8") + "&user=" + 
-            URLEncoder.encode(username,"UTF-8")+"&redirectUrl=" + 
-            URLEncoder.encode(reqUrl,"UTF-8");
+            URLEncoder.encode(username,"UTF-8");
+
+        if (securityRealm.getEnableSSORedirect()) {
+            // append redirect only if enabled
+            cnauthUrl = cnauthUrl + "&redirectUrl=" + URLEncoder.encode(reqUrl,"UTF-8");
+        }
 
         // prepare a redirect
         response.setStatus(HttpServletResponse.SC_MOVED_TEMPORARILY);

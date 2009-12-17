@@ -47,9 +47,7 @@ public class CollabNetApp {
      */
     public CollabNetApp(String url, String username, String password)
         throws RemoteException {
-        this.url = url;
-        this.username = username;
-        this.icns = this.getICollabNetSoap();
+        this(url, username);
         this.sessionId = this.login(password);
     }
 
@@ -60,11 +58,19 @@ public class CollabNetApp {
      * @param username to login as.
      */
     public CollabNetApp(String url, String username) {
-        this.url = url;
+        this(url);
         this.username = username;
+    }
+
+    /**
+     * Creates a new collabnet app
+     * @param url url of the CollabNet server
+     */
+    public CollabNetApp(String url) {
+        this.url = url;
         this.icns = this.getICollabNetSoap();
     }
-    
+
     /**
      * @return the session id.
      */
