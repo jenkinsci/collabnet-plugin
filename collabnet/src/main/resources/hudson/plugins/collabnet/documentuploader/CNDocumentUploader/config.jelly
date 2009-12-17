@@ -1,0 +1,99 @@
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" 
+ xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form" 
+ xmlns:c="/hudson/plugins/collabnet/tags">
+
+  <script src="${rootURL}/plugin/collabnet/scripts/cnauth_override.js" type="text/javascript" />
+
+  <j:set var="rootHelpURL" value="${descriptor.getHelpUrl()}" />
+
+
+  <j:choose>
+    <j:when test="${descriptor.canInheritAuth()}">
+      <f:nested>
+        <table style="width:100%">
+          <j:set var="cndoc_override" value="false" />
+          <j:choose>
+            <j:when test="${instance != null}">
+              <j:set var="cndu_override" 
+                value="${instance.overrideAuth()}" />
+            </j:when>
+          </j:choose>
+          <c:cnOptionalBlock id="cndu.override_auth" 
+           name="cndu.override_auth" 
+           title="Override the Global CollabNet Configuration"
+           checked="${cndu_override}" 
+           onclick="document.getElementById('cndu.password').onchange();cndu_project_update();"
+             >
+           <c:cnAuth prefix="cndu" 
+            checkUrlRoot="${rootURL}/publisher/CNDocumentUploader" 
+            helpUrlRoot="${rootHelpURL}" url="${instance.getCollabNetUrl()}" 
+            username="${instance.username}" password="${instance.password}" 
+            onchange="document.getElementById('cndu_project').onchange();"
+           />
+          </c:cnOptionalBlock>
+        </table>
+      </f:nested>
+    </j:when>
+    <j:otherwise>
+      <c:cnAuth prefix="cndu" 
+        checkUrlRoot="${rootURL}/publisher/CNDocumentUploader" 
+        helpUrlRoot="${rootHelpURL}" url="${instance.getCollabNetUrl()}" 
+        username="${instance.username}" password="${instance.password}" 
+        onchange="document.getElementById('cndu_project').onchange();" />
+    </j:otherwise>
+  </j:choose>
+
+  <f:entry title="Project" help="${rootHelpURL}/help-project.html">
+    <c:updatableComboBox name="cndu.project" value="${instance.project}" 
+     id="cndu_project" clazz="setting-input validated"
+     items="${instance.getProjects()}"
+     checkUrl="'${rootURL}/publisher/CNDocumentUploader/projectCheck?' +
+       'project=' + escape(this.value) + '&amp;' + get_auth_param_str('cndu')"
+     updateUrl="'${rootURL}/publisher/CNDocumentUploader/getProjects?' +
+       get_auth_param_str('cndu')" />
+  </f:entry>
+
+  <f:entry title="Upload Folder Path" help="${rootHelpURL}/help-uploadPath.html">
+    <f:textbox name="cndu.upload_path" value="${instance.getUploadPath()}" 
+     id="cndu.upload_path" 
+     checkUrl="'${rootURL}/publisher/CNDocumentUploader/pathCheck?path=' + 
+       escape(this.value) + '&amp;project=' + 
+       escape(document.getElementById('cndu_project').value) + 
+       '&amp;' + get_auth_param_str('cndu')" />
+  </f:entry>
+
+  <f:entry title="Description" help="${rootHelpURL}/help-description.html">
+    <f:textbox name="cndu.description" value="${instance.description}" 
+     id="cndu.description"/>
+  </f:entry>
+
+  <f:entry title="File Patterns to Upload" 
+   help="${rootHelpURL}/help-filepattern.html">
+    <f:repeatable name="cndu.files" var="file" 
+     items="${instance.getFilePatterns()}" minimum="1" noAddButton="true">
+      <f:textbox name="cndu.file" value="${file}" 
+       checkUrl="'${rootURL}/publisher/CNDocumentUploader/' + 
+         'unRequiredInterpretedCheck?value='+escape(this.value)" />
+      <div align="right">
+        <input type="button" value="Add File Pattern" 
+         class="repeatable-add show-if-last" />
+        <input type="button" value="Delete File Pattern" 
+         class="repeatable-delete show-if-not-only" /> 
+      </div>
+    </f:repeatable>
+  </f:entry>    
+
+  <f:entry title="Upload build log?" 
+   help="${rootHelpURL}/help-buildlog.html">
+    <span>
+      <f:radio name="cndu.buildlog" id="yes" title="Yes"
+       value="true" checked="${instance.includeBuildLog()==true}">
+      </f:radio>
+      <label for="yes">Yes</label> 
+      <f:radio name="cndu.buildlog" id="no" title="No" 
+       value="false" checked="${instance.includeBuildLog()!=true}">
+      </f:radio>
+      <label for="no">No</label>
+    </span>
+  </f:entry>
+</j:jelly>

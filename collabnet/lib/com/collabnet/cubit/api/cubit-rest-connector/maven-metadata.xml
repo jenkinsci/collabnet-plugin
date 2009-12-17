@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?><metadata>
+  <groupId>com.collabnet.cubit.api</groupId>
+  <artifactId>cubit-rest-connector</artifactId>
+  <version>1.0</version>
+  <versioning>
+    <versions>
+      <version>1.0</version>
+    </versions>
+    <lastUpdated>20090218011814</lastUpdated>
+  </versioning>
+</metadata>

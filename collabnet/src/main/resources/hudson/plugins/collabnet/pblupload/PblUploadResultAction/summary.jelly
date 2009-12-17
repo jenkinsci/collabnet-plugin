@@ -1,0 +1,13 @@
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
+  <t:summary icon="${it.getSummaryIcon()}">
+    <j:choose>
+      <j:when test="${it.isSuccess()==true}">
+        Successfully uploaded files to the <a href="${it.getPblUrlName()}">CollabNet Project Build Library</a>.
+      </j:when>
+      <j:otherwise>
+        CollabNet Project Build Library: Failed to upload any files.
+      </j:otherwise>
+      (See <a href="${it.getResultUrlName()}">console</a> for details.)
+     </j:choose>
+  </t:summary>
+</j:jelly>
