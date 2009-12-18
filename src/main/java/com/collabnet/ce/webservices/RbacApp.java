@@ -14,8 +14,7 @@ import java.util.Collection;
  * Class to hold the role-related methods.
  * Wraps a collabNetApp.
  */
-public class RbacApp {
-    private CollabNetApp collabNetApp;
+public class RbacApp extends AbstractSoapApp {
     private IRbacAppSoap iras;
 
     /**
@@ -24,7 +23,7 @@ public class RbacApp {
      * @param collabNetApp a valid (logged-in) instance.
      */
     public RbacApp(CollabNetApp collabNetApp) {
-        this.collabNetApp = collabNetApp;
+        super(collabNetApp);
         this.iras = this.getIRbacAppSoap();
     }
 
@@ -32,7 +31,7 @@ public class RbacApp {
      * @return an instance of the Client Soap stub for RbacApp.wsdl.
      */
     private IRbacAppSoap getIRbacAppSoap() {
-        String soapURL = this.getUrl() + CollabNetApp.SOAP_SERVICE +
+        String soapURL = this.getServerUrl() + CollabNetApp.SOAP_SERVICE +
             "RbacApp?wsdl";
         return (IRbacAppSoap) ClientSoapStubFactory.
             getSoapStub(IRbacAppSoap.class, soapURL);
@@ -153,23 +152,5 @@ public class RbacApp {
             roles.add(rsList.getDataRows()[i].getTitle());
         }
         return roles;
-    }
-
-
-/*************************************
-     * Below are wrapping functions, to make the code neater and in case,
-     * something changes.
-     **************************************/
-    
-    private void checkValidSessionId() {
-        this.collabNetApp.checkValidSessionId();
-    }
-    
-    private String getSessionId() {
-        return this.collabNetApp.getSessionId();
-    }
-    
-    private String getUrl() {
-        return this.collabNetApp.getServerUrl();
     }
 }

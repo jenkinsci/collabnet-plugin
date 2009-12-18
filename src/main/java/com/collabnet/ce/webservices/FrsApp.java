@@ -22,8 +22,7 @@ import java.util.TreeSet;
  * Class to hold the package and release-related methods.
  * Wraps a collabNetApp.
  */
-public class FrsApp {
-    private CollabNetApp collabNetApp;
+public class FrsApp extends AbstractSoapApp {
     private IFrsAppSoap ifa;
     
     /**
@@ -33,7 +32,7 @@ public class FrsApp {
      * @param collabNetApp logged in main CollabNet webservice.
      */
     public FrsApp(CollabNetApp collabNetApp) {
-        this.collabNetApp = collabNetApp;
+        super(collabNetApp);
         this.ifa = this.getFrsAppSoap();
     }
     
@@ -43,7 +42,7 @@ public class FrsApp {
      * @return an instance of the FileReleseSystem webservice client. 
      */
     private IFrsAppSoap getFrsAppSoap() {
-        String soapURL = this.getUrl() + CollabNetApp.SOAP_SERVICE + 
+        String soapURL = this.getServerUrl() + CollabNetApp.SOAP_SERVICE +
             "FrsApp?wsdl";
         return (IFrsAppSoap) ClientSoapStubFactory.
             getSoapStub(IFrsAppSoap.class, soapURL);
@@ -250,22 +249,5 @@ public class FrsApp {
         this.checkValidSessionId();
         return this.ifa.createFrsFile(this.getSessionId(), releaseId, fileName,
                                       mimeType, fileId);
-    }
-    
-    /*************************************
-     * Below are wrapping functions, to make the code neater and in case,
-     * something changes.
-     **************************************/
-    
-    private void checkValidSessionId() {
-        this.collabNetApp.checkValidSessionId();
-    }
-    
-    private String getSessionId() {
-        return this.collabNetApp.getSessionId();
-    }
-    
-    private String getUrl() {
-        return this.collabNetApp.getServerUrl();
     }
 }

@@ -1,5 +1,9 @@
 package hudson.plugins.collabnet.tracker;
 
+import com.collabnet.ce.soap50.webservices.tracker.ArtifactSoapDO;
+import com.collabnet.ce.webservices.CollabNetApp;
+import com.collabnet.ce.webservices.FileStorageApp;
+import com.collabnet.ce.webservices.TrackerApp;
 import hudson.Extension;
 import hudson.Launcher;
 import hudson.model.AbstractBuild;
@@ -8,37 +12,27 @@ import hudson.model.Descriptor;
 import hudson.model.Hudson;
 import hudson.model.Result;
 import hudson.model.TaskListener;
-import hudson.tasks.BuildStepMonitor;
-import hudson.tasks.Notifier;
-import hudson.tasks.Publisher;
-import hudson.util.FormValidation;
-
 import hudson.plugins.collabnet.share.TeamForgeShare;
 import hudson.plugins.collabnet.util.CNFormFieldValidator;
 import hudson.plugins.collabnet.util.CNHudsonUtil;
 import hudson.plugins.collabnet.util.ComboBoxUpdater;
 import hudson.plugins.collabnet.util.CommonUtil;
+import hudson.tasks.BuildStepMonitor;
+import hudson.tasks.Notifier;
+import hudson.tasks.Publisher;
+import hudson.util.FormValidation;
+import net.sf.json.JSONObject;
+import org.apache.axis.utils.StringUtils;
+import org.kohsuke.stapler.QueryParameter;
+import org.kohsuke.stapler.StaplerRequest;
+import org.kohsuke.stapler.StaplerResponse;
 
 import java.io.IOException;
 import java.rmi.RemoteException;
 import java.util.Collection;
 import java.util.logging.Logger;
 
-import net.sf.json.JSONObject;
-
-import org.apache.axis.utils.StringUtils;
-
-import org.kohsuke.stapler.QueryParameter;
-import org.kohsuke.stapler.StaplerRequest;
-import org.kohsuke.stapler.StaplerResponse;
-
-import com.collabnet.ce.soap50.webservices.tracker.ArtifactSoapDO;
-import com.collabnet.ce.webservices.CollabNetApp;
-import com.collabnet.ce.webservices.FileStorageApp;
-import com.collabnet.ce.webservices.TrackerApp;
-
 public class CNTracker extends Notifier {
-    private static String SOAP_SERVICE = "/ce-soap50/services/";
     private static int DEFAULT_PRIORITY = 3;
 
     // listener is used for logging and will only be

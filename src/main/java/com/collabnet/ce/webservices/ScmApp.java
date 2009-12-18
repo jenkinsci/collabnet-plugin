@@ -16,8 +16,7 @@ import java.util.Collection;
  * Class to hold the scm-related methods.
  * Wraps a collabNetApp.
  */
-public class ScmApp {
-    private CollabNetApp collabNetApp;
+public class ScmApp extends AbstractSoapApp {
     private IScmAppSoap isas;
 
     /**
@@ -26,7 +25,7 @@ public class ScmApp {
      * @param collabNetApp a valid (logged-in) instance.
      */
     public ScmApp(CollabNetApp collabNetApp) {
-        this.collabNetApp = collabNetApp;
+        super(collabNetApp);
         this.isas = this.getIScmAppSoap();
     }
 
@@ -34,7 +33,7 @@ public class ScmApp {
      * @return an instance of the Client Soap stub for ScmApp.wsdl.
      */
     private IScmAppSoap getIScmAppSoap() {
-        String soapURL = this.getUrl() + CollabNetApp.SOAP_SERVICE +
+        String soapURL = this.getServerUrl() + CollabNetApp.SOAP_SERVICE +
             "ScmApp?wsdl";
         return (IScmAppSoap) ClientSoapStubFactory.
             getSoapStub(IScmAppSoap.class, soapURL);
@@ -78,22 +77,5 @@ public class ScmApp {
             repoNames.add(row.getTitle());
         }
         return repoNames;
-    }
-
-    /*************************************
-     * Below are wrapping functions, to make the code neater and in case,
-     * something changes.
-     **************************************/
-    
-    private void checkValidSessionId() {
-        this.collabNetApp.checkValidSessionId();
-    }
-    
-    private String getSessionId() {
-        return this.collabNetApp.getSessionId();
-    }
-    
-    private String getUrl() {
-        return this.collabNetApp.getServerUrl();
     }
 }

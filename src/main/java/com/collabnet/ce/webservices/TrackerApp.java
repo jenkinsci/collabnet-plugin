@@ -22,8 +22,7 @@ import java.util.TreeSet;
  * Class to hold the tracker-related methods.
  * Wraps a collabNetApp.
  */
-public class TrackerApp {
-    private CollabNetApp collabNetApp;
+public class TrackerApp extends AbstractSoapApp {
     private ITrackerAppSoap itas;
     
     /**
@@ -32,7 +31,7 @@ public class TrackerApp {
      * @param collabNetApp a valid (logged-in) instance.
      */
     public TrackerApp(CollabNetApp collabNetApp) {
-        this.collabNetApp = collabNetApp;
+        super(collabNetApp);
         this.itas = this.getITrackerAppSoap();
     }
     
@@ -40,7 +39,7 @@ public class TrackerApp {
      * @return an instance of the Client Soap stub for TrackerApp.wsdl.
      */
     private ITrackerAppSoap getITrackerAppSoap() {
-        String soapURL = this.getUrl() + CollabNetApp.SOAP_SERVICE +
+        String soapURL = this.getServerUrl() + CollabNetApp.SOAP_SERVICE +
             "TrackerApp?wsdl";
         return (ITrackerAppSoap) ClientSoapStubFactory.
             getSoapStub(ITrackerAppSoap.class, soapURL);
@@ -202,7 +201,7 @@ public class TrackerApp {
      * @param fileMimeType of associated attachment.
      * @param fileId of associated attachment (returned when attachment 
      *                                         was uploaded)
-     * @throws RemoteExcpetion
+     * @throws RemoteException if the operation fails
      */
     public void setArtifactData(ArtifactSoapDO artifact, String comment, 
                                 String fileName, String fileMimeType, 
@@ -210,23 +209,5 @@ public class TrackerApp {
         this.checkValidSessionId();
         this.itas.setArtifactData(this.getSessionId(), artifact, comment, 
                                   fileName, fileMimeType, fileId);
-    }
-    
-    
-    /*************************************
-     * Below are wrapping functions, to make the code neater and in case,
-     * something changes.
-     **************************************/
-    
-    private void checkValidSessionId() {
-        this.collabNetApp.checkValidSessionId();
-    }
-    
-    private String getSessionId() {
-        return this.collabNetApp.getSessionId();
-    }
-    
-    private String getUrl() {
-        return this.collabNetApp.getServerUrl();
     }
 }

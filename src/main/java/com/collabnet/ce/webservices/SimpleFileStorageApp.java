@@ -14,9 +14,9 @@ import java.rmi.RemoteException;
  * Class to hold the file-related methods.
  * Wraps a collabNetApp.
  */
-public class SimpleFileStorageApp {
+public class SimpleFileStorageApp extends AbstractSoapApp {
     private static int BYTE_SIZE = 1048576; // 1 MB
-    private CollabNetApp collabNetApp;
+
     private ISimpleFileStorageAppSoap ifsa;
     
     /**
@@ -25,7 +25,7 @@ public class SimpleFileStorageApp {
      * @param collabNetApp a valid (logged-in) collabNetApp.
      */
     public SimpleFileStorageApp(CollabNetApp collabNetApp) {
-        this.collabNetApp = collabNetApp;
+        super(collabNetApp);
         this.ifsa = this.getISimpleFileStorageAppSoap();
     }
     
@@ -33,7 +33,7 @@ public class SimpleFileStorageApp {
      * @return a Client Soap stub for the SimpleFileStorageApp.
      */
     private ISimpleFileStorageAppSoap getISimpleFileStorageAppSoap() {
-        String soapURL = this.getUrl() + CollabNetApp.SOAP_SERVICE +
+        String soapURL = this.getServerUrl() + CollabNetApp.SOAP_SERVICE +
             "SimpleFileStorageApp?wsdl";
         return (ISimpleFileStorageAppSoap) ClientSoapStubFactory.
             getSoapStub(ISimpleFileStorageAppSoap.class, soapURL);
@@ -44,7 +44,7 @@ public class SimpleFileStorageApp {
      *
      * @param file to upload.
      * @return the fileId associatd with the uploaded file.
-     * @throws RemoteException.
+     * @throws RemoteException if the operation fails
      */
     public String uploadFile(File file) throws RemoteException {
         String id = null;    
@@ -85,22 +85,4 @@ public class SimpleFileStorageApp {
         }
         return id;
     } 
-    
-    
-    /*************************************
-     * Below are wrapping functions, to make the code neater and in case,
-     * something changes.
-     **************************************/
-
-    private void checkValidSessionId() {
-        this.collabNetApp.checkValidSessionId();
-    }
-    
-    private String getSessionId() {
-        return this.collabNetApp.getSessionId();
-    }
-    
-    private String getUrl() {
-        return this.collabNetApp.getServerUrl();
-    }
 }

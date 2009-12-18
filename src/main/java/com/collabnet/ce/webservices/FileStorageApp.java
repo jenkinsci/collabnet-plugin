@@ -14,8 +14,7 @@ import javax.activation.FileDataSource;
  * Class to hold the file-related methods.
  * Wraps a CollabNetApp.
  */
-public class FileStorageApp {
-    private CollabNetApp collabNetApp;
+public class FileStorageApp extends AbstractSoapApp {
     private IFileStorageAppSoap ifsa;
 
     /**
@@ -24,7 +23,7 @@ public class FileStorageApp {
      * @param collabNetApp a valid (logged-in) collabNetApp.
      */
     public FileStorageApp(CollabNetApp collabNetApp) {
-        this.collabNetApp = collabNetApp;
+        super(collabNetApp);
         this.ifsa = this.getIFileStorageAppSoap();
     }
 
@@ -32,7 +31,7 @@ public class FileStorageApp {
      * @return a Client Soap stub for the SimpleFileStorageApp.
      */
     private IFileStorageAppSoap getIFileStorageAppSoap() {
-        String soapURL = this.getUrl() + CollabNetApp.SOAP_SERVICE +
+        String soapURL = this.getServerUrl() + CollabNetApp.SOAP_SERVICE +
             "FileStorageApp?wsdl";
         return (IFileStorageAppSoap) ClientSoapStubFactory.
             getSoapStub(IFileStorageAppSoap.class, soapURL);
@@ -43,7 +42,7 @@ public class FileStorageApp {
      *
      * @param file to upload.
      * @return the fileId associatd with the uploaded file.
-     * @throws RemoteException.
+     * @throws RemoteException if something fails
      */
     public String uploadFile(File file) throws RemoteException {
         String fileId = null;
@@ -51,22 +50,5 @@ public class FileStorageApp {
         DataHandler dh = new DataHandler(fds);
         fileId = this.ifsa.uploadFile(this.getSessionId(), dh);
         return fileId;
-    }
-
-    /*************************************
-     * Below are wrapping functions, to make the code neater and in case,
-     * something changes.
-     **************************************/
-
-    private void checkValidSessionId() {
-        this.collabNetApp.checkValidSessionId();
-    }
-    
-    private String getSessionId() {
-        return this.collabNetApp.getSessionId();
-    }
-    
-    private String getUrl() {
-        return this.collabNetApp.getServerUrl();
     }
 }

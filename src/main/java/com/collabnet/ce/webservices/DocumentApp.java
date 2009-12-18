@@ -10,8 +10,6 @@ import com.collabnet.ce.soap50.webservices.docman.DocumentSoapDO;
 import com.collabnet.ce.soap50.webservices.docman.DocumentSoapList;
 import com.collabnet.ce.soap50.webservices.docman.DocumentSoapRow;
 
-import com.collabnet.ce.soap50.types.SoapFilter;
-
 import java.rmi.RemoteException;
 import java.util.Date;
 
@@ -19,8 +17,7 @@ import java.util.Date;
  * Class to hold the document-related methods.
  * Wraps a collabNetApp.
  */
-public class DocumentApp {
-    private CollabNetApp collabNetApp;
+public class DocumentApp extends AbstractSoapApp {
     private IDocumentAppSoap da;
 
     /**
@@ -29,7 +26,7 @@ public class DocumentApp {
      * @param collabNetApp a valid (logged-in) collabNetApp.
      */
     public DocumentApp(CollabNetApp collabNetApp) {
-        this.collabNetApp = collabNetApp;
+        super(collabNetApp);
         this.da = this.getDocumentAppSoap();
     }
 
@@ -37,7 +34,7 @@ public class DocumentApp {
      * @return a Client Soap stub for the DocumentApp.
      */
     private IDocumentAppSoap getDocumentAppSoap() {
-        String soapURL = this.getUrl() + CollabNetApp.SOAP_SERVICE +
+        String soapURL = this.getServerUrl() + CollabNetApp.SOAP_SERVICE +
             "DocumentApp?wsdl";
         return (IDocumentAppSoap) ClientSoapStubFactory.
             getSoapStub(IDocumentAppSoap.class, soapURL);
@@ -259,22 +256,5 @@ public class DocumentApp {
                                description, versionComment, status, 
                                createLocked, fileName, mimeType, fileId, 
                                associationId, associationDesc);        
-    } 
-
-    /*************************************
-     * Below are wrapping functions, to make the code neater and in case,
-     * something changes.
-     **************************************/
-
-    private void checkValidSessionId() {
-        this.collabNetApp.checkValidSessionId();
-    }
-    
-    private String getSessionId() {
-        return this.collabNetApp.getSessionId();
-    }
-    
-    private String getUrl() {
-        return this.collabNetApp.getServerUrl();
     }
 }
