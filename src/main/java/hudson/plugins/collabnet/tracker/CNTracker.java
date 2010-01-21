@@ -7,6 +7,7 @@ import com.collabnet.ce.webservices.TrackerApp;
 import hudson.Extension;
 import hudson.Launcher;
 import hudson.model.AbstractBuild;
+import hudson.model.AbstractProject;
 import hudson.model.BuildListener;
 import hudson.model.Descriptor;
 import hudson.model.Hudson;
@@ -17,6 +18,7 @@ import hudson.plugins.collabnet.util.CNFormFieldValidator;
 import hudson.plugins.collabnet.util.CNHudsonUtil;
 import hudson.plugins.collabnet.util.ComboBoxUpdater;
 import hudson.plugins.collabnet.util.CommonUtil;
+import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.BuildStepMonitor;
 import hudson.tasks.Notifier;
 import hudson.tasks.Publisher;
@@ -774,11 +776,20 @@ public class CNTracker extends Notifier {
     }
 
     @Extension
-    public static final class DescriptorImpl extends Descriptor<Publisher> {
+    public static final class DescriptorImpl extends BuildStepDescriptor<Publisher> {
         private static Logger log = Logger.getLogger("CNTrackerDescriptor");
 
         public DescriptorImpl() {
             super(CNTracker.class);
+        }
+
+        @Override
+        /**
+         * Implementation of the abstract isApplicable method from 
+         * BuildStepDescriptor.
+         */
+         public boolean isApplicable(Class<? extends AbstractProject> jobType) {
+            return true;
         }
         
         /**
