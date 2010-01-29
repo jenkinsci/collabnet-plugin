@@ -9,7 +9,11 @@ import java.rmi.RemoteException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.logging.Logger;
 
 import org.acegisecurity.Authentication;
@@ -274,14 +278,37 @@ public class CNConnection {
      */
     public void grantRoles(String projectId, Collection<String> roles, 
                            Collection<String> usernames) {
-        RbacApp ra = new RbacApp(this.getCollabNetApp());
-        for (String username: usernames) {
-            for (String role: roles) {
+        if (usernames.size() > 0) {
+            RbacApp ra = new RbacApp(this.getCollabNetApp());
+            Map<String, String> roleNameToIdMap;
+            try {
+                roleNameToIdMap = ra.getRoles(projectId);
+            } catch (RemoteException e) {
+                roleNameToIdMap = new HashMap<String, String>();
+            }
+
+            for (String roleName : roles) {
+                String roleId = roleNameToIdMap.get(roleName);
+                // figure out which users already belongs to the role
+                Set<String> alreadyMemberSet = new HashSet<String>();
+                Collection<String> roleMembers;
                 try {
-                    ra.grantRole(projectId, role, username);
-                } catch (RemoteException re) {
-                    log.severe("grantRoles: failed with RemoteException: " +
-                               re.getMessage());
+                    roleMembers = ra.getRoleMembers(roleId);
+                } catch (RemoteException e) {
+                    roleMembers = new ArrayList<String>();
+                }
+                alreadyMemberSet.addAll(roleMembers);
+
+                // now iterate through username collection and grant role only to users without role
+                for (String username: usernames) {
+                    if (!alreadyMemberSet.contains(username)) {
+                        try {
+                            ra.grantRole(roleId, username);
+                        } catch (RemoteException re) {
+                            log.severe("grantRoles: failed with RemoteException: " +
+                                re.getMessage());
+                        }
+                    }
                 }
             }
         }

@@ -2,6 +2,7 @@ package com.collabnet.ce.webservices;
 
 import com.collabnet.ce.soap50.webservices.ClientSoapStubFactory;
 
+import com.collabnet.ce.soap50.webservices.cemain.UserSoapList;
 import com.collabnet.ce.soap50.webservices.rbac.IRbacAppSoap;
 import com.collabnet.ce.soap50.webservices.rbac.RoleSoapList;
 import com.collabnet.ce.soap50.webservices.rbac.RoleSoapRow;
@@ -9,6 +10,8 @@ import com.collabnet.ce.soap50.webservices.rbac.RoleSoapRow;
 import java.rmi.RemoteException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Class to hold the role-related methods.
@@ -38,20 +41,20 @@ public class RbacApp extends AbstractSoapApp {
     }
 
     /**
-     * @param projectId
-     * @return roles associated with the given project
+     * @param projectId the project id
+     * @return map (name->id) of roles associated with the given project
      * @throws RemoteException
      */
-    public Collection<String> getRoles(String projectId) 
+    public Map<String, String> getRoles(String projectId)
         throws RemoteException {
         this.checkValidSessionId();
         RoleSoapList rsList = this.iras.getRoleList(this.getSessionId(), 
                                                     projectId);
-        Collection<String> roleNames = new ArrayList<String>();
+        Map<String, String> roleNameToIdMap = new HashMap<String, String>();
         for (RoleSoapRow row: rsList.getDataRows()) {
-            roleNames.add(row.getTitle());
+            roleNameToIdMap.put(row.getTitle(), row.getId());
         }
-        return roleNames;
+        return roleNameToIdMap;
     }
 
     /**
@@ -74,9 +77,9 @@ public class RbacApp extends AbstractSoapApp {
                                                "number of role names and " +
                                                "descriptions  are not equal.");
         }
-        Collection<String> existingRoles = this.getRoles(projectId);
+        Map<String, String> existingRoles = this.getRoles(projectId);
         for (int i = 0; i < roles.length; i++) {
-            if (!existingRoles.contains(roles[i])) {
+            if (!existingRoles.containsKey(roles[i])) {
                 this.addRole(projectId, roles[i], descriptions[i]);
                 rolesAdded = true;
             }
@@ -111,6 +114,19 @@ public class RbacApp extends AbstractSoapApp {
         throws RemoteException {
         this.checkValidSessionId();
         String roleId = this.findRoleId(projectId, roleName);
+        this.iras.addUser(this.getSessionId(), roleId, username);
+    }
+
+    /**
+     * Grant the given role to the user.
+     *
+     * @param roleId
+     * @param username
+     * @throws RemoteException
+     */
+    public void grantRole(String roleId, String username)
+        throws RemoteException {
+        this.checkValidSessionId();
         this.iras.addUser(this.getSessionId(), roleId, username);
     }
 
@@ -150,6 +166,22 @@ public class RbacApp extends AbstractSoapApp {
                                                          projectId, username);
         for (int i = 0; i < rsList.getDataRows().length; i++) {
             roles.add(rsList.getDataRows()[i].getTitle());
+        }
+        return roles;
+    }
+
+    /**
+     * Get a list of users that are members of a given role
+     *
+     * @param roleId the id of the role to get
+     * @throws RemoteException
+     */
+    public Collection<String> getRoleMembers(String roleId) throws RemoteException {
+        this.checkValidSessionId();
+        Collection<String> roles = new ArrayList<String>();
+        UserSoapList userList = this.iras.getRoleMemberList(this.getSessionId(), roleId);
+        for (int i = 0; i < userList.getDataRows().length; i++) {
+            roles.add(userList.getDataRows()[i].getUserName());
         }
         return roles;
     }
