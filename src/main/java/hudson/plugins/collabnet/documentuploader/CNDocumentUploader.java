@@ -11,12 +11,14 @@ import hudson.Launcher;
 import hudson.FilePath;
 import hudson.FilePath.FileCallable;
 import hudson.model.AbstractBuild;
+import hudson.model.AbstractProject;
 import hudson.model.BuildListener;
 import hudson.model.Descriptor;
 import hudson.model.Result;
 import hudson.model.Action;
 import hudson.model.TaskListener;
 import hudson.remoting.VirtualChannel;
+import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.BuildStepMonitor;
 import hudson.tasks.Notifier;
 import hudson.tasks.Publisher;
@@ -82,7 +84,10 @@ public class CNDocumentUploader extends Notifier {
      * @param project where the build log will be uploaded.
      * @param uploadPath on the CollabNet server, where the build log should
      *                   be uploaded.
-     * @param fileName to set for the build log.
+     * @param description
+     * @param filePatterns
+     * @param includeBuildLog
+     * @param override_auth
      */
     public CNDocumentUploader(String url, String username, String password, 
                               String project, String uploadPath, 
@@ -538,7 +543,7 @@ public class CNDocumentUploader extends Notifier {
     /**
      * Upload the build log to the collabnet server.
      *
-     * @param build the current Hudson build.
+     * @param filePath the path of file to upload
      * @return the id associated with the file upload.
      */
     private String uploadFile(FilePath filePath) {
@@ -612,10 +617,19 @@ public class CNDocumentUploader extends Notifier {
      * The CNDocumentUploader Descriptor class.
      */
     @Extension
-    public static final class DescriptorImpl extends Descriptor<Publisher> {
+    public static final class DescriptorImpl extends BuildStepDescriptor<Publisher> {
 
         public DescriptorImpl() {
             super(CNDocumentUploader.class);
+        }
+
+        @Override
+        /**
+         * Implementation of the abstract isApplicable method from
+         * BuildStepDescriptor.
+         */
+         public boolean isApplicable(Class<? extends AbstractProject> jobType) {
+            return true;
         }
 
         /**
