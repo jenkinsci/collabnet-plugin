@@ -159,12 +159,12 @@ public class CNAuthorizationStrategy extends AuthorizationStrategy {
                 return new CNRootACL(this.adminUsers, this.adminGroups, 
                                      this.readUsers, this.readGroups, 
                                      new CNProjectACL(projectName));
-            } else {
-                return this.getRootACL();
             }
-        } else {
-            return this.getRootACL();
         }
+
+        // for jobs that are not associated with any project, we'll make it configuratble by any authenticated user
+        return new CNRootACL(this.adminUsers, this.adminGroups,
+            this.readUsers, this.readGroups, new CNAuthenticatedUserACL());
     }
 
     @Override
