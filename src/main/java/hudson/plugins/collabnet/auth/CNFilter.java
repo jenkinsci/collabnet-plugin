@@ -19,8 +19,11 @@ import hudson.plugins.collabnet.util.CommonUtil;
 import hudson.security.SecurityRealm;
 
 import org.acegisecurity.Authentication;
+import org.acegisecurity.GrantedAuthority;
+import org.acegisecurity.GrantedAuthorityImpl;
 import org.acegisecurity.context.SecurityContextHolder;
 
+import org.acegisecurity.providers.anonymous.AnonymousAuthenticationToken;
 import org.apache.commons.lang.StringUtils;
 
 import com.collabnet.ce.webservices.CollabNetApp;
@@ -61,8 +64,20 @@ public class CNFilter implements Filter {
         }
 
         if (Hudson.getInstance().isUseSecurity()) {
-            if (enableSSOFromCTF && (!auth.isAuthenticated() || auth.getPrincipal().equals("anonymous"))) {
-                loginHudsonUsingCTFSSO((CollabNetSecurityRealm)securityRealm, (HttpServletRequest) request);
+            if (enableSSOFromCTF) {
+                HttpServletRequest httpRequest = (HttpServletRequest) request;
+                // first detect if we are accessing hudson through CTF
+                String username = request.getParameter("sfUsername");
+                if (username != null) {
+                    // 'sfUsername' is used by CTF for linked apps. if present make sure match the authenticated user
+                    if (!username.equals(auth.getName())) {
+                        auth.setAuthenticated(false);
+                    }
+                }
+
+                if (!auth.isAuthenticated() || auth.getPrincipal().equals("anonymous")) {
+                    loginHudsonUsingCTFSSO((CollabNetSecurityRealm)securityRealm, httpRequest);
+                }
             } else if (enableSSOToCTF && auth instanceof CNAuthentication) {
                 CNAuthentication cnauth = (CNAuthentication) auth;
                 if (!cnauth.isCNAuthed()) {
@@ -91,24 +106,33 @@ public class CNFilter implements Filter {
         String url = securityRealm.getCollabNetUrl();
         String username = request.getParameter("sfUsername");
         String token = request.getParameter("sfLoginToken");
+        Authentication auth = null;
+        boolean logoff = false;
         if (username != null && token != null) {
             CollabNetApp ca = new CollabNetApp(url, username);
             try {
                 ca.loginWithToken(token);
-                Authentication cnauthentication = 
-                    new CNAuthentication(username, ca);
-                // ensure that a session exists before we set context in it
-                // see artf42298
-                request.getSession(true);
-                SecurityContextHolder.getContext().
-                    setAuthentication(cnauthentication);
+                auth = new CNAuthentication(username, ca);
             } catch (RemoteException re) {
                 // login failed, but continue
                 log.severe("Login failed with RemoteException: " + 
                            re.getMessage());
+                logoff = true; 
             }
-        } 
-    }    
+        } else {
+            logoff = true;
+        }
+
+        if (logoff) {
+            auth = new AnonymousAuthenticationToken("anonymous","anonymous",
+                new GrantedAuthority[]{new GrantedAuthorityImpl("anonymous")});
+        }
+
+        // ensure that a session exists before we set context in it
+        // see artf42298
+        request.getSession(true);
+        SecurityContextHolder.getContext().setAuthentication(auth);
+    }
     
     /**
      * Redirect to the CollabNet Server to login there, and then 
