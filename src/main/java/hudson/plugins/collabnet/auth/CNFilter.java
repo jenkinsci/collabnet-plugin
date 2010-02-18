@@ -78,7 +78,9 @@ public class CNFilter implements Filter {
                 if (!auth.isAuthenticated() || auth.getPrincipal().equals("anonymous")) {
                     loginHudsonUsingCTFSSO((CollabNetSecurityRealm)securityRealm, httpRequest);
                 }
-            } else if (enableSSOToCTF && auth instanceof CNAuthentication) {
+            }
+
+            if (enableSSOToCTF && auth instanceof CNAuthentication) {
                 CNAuthentication cnauth = (CNAuthentication) auth;
                 if (!cnauth.isCNAuthed()) {
                     loginToCTF(cnauth, (CollabNetSecurityRealm)securityRealm,
