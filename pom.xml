@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.jvnet.hudson.plugins</groupId>
     <artifactId>plugin</artifactId>
-    <version>1.336</version>
+    <version>1.338</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
   <artifactId>collabnet</artifactId>
@@ -70,12 +70,12 @@
     <dependency>
       <groupId>org.jvnet.hudson.plugins</groupId>
       <artifactId>promoted-builds</artifactId>
-      <version>1.5</version>
+      <version>1.6</version>
     </dependency>
     <dependency>
       <groupId>org.jvnet.hudson.plugins</groupId>
       <artifactId>subversion</artifactId>
-      <version>1.7</version>
+      <version>1.8</version>
     </dependency>
     <dependency>
       <groupId>log4j</groupId>
