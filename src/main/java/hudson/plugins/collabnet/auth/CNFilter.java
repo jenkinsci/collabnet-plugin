@@ -51,41 +51,39 @@ public class CNFilter implements Filter {
     public void doFilter(ServletRequest request, ServletResponse response,
                          FilterChain chain) throws IOException, ServletException {
 
-        // check if we're already authenticated
-        Authentication auth = Hudson.getAuthentication();
-        // check if we're in the CollabNetSecurity Realm
-        SecurityRealm securityRealm = Hudson.getInstance().getSecurityRealm();
-        boolean enableSSOFromCTF = false;
-        boolean enableSSOToCTF = false;
-        if (securityRealm instanceof CollabNetSecurityRealm) {
-            CollabNetSecurityRealm cnRealm = (CollabNetSecurityRealm) securityRealm;
-            enableSSOFromCTF = cnRealm.getEnableSSOAuthFromCTF();
-            enableSSOToCTF = cnRealm.getEnableSSOAuthToCTF();
-        }
-
         if (Hudson.getInstance().isUseSecurity()) {
-            if (enableSSOFromCTF) {
-                HttpServletRequest httpRequest = (HttpServletRequest) request;
-                // first detect if we are accessing hudson through CTF
-                String username = request.getParameter("sfUsername");
-                if (username != null) {
-                    // 'sfUsername' is used by CTF for linked apps. if present make sure match the authenticated user
-                    if (!username.equals(auth.getName())) {
-                        auth.setAuthenticated(false);
+            // check if we're in the CollabNetSecurity Realm
+            SecurityRealm securityRealm = Hudson.getInstance().getSecurityRealm();
+            if (securityRealm instanceof CollabNetSecurityRealm) {
+                CollabNetSecurityRealm cnRealm = (CollabNetSecurityRealm) securityRealm;
+                boolean enableSSOFromCTF = cnRealm.getEnableSSOAuthFromCTF();
+                boolean enableSSOToCTF = cnRealm.getEnableSSOAuthToCTF();
+
+                Authentication auth = Hudson.getAuthentication();
+
+                if (enableSSOFromCTF) {
+                    HttpServletRequest httpRequest = (HttpServletRequest) request;
+                    // first detect if we are accessing hudson through CTF
+                    String username = request.getParameter("sfUsername");
+                    if (username != null) {
+                        // 'sfUsername' is used for CTF linked apps. if present make sure match the authenticated user
+                        if (!username.equals(auth.getName())) {
+                            auth.setAuthenticated(false);
+                        }
+                    }
+
+                    if (!auth.isAuthenticated() || auth.getPrincipal().equals("anonymous")) {
+                        loginHudsonUsingCTFSSO((CollabNetSecurityRealm)securityRealm, httpRequest);
                     }
                 }
 
-                if (!auth.isAuthenticated() || auth.getPrincipal().equals("anonymous")) {
-                    loginHudsonUsingCTFSSO((CollabNetSecurityRealm)securityRealm, httpRequest);
-                }
-            }
-
-            if (enableSSOToCTF && auth instanceof CNAuthentication) {
-                CNAuthentication cnauth = (CNAuthentication) auth;
-                if (!cnauth.isCNAuthed()) {
-                    loginToCTF(cnauth, (CollabNetSecurityRealm)securityRealm,
-                        (HttpServletRequest) request, (HttpServletResponse) response);
-                    return;
+                if (enableSSOToCTF && auth instanceof CNAuthentication) {
+                    CNAuthentication cnauth = (CNAuthentication) auth;
+                    if (!cnauth.isCNAuthed()) {
+                        loginToCTF(cnauth, (CollabNetSecurityRealm)securityRealm,
+                            (HttpServletRequest) request, (HttpServletResponse) response);
+                        return;
+                    }
                 }
             }
         }
