@@ -190,11 +190,12 @@ public class TeamForge extends SubversionRepositoryBrowser {
         return new URL(link.toString());
     }
 
-    private StringBuffer getViewerUrlWithPath(SubversionChangeLogSet.Path 
-                                              path) {
+    private StringBuffer getViewerUrlWithPath(SubversionChangeLogSet.Path path) {
         String[] urlParts = this.getViewerUrl().split("\\?");
-        StringBuffer viewWithPath = new StringBuffer(urlParts[0])
-            .append(path.getValue()).append("?").append(urlParts[1]);
+        StringBuffer viewWithPath = new StringBuffer(urlParts[0]).append(path.getValue()).append("?");
+        if (urlParts.length > 1) {
+            viewWithPath.append(urlParts[1]);
+        }
         return viewWithPath;
     }
 
