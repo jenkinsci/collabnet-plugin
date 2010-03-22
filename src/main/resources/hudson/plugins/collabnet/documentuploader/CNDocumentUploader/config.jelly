@@ -4,6 +4,8 @@
 
   <script src="${rootURL}/plugin/collabnet/scripts/cnauth_override.js" type="text/javascript" />
 
+  <j:set var="unique_id" value="${descriptor.getUniqueId()}" />
+
   <j:set var="rootHelpURL" value="${descriptor.getHelpUrl()}" />
 
 
@@ -18,60 +20,60 @@
                 value="${instance.overrideAuth()}" />
             </j:when>
           </j:choose>
-          <c:cnOptionalBlock id="cndu.override_auth" 
-           name="cndu.override_auth" 
+          <c:cnOptionalBlock id="_${unique_id}.cndu.override_auth"
+           name="_${unique_id}.cndu.override_auth"
            title="Override the Global CollabNet Configuration"
            checked="${cndu_override}" 
-           onclick="document.getElementById('cndu.password').onchange();cndu_project_update();"
+           onclick="document.getElementById('${unique_id}.cndu.password').onchange();_${unique_id}_cndu_project_update();"
              >
-           <c:cnAuth prefix="cndu" 
+           <c:cnAuth prefix="${unique_id}.cndu"
             checkUrlRoot="${rootURL}/publisher/CNDocumentUploader" 
             helpUrlRoot="${rootHelpURL}" url="${instance.getCollabNetUrl()}" 
             username="${instance.username}" password="${instance.password}" 
-            onchange="document.getElementById('cndu_project').onchange();"
+            onchange="document.getElementById('_${unique_id}_cndu_project').onchange();"
            />
           </c:cnOptionalBlock>
         </table>
       </f:nested>
     </j:when>
     <j:otherwise>
-      <c:cnAuth prefix="cndu" 
+      <c:cnAuth prefix="${unique_id}.cndu"
         checkUrlRoot="${rootURL}/publisher/CNDocumentUploader" 
         helpUrlRoot="${rootHelpURL}" url="${instance.getCollabNetUrl()}" 
         username="${instance.username}" password="${instance.password}" 
-        onchange="document.getElementById('cndu_project').onchange();" />
+        onchange="document.getElementById('_${unique_id}_cndu_project').onchange();" />
     </j:otherwise>
   </j:choose>
 
   <f:entry title="Project" help="${rootHelpURL}/help-project.html">
     <c:updatableComboBox name="cndu.project" value="${instance.project}" 
-     id="cndu_project" clazz="setting-input validated"
+     id="_${unique_id}_cndu_project" clazz="setting-input validated"
      items="${instance.getProjects()}"
      checkUrl="'${rootURL}/publisher/CNDocumentUploader/projectCheck?' +
-       'project=' + escape(this.value) + '&amp;' + get_auth_param_str('cndu')"
+       'project=' + escape(this.value) + '&amp;' + get_auth_param_str('${unique_id}.cndu')"
      updateUrl="'${rootURL}/publisher/CNDocumentUploader/getProjects?' +
-       get_auth_param_str('cndu')" />
+       get_auth_param_str('${unique_id}.cndu')" />
   </f:entry>
 
   <f:entry title="Upload Folder Path" help="${rootHelpURL}/help-uploadPath.html">
-    <f:textbox name="cndu.upload_path" value="${instance.getUploadPath()}" 
-     id="cndu.upload_path" 
+    <f:textbox name="cndu.upload_path" value="${instance.getUploadPath()}"
+     id="${unique_id}.cndu.upload_path"
      checkUrl="'${rootURL}/publisher/CNDocumentUploader/pathCheck?path=' + 
        escape(this.value) + '&amp;project=' + 
-       escape(document.getElementById('cndu_project').value) + 
-       '&amp;' + get_auth_param_str('cndu')" />
+       escape(document.getElementById('_${unique_id}_cndu_project').value) +
+       '&amp;' + get_auth_param_str('${unique_id}.cndu')" />
   </f:entry>
 
   <f:entry title="Description" help="${rootHelpURL}/help-description.html">
     <f:textbox name="cndu.description" value="${instance.description}" 
-     id="cndu.description"/>
+     id="${unique_id}.cndu.description"/>
   </f:entry>
 
   <f:entry title="File Patterns to Upload" 
    help="${rootHelpURL}/help-filepattern.html">
-    <f:repeatable name="cndu.files" var="file" 
+    <f:repeatable name="${unique_id}.cndu.files" var="file" 
      items="${instance.getFilePatterns()}" minimum="1" noAddButton="true">
-      <f:textbox name="cndu.file" value="${file}" 
+      <f:textbox name="${unique_id}.cndu.file" value="${file}"
        checkUrl="'${rootURL}/publisher/CNDocumentUploader/' + 
          'unRequiredInterpretedCheck?value='+escape(this.value)" />
       <div align="right">
@@ -86,11 +88,11 @@
   <f:entry title="Upload build log?" 
    help="${rootHelpURL}/help-buildlog.html">
     <span>
-      <f:radio name="cndu.buildlog" id="yes" title="Yes"
+      <f:radio name="${unique_id}.cndu.buildlog" id="${unique_id}.yes" title="Yes"
        value="true" checked="${instance.includeBuildLog()==true}">
       </f:radio>
       <label for="yes">Yes</label> 
-      <f:radio name="cndu.buildlog" id="no" title="No" 
+      <f:radio name="${unique_id}.cndu.buildlog" id="${unique_id}.no" title="No"
        value="false" checked="${instance.includeBuildLog()!=true}">
       </f:radio>
       <label for="no">No</label>

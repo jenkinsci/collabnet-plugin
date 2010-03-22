@@ -619,9 +619,26 @@ public class CNDocumentUploader extends Notifier {
     @Extension
     public static final class DescriptorImpl extends BuildStepDescriptor<Publisher> {
 
+        /* use to make sure fields are generated with unique names on html */
+        private static int smUniqueIdCounter = 0;
+
         public DescriptorImpl() {
             super(CNDocumentUploader.class);
         }
+
+        /**
+         * @return a unique integer, used to uniquely identify an instance of this plugin on a page.
+         */
+        public synchronized int getUniqueId() {
+            int returnVal = smUniqueIdCounter;
+            if (returnVal == (Integer.MAX_VALUE - 1)) {
+                smUniqueIdCounter = 0;
+            } else {
+                smUniqueIdCounter++;
+            }
+            return returnVal;
+        }
+
 
         @Override
         /**

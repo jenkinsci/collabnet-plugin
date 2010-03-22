@@ -779,14 +779,32 @@ public class CNTracker extends Notifier {
     public static final class DescriptorImpl extends BuildStepDescriptor<Publisher> {
         private static Logger log = Logger.getLogger("CNTrackerDescriptor");
 
+        /* use to make sure fields are generated with unique names on html */
+        private static int smUniqueIdCounter = 0;
+
+        /**
+         * Basic constructor.
+         */
         public DescriptorImpl() {
             super(CNTracker.class);
         }
 
+        /**
+         * @return a unique integer, used to uniquely identify an instance of this plugin on a page.
+         */
+        public synchronized int getUniqueId() {
+            int returnVal = smUniqueIdCounter;
+            if (returnVal == (Integer.MAX_VALUE - 1)) {
+                smUniqueIdCounter = 0;
+            } else {
+                smUniqueIdCounter++;
+            }
+            return returnVal;
+        }
+
         @Override
         /**
-         * Implementation of the abstract isApplicable method from 
-         * BuildStepDescriptor.
+         * * Allows this plugin to be used as a promotion task.
          */
          public boolean isApplicable(Class<? extends AbstractProject> jobType) {
             return true;
