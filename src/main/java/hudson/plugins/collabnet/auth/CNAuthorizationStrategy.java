@@ -154,11 +154,11 @@ public class CNAuthorizationStrategy extends AuthorizationStrategy {
         CNAuthProjectProperty capp = (CNAuthProjectProperty)job.
             getProperty(CNAuthProjectProperty.class);
         if (capp != null) {
-            String projectName = capp.getProject();
-            if (projectName != null && !projectName.equals("")) {
+            String projectId = capp.getProjectId();
+            if (projectId != null && !projectId.equals("")) {
                 return new CNRootACL(this.adminUsers, this.adminGroups, 
                                      this.readUsers, this.readGroups, 
-                                     new CNProjectACL(projectName));
+                                     new CNProjectACL(projectId));
             }
         }
 

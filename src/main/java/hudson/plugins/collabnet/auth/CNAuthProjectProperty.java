@@ -27,6 +27,7 @@ import org.kohsuke.stapler.StaplerRequest;
 public class CNAuthProjectProperty extends JobProperty<Job<?, ?>> {
     public static Permission CONFIGURE_PROPERTY = Item.CONFIGURE;
     private String project;
+    private transient String mProjectId;
     private boolean createRoles = false;
     private boolean grantDefaultRoles = false;
     private static Logger log = Logger.getLogger("CNAuthProjectProperty");
@@ -38,11 +39,23 @@ public class CNAuthProjectProperty extends JobProperty<Job<?, ?>> {
     public CNAuthProjectProperty(String project, Boolean createRoles, 
                                  Boolean grantDefaults) {
         this.project = project;
-        this.createRoles = createRoles.booleanValue();
-        this.grantDefaultRoles = grantDefaults.booleanValue();
+        this.createRoles = createRoles;
+        this.grantDefaultRoles = grantDefaults;
         if (this.createRoles || this.grantDefaultRoles) {
             this.loadRoles();
         }
+    }
+
+    /**
+     * Convert the project name into projectId
+     */
+    private void loadProjectId() {
+        CNConnection conn = CNConnection.getInstance();
+        if (conn == null) {
+            log.warning("Cannot loadProjectId, incorrect authentication type.");
+            return;
+        }
+        mProjectId = conn.getProjectId(this.getProject());
     }
 
     /**
@@ -50,6 +63,16 @@ public class CNAuthProjectProperty extends JobProperty<Job<?, ?>> {
      */
     public String getProject() {
         return this.project;
+    }
+
+    /**
+     * @return the id of the TeamForge project.
+     */
+    public String getProjectId() {
+        if (mProjectId == null && this.project != null) {
+            loadProjectId();
+        }
+        return mProjectId;
     }
 
     /**
@@ -96,28 +119,27 @@ public class CNAuthProjectProperty extends JobProperty<Job<?, ?>> {
      *
      */
     private void loadRoles() {
-        if (this.getProject() != null && !this.getProject().equals("")) {
+        if (mProjectId != null && !mProjectId.equals("")) {
             CNConnection conn = CNConnection.getInstance();
             if (conn == null) {
                 log.warning("Cannot loadRoles, incorrect authentication type.");
                 return;
             }
-            String projectId = conn.getProjectId(this.getProject());
             if (this.createRoles()) {
                 List<String> roleNames = CNProjectACL.CollabNetRoles.
                     getNames();
                 List<String> descriptions = CNProjectACL.CollabNetRoles.
                     getDescriptions();
-                conn.addRoles(projectId, roleNames, descriptions);
+                conn.addRoles(mProjectId, roleNames, descriptions);
             }
             
             if (this.grantDefaultRoles()) {
                 // load up some default roles
                 // this should be an option later
-                conn.grantRoles(projectId, this.getDefaultUserRoles(), 
-                                conn.getUsers(projectId));
-                conn.grantRoles(projectId, this.getDefaultAdminRoles(), 
-                                conn.getAdmins(projectId));
+                conn.grantRoles(mProjectId, this.getDefaultUserRoles(),
+                                conn.getUsers(mProjectId));
+                conn.grantRoles(mProjectId, this.getDefaultAdminRoles(),
+                                conn.getAdmins(mProjectId));
             }
         }   
     }
@@ -222,7 +244,7 @@ public class CNAuthProjectProperty extends JobProperty<Job<?, ?>> {
             }
             // check that the user will have configure permissions
             // on this page
-            CNProjectACL acl = new CNProjectACL(project);
+            CNProjectACL acl = new CNProjectACL(projectId);
             if (!acl.hasPermission(CNAuthProjectProperty
                                    .CONFIGURE_PROPERTY)) {
                 CollabNetRole roleNeeded =

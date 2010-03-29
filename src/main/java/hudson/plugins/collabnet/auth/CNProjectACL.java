@@ -20,23 +20,16 @@ import org.acegisecurity.Authentication;
  * An ACL that uses project roles to determine what Hudson permissions to give.
  */
 public class CNProjectACL extends ACL {
-    private String project;
     private String projectId = null;
 
     private static Logger log = Logger.getLogger("CNProjectACL");
 
     /**
-     * Constructed with the CollabNet project name.
+     * Constructor.
+     * @param projectId the id of the TeamForge project associated with this ACL
      */
-    public CNProjectACL(String project) {
-        this.project = project;
-    }
-
-    public String getProjectId(CNConnection conn) {
-        if (this.projectId == null) {
-            this.projectId = conn.getProjectId(this.project);
-        }
-        return this.projectId;
+    public CNProjectACL(String projectId) {
+        this.projectId = projectId;
     }
 
     public boolean hasPermission(Authentication a, Permission permission) {
@@ -49,15 +42,14 @@ public class CNProjectACL extends ACL {
                        "Hudson instance.");
             return false;
         }
-        String projId = this.getProjectId(conn);
-        if (projId == null) {
+
+        if (projectId == null) {
             log.severe("hasPerission: project id could not be found for " +
-                      "project: " + this.project + ".");
+                      "project: " + this.projectId + ".");
             return false;
         }
-        Collection<CollabNetRole> userRoles = 
-            CollabNetRoles.getRoles(conn.getUserRoles(projId, 
-                                                      conn.getUsername()));
+
+        Collection<CollabNetRole> userRoles = CollabNetRoles.getRoles(conn.getUserRoles(projectId, conn.getUsername()));
         for(; permission!=null; permission=permission.impliedBy) {
             for (CollabNetRole role: userRoles) {
                 if (role.hasPermission(permission)) {
