@@ -6,19 +6,20 @@ import hudson.model.Item;
 import hudson.model.Job;
 import hudson.model.JobProperty;
 import hudson.model.JobPropertyDescriptor;
+import hudson.plugins.collabnet.util.CommonUtil;
 import hudson.security.Permission;
 import hudson.util.FormValidation;
+import net.sf.json.JSONObject;
+import org.kohsuke.stapler.QueryParameter;
+import org.kohsuke.stapler.StaplerRequest;
+import org.kohsuke.stapler.StaplerResponse;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.logging.Logger;
-
-import net.sf.json.JSONObject;
-
-import org.kohsuke.stapler.QueryParameter;
-import org.kohsuke.stapler.StaplerRequest;
 
 /**
  * Job property to associate a Hudson job with a CollabNet Project for
@@ -26,8 +27,9 @@ import org.kohsuke.stapler.StaplerRequest;
  */
 public class CNAuthProjectProperty extends JobProperty<Job<?, ?>> {
     public static Permission CONFIGURE_PROPERTY = Item.CONFIGURE;
-    private String project;
-    private transient String mProjectId;
+    private transient boolean mIsNotLoadedFromDisk = false;
+    private transient String project = null;
+    private String projectId = null;
     private boolean createRoles = false;
     private boolean grantDefaultRoles = false;
     private static Logger log = Logger.getLogger("CNAuthProjectProperty");
@@ -36,43 +38,81 @@ public class CNAuthProjectProperty extends JobProperty<Job<?, ?>> {
     private static Collection<String> defaultUserRoles = 
         Collections.emptyList();
 
-    public CNAuthProjectProperty(String project, Boolean createRoles, 
-                                 Boolean grantDefaults) {
-        this.project = project;
+    /**
+     * Constructor
+     * @param projectName name of project to tie the auth to
+     * @param createRoles true to create special hudson roles
+     * @param grantDefaults true to grant default roles to project members
+     * @param isNotLoadedFromDisk true for newly instantiated jobs
+     */
+    public CNAuthProjectProperty(String projectName, Boolean createRoles,
+                                 Boolean grantDefaults, boolean isNotLoadedFromDisk) {
+        this.project = projectName;
         this.createRoles = createRoles;
         this.grantDefaultRoles = grantDefaults;
         if (this.createRoles || this.grantDefaultRoles) {
             this.loadRoles();
         }
+        mIsNotLoadedFromDisk = isNotLoadedFromDisk;
     }
 
     /**
-     * Convert the project name into projectId
+     * Determine the project id.
      */
-    private void loadProjectId() {
-        CNConnection conn = CNConnection.getInstance();
-        if (conn == null) {
-            log.warning("Cannot loadProjectId, incorrect authentication type.");
-            return;
+    private void loadProjectIdIfNecessary() {
+        if (CommonUtil.isEmpty(projectId) && !CommonUtil.isEmpty(project)) {
+            CNConnection conn = CNConnection.getInstance();
+            if (conn == null) {
+                return;
+            }
+
+            projectId = conn.getProjectId(project);
+
+            if (!mIsNotLoadedFromDisk) {
+                if (this.owner != null) {
+                    try {
+                        mIsNotLoadedFromDisk = true;
+                        this.owner.save(); // should save the conf file for the job
+                    } catch (IOException e) {
+                        log.info("Failed to modify config file for migration of project name to project id");
+                    }
+                }
+            }
         }
-        mProjectId = conn.getProjectId(this.getProject());
     }
 
     /**
      * @return the name of the CollabNet project.
      */
     public String getProject() {
-        return this.project;
+        loadProjectIdIfNecessary();
+
+        if (!CommonUtil.isEmpty(projectId)) {
+            // always use the name from project id if project id exists - this allows us to address scenario where
+            // while the app is running, the project name was changed on the server
+            CNConnection conn = CNConnection.getInstance();
+            if (conn != null) {
+                return conn.getProjectName(projectId);
+            }
+        }
+
+        return "";
     }
 
     /**
      * @return the id of the TeamForge project.
      */
     public String getProjectId() {
-        if (mProjectId == null && this.project != null) {
-            loadProjectId();
-        }
-        return mProjectId;
+        loadProjectIdIfNecessary();
+        return projectId;
+    }
+
+    /**
+     * Set the project id and reprocure the corresponding project name
+     * @param projectId project id
+     */
+    public void setProjectId(String projectId) {
+        this.projectId = projectId;
     }
 
     /**
@@ -119,7 +159,7 @@ public class CNAuthProjectProperty extends JobProperty<Job<?, ?>> {
      *
      */
     private void loadRoles() {
-        if (mProjectId != null && !mProjectId.equals("")) {
+        if (!CommonUtil.isEmpty(projectId) && !projectId.equals("")) {
             CNConnection conn = CNConnection.getInstance();
             if (conn == null) {
                 log.warning("Cannot loadRoles, incorrect authentication type.");
@@ -130,16 +170,16 @@ public class CNAuthProjectProperty extends JobProperty<Job<?, ?>> {
                     getNames();
                 List<String> descriptions = CNProjectACL.CollabNetRoles.
                     getDescriptions();
-                conn.addRoles(mProjectId, roleNames, descriptions);
+                conn.addRoles(projectId, roleNames, descriptions);
             }
             
             if (this.grantDefaultRoles()) {
                 // load up some default roles
                 // this should be an option later
-                conn.grantRoles(mProjectId, this.getDefaultUserRoles(),
-                                conn.getUsers(mProjectId));
-                conn.grantRoles(mProjectId, this.getDefaultAdminRoles(),
-                                conn.getAdmins(mProjectId));
+                conn.grantRoles(projectId, this.getDefaultUserRoles(),
+                                conn.getUsers(projectId));
+                conn.grantRoles(projectId, this.getDefaultAdminRoles(),
+                                conn.getAdmins(projectId));
             }
         }   
     }
@@ -172,9 +212,15 @@ public class CNAuthProjectProperty extends JobProperty<Job<?, ?>> {
             if (formData.get("grantDefaults") != null) {
                 grantDefaults = Boolean.TRUE;
             }
-            return new CNAuthProjectProperty((String)formData.get("project"),
-                                             createRoles,
-                                             grantDefaults);
+            String projectName = (String)formData.get("project");
+            String storedProjectId = (String)formData.get("storedProjectId");
+            CNAuthProjectProperty prop = new CNAuthProjectProperty(projectName, createRoles, grantDefaults, true);
+            prop.loadProjectIdIfNecessary();
+            if (!CommonUtil.isEmpty(prop.getProject()) && CommonUtil.isEmpty(prop.getProjectId())) {
+                // means we can't find the specified project name - prevent overriding
+                prop.setProjectId(storedProjectId);
+            }
+            return prop;
         }
 
         /**
@@ -202,10 +248,11 @@ public class CNAuthProjectProperty extends JobProperty<Job<?, ?>> {
          * @param project
          */
         public FormValidation doProjectCheck(@QueryParameter String project) {
-            if (project == null || project.equals("")) {
-                return FormValidation.warning("If left empty, only Hudson admins have " +
-                        "more than READ permissions in the project.");
+            if (CommonUtil.isEmpty(project)) {
+                return FormValidation.warning("If left empty, all users will be able to configure and access this " +
+                    "build");
             }
+
             CNConnection conn = CNConnection.getInstance();
             if (conn == null) {
                 return FormValidation.warning("Cannot check project name, improper" +
@@ -215,14 +262,12 @@ public class CNAuthProjectProperty extends JobProperty<Job<?, ?>> {
             boolean superUser = conn.isSuperUser();
             boolean hudsonAdmin = Hudson.getInstance().getACL()
                 .hasPermission(Hudson.ADMINISTER);
-            if (projectId == null) {
+            if (CommonUtil.isEmpty(projectId)) {
                 if (superUser) {
                     return FormValidation.error("This project does not exist.");
                 } else {
                     return FormValidation.error("The current user does not have access " +
-                          "to this project.  If this project is " +
-                          "chosen, the current user will be locked " +
-                          "out of this Hudson job.");
+                          "to this project.  This setting change will not be saved.");
                 }
             }
             if (superUser) {
@@ -261,6 +306,30 @@ public class CNAuthProjectProperty extends JobProperty<Job<?, ?>> {
             }
 
             return FormValidation.ok();
+        }
+
+        /**
+         * Get the project id for the given project
+         * @param request the request
+         * @param response the response
+         * @throw IOException if we fail to write response
+         */
+        public void doGetProjectId(StaplerRequest request, StaplerResponse response) throws IOException {
+            CNConnection conn = CNConnection.getInstance();
+            String project = request.getParameter("project");
+
+            String projectId;
+            if (conn == null) {
+                projectId = "";
+            } else {
+                projectId = conn.getProjectId(project);
+            }
+
+            response.setContentType("text/plain;charset=UTF-8");
+            JSONObject jsonObj = new JSONObject();
+            jsonObj.put("projectName", project);
+            jsonObj.put("projectId", projectId);
+            response.getWriter().print(jsonObj.toString());
         }
 
         /**

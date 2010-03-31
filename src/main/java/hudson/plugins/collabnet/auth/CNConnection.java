@@ -170,11 +170,21 @@ public class CNConnection {
     }
 
     /**
+     * Get the project id
      * @param project name
      * @return projectId or null, if none found.
      */
     public String getProjectId(String project) {
         return CNHudsonUtil.getProjectId(this.getCollabNetApp(), project);
+    }
+
+    /**
+     * Get the project name
+     * @param projectId id
+     * @return project name or null, if none found.
+     */
+    public String getProjectName(String projectId) {
+        return CNHudsonUtil.getProjectName(this.getCollabNetApp(), projectId);
     }
 
     /**

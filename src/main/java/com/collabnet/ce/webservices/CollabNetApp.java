@@ -9,6 +9,7 @@ import com.collabnet.ce.soap50.webservices.cemain.Group2SoapList;
 import com.collabnet.ce.soap50.webservices.cemain.Group2SoapRow;
 import com.collabnet.ce.soap50.webservices.cemain.ProjectMemberSoapList;
 import com.collabnet.ce.soap50.webservices.cemain.ProjectMemberSoapRow;
+import com.collabnet.ce.soap50.webservices.cemain.ProjectSoapDO;
 import com.collabnet.ce.soap50.webservices.cemain.ProjectSoapList;
 import com.collabnet.ce.soap50.webservices.cemain.ProjectSoapRow;
 import com.collabnet.ce.soap50.webservices.cemain.UserSoapList;
@@ -189,6 +190,22 @@ public class CollabNetApp {
         	}
         }
         return null;
+    }
+
+    /**
+     * Find the project that matches the given name, and return it's id.
+     *
+     * @param projectId
+     * @return name for this project (if a match is found), null otherwise.
+     */
+    public String getProjectName(String projectId) {
+        this.checkValidSessionId();
+        try {
+            ProjectSoapDO projectDO = icns.getProjectData(sessionId, projectId);
+            return projectDO.getTitle();
+        } catch (RemoteException e) {
+            return null;
+        }
     }
 
     /**

@@ -146,4 +146,13 @@ public class CommonUtil {
         }
         return results.toArray(new String[0]);
     }
+
+    /**
+     * Determine whether a string is "empty", meaning is null or empty.
+     * @param str string in question
+     * @return true if empty
+     */
+    public static boolean isEmpty(String str) {
+        return (str == null || str.trim().length() == 0); 
+    }
 }

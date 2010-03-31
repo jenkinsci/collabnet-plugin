@@ -154,6 +154,21 @@ public class CNHudsonUtil {
     }
 
     /**
+     * Get the project name for the project with given id.
+     *
+     * @param cna for accessing the webservice methods.
+     * @param projectId id.
+     * @return the id for the project or null, if no such project exist.
+     */
+    public static String getProjectName(CollabNetApp cna, String projectId) {
+        String projectName = null;
+        if (cna != null) {
+            projectName = cna.getProjectName(projectId);
+        }
+        return projectName;
+    }
+
+    /**
      * Get the release id.
      *
      * @param cna for accessing the webservice methods.

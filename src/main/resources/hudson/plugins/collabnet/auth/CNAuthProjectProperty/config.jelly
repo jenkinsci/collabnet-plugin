@@ -24,8 +24,35 @@
            id="capp_project" clazz='setting-input validated'
            items="${descriptor.getProjects()}"
            checkUrl="'${rootURL}/jobProperty/CNAuthProjectProperty/' + 
-             'projectCheck?project='+escape(this.value)" />
+             'projectCheck?project='+escape(this.value)"
+           onchange="updateProjectId('${rootURL}/jobProperty/CNAuthProjectProperty/' +
+             'getProjectId?project='+escape(this.value), 'capp_projectid_selected')" />
         </f:entry>
+
+        <f:description>
+          <script type="text/javascript">
+            function updateProjectId(url, targetId) {
+              new Ajax.Request(url, {
+                 method : "get",
+                 onComplete : function(x) {
+                    var json = x.responseText.evalJSON(false);
+                    var targetEl = document.getElementById(targetId);
+                    if (json.projectId) {
+                      targetEl.innerHTML=json.projectId + ':' + json.projectName;
+                    } else {
+                      targetEl.innerHTML='';
+                    }
+                 }
+              });
+            }
+          </script>
+          Currently stored project: <j:if test="${instance.project != null}">${instance.projectId}:${instance.project}</j:if>
+        </f:description>
+
+        <f:description>
+          Currently selected project: <span id="capp_projectid_selected"><j:if test="${instance.project != null}">${instance.projectId}:${instance.project}</j:if></span>
+          <input type="hidden" name="capp.storedProjectId" value="${instance.projectId}"/>
+        </f:description>
 
         <f:optionalBlock name="capp.createRoles" 
          title="Create Hudson roles in CollabNet TeamForge for this project." 
