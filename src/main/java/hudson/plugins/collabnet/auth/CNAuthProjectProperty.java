@@ -166,10 +166,12 @@ public class CNAuthProjectProperty extends JobProperty<Job<?, ?>> {
                 return;
             }
             if (this.createRoles()) {
-                List<String> roleNames = CNProjectACL.CollabNetRoles.
-                    getNames();
-                List<String> descriptions = CNProjectACL.CollabNetRoles.
-                    getDescriptions();
+                List<String> roleNames = new ArrayList<String>();
+                List<String> descriptions = new ArrayList<String>();
+                for (CollabNetRole role: CNProjectACL.CollabNetRoles.getAllRoles()) {
+                    roleNames.add(role.getName());
+                    descriptions.add(role.getDescription());
+                }
                 conn.addRoles(projectId, roleNames, descriptions);
             }
             

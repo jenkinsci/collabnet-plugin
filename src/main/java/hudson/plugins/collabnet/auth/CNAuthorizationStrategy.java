@@ -35,6 +35,7 @@ public class CNAuthorizationStrategy extends AuthorizationStrategy {
     private Collection<String> readGroups;
     private Collection<String> adminUsers;
     private Collection<String> adminGroups;
+    private int mAuthCacheTimeoutMin;
     private ACL rootACL;
 
     private static Logger log = Logger.getLogger("CNAuthorizationStrategy");
@@ -51,14 +52,16 @@ public class CNAuthorizationStrategy extends AuthorizationStrategy {
      *                  all permissions in Hudson.
      * @param adminGroups a list of groupnames (from CollabNet) whose members
      *                  have all permissions in Hudson.
+     * @param permCacheTimeoutMin the cache timeout in min, after which the cache entries are cleared. -1 to disable.
      */
     public CNAuthorizationStrategy(String[] readUsers, String [] readGroups, 
-                                   String[] adminUsers, String [] adminGroups) 
+                                   String[] adminUsers, String [] adminGroups, int permCacheTimeoutMin)
     {
         this.readUsers = Arrays.asList(readUsers);
         this.readGroups = Arrays.asList(readGroups);
         this.adminUsers = Arrays.asList(adminUsers);
         this.adminGroups = Arrays.asList(adminGroups);
+        mAuthCacheTimeoutMin = permCacheTimeoutMin;
         this.rootACL = new CNRootACL(this.adminUsers, this.adminGroups, 
                                      this.readUsers, this.readGroups);
     }
@@ -101,6 +104,22 @@ public class CNAuthorizationStrategy extends AuthorizationStrategy {
             return "";
         }
         return CNAuthorizationStrategy.join(this.adminGroups, ", ");
+    }
+
+    /**
+     * Get the number of min the cache is to be kept.
+     * @return number of min
+     */
+    public int getAuthCacheTimeoutMin() {
+        return mAuthCacheTimeoutMin;
+    }
+
+    /**
+     * Get the number of ms the cache is to be kept.
+     * @return number of ms
+     */
+    public long getAuthCacheTimeoutMs() {
+        return (long) (getAuthCacheTimeoutMin() * (60 * 1000));
     }
 
     /**
@@ -247,8 +266,12 @@ public class CNAuthorizationStrategy extends AuthorizationStrategy {
                                                            .get("adminUsers"));
             String[] adminGroups = CommonUtil
                 .splitCommaStr((String)formData.get("adminGroups"));
-            return new CNAuthorizationStrategy(readUsers, readGroups, 
-                                               adminUsers, adminGroups);
+            int permCacheTimeoutMin = formData.getInt("authCacheTimeoutMin");
+            if (permCacheTimeoutMin < 0) {
+                permCacheTimeoutMin = 0; // can't be negative
+            }
+
+            return new CNAuthorizationStrategy(readUsers, readGroups, adminUsers, adminGroups, permCacheTimeoutMin);
         }
 
         /**
@@ -272,7 +295,7 @@ public class CNAuthorizationStrategy extends AuthorizationStrategy {
             }
             return CNConnection.getVersion(url);
         }
-        
+
         /**
          * @return true if the CollabNet version is late enough (5.2+)
          *         that using this AuthorizationStrategy is effective.
@@ -329,5 +352,13 @@ public class CNAuthorizationStrategy extends AuthorizationStrategy {
                 @QueryParameter String users) {
             return CNFormFieldValidator.groupListCheck(groups, users);
         } 
-    }   
+
+        /**
+         * Check that the timeout number is greater than or equal to 0
+         * @param value the timeout to be checked
+         */
+        public FormValidation doTimeoutCheck(@QueryParameter String value) {
+            return CNFormFieldValidator.numberCheck(value, true, true, false);
+        }
+    }
 }

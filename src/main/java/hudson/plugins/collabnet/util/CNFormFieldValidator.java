@@ -624,4 +624,37 @@ public abstract class CNFormFieldValidator {
             return false;
         }
     }
+
+    /**
+     * Perform checking of number
+     * @param number the number
+     * @param allowPositive true to allow positive
+     * @param allowZero true to allow zero
+     * @param allowNegative true to allow negative
+     * @return validation
+     */
+    public static FormValidation numberCheck(String number, boolean allowPositive, boolean allowZero, 
+                                             boolean allowNegative) {
+
+        int integer;
+        try {
+            integer = Integer.parseInt(number);
+        } catch (Exception e) {
+            integer = 0;
+        }
+
+        if (integer < 0 && !allowNegative) {
+            return FormValidation.error("Integer cannot be negative: " + integer);
+        }
+
+        if (integer == 0 && !allowZero) {
+            return FormValidation.error("Integer cannot be zero: " + integer);
+        }
+
+        if (integer > 0 && !allowPositive) {
+            return FormValidation.error("Integer cannot be positive: " + integer);
+        }
+
+        return FormValidation.ok();
+    }
 }

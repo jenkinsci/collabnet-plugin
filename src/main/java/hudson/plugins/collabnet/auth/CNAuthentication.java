@@ -1,15 +1,16 @@
 package hudson.plugins.collabnet.auth;
 
-import java.rmi.RemoteException;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.logging.Logger;
-
+import com.collabnet.ce.webservices.CollabNetApp;
+import hudson.security.Permission;
 import org.acegisecurity.Authentication;
 import org.acegisecurity.GrantedAuthority;
 import org.acegisecurity.GrantedAuthorityImpl;
 
-import com.collabnet.ce.webservices.CollabNetApp;
+import java.rmi.RemoteException;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Set;
+import java.util.logging.Logger;
 
 /**
  * Authentication class for CollabNet.
@@ -22,6 +23,7 @@ public class CNAuthentication implements Authentication {
     private Collection<String> groups;
     private boolean authenticated = false;
     private boolean cnauthed = false;
+    private CNAuthorizationCache mAuthCache = null;
 
     private static Logger log = Logger.getLogger("CNAuthentication");
     
@@ -31,6 +33,8 @@ public class CNAuthentication implements Authentication {
         this.setupAuthorities();
         this.setupGroups();
         this.setAuthenticated(true);
+
+        mAuthCache = new CNAuthorizationCache();
     }
     
     /**
@@ -61,7 +65,9 @@ public class CNAuthentication implements Authentication {
         this.groups = Collections.emptyList();
         try {
             this.groups = cna.getUserGroups(this.principal);
-        } catch (RemoteException re) {}
+        } catch (RemoteException re) {
+            // not much we can do
+        }
     }
     
     public void setAuthenticated(boolean authenticated) {
@@ -126,5 +132,15 @@ public class CNAuthentication implements Authentication {
             sessionId = ((CollabNetApp)this.getCredentials()).getSessionId();
         }
         return sessionId;
+    }
+
+    /**
+     * Get a set of all permission that a user has for a given project.
+     * @param username user name
+     * @param projectId project id
+     * @return set of permissions
+     */
+    public Set<Permission> getUserProjectPermSet(String username, String projectId) {
+        return mAuthCache.getUserProjectPermSet(username, projectId);
     }
 }

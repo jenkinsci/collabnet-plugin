@@ -3,6 +3,7 @@ package hudson.plugins.collabnet.auth;
 import hudson.model.AbstractProject;
 import hudson.model.Hudson;
 import hudson.model.Item;
+import hudson.plugins.collabnet.util.CommonUtil;
 import hudson.plugins.promoted_builds.Promotion;
 import hudson.security.ACL;
 import hudson.security.Permission;
@@ -12,6 +13,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.logging.Logger;
 
 import org.acegisecurity.Authentication;
@@ -33,8 +35,8 @@ public class CNProjectACL extends ACL {
     }
 
     public boolean hasPermission(Authentication a, Permission permission) {
-        CNConnection conn = CNConnection.getInstance(a);
-        if (conn == null) {
+
+        if (!(a instanceof CNAuthentication)) {
             log.severe("Improper Authentication type used with " +
                        "CNAuthorizationStrategy!  CNAuthorization " +
                        "strategy cannot be used without " +
@@ -43,59 +45,36 @@ public class CNProjectACL extends ACL {
             return false;
         }
 
-        if (projectId == null) {
-            log.severe("hasPerission: project id could not be found for " +
-                      "project: " + this.projectId + ".");
+        if (CommonUtil.isEmpty(projectId)) {
+            log.severe("hasPerission: project id could not be found for project: " + this.projectId + ".");
             return false;
         }
 
-        Collection<CollabNetRole> userRoles = CollabNetRoles.getRoles(conn.getUserRoles(projectId, conn.getUsername()));
+        CNAuthentication cnAuth = (CNAuthentication) a;
+        String username = (String) cnAuth.getPrincipal();
+        Set<Permission> userPerms = cnAuth.getUserProjectPermSet(username, projectId);
         for(; permission!=null; permission=permission.impliedBy) {
-            for (CollabNetRole role: userRoles) {
-                if (role.hasPermission(permission)) {
-                    return true;
-                }
+            if (userPerms.contains(permission)) {
+                return true;
             }
         }
         return false;
     }
 
     public static class CollabNetRoles {
-        private static Collection<CollabNetRole> roles = 
+        private static Collection<CollabNetRole> roles =
             Collections.emptyList();
 
         /**
-         * Get the role which matches this name, if one exists.
-         * This is a bit inefficient, but should be ok for small numbers
-         * of roles.  If we ever have performance problems, we might
-         * want to consider putting this in a name->role HashMap.
+         * Get the applicable hudson roles matching a set of user role names
          *
-         * @param name to match
-         * @return the matching CollabNetRole or null if none is found.
+         * @param userRoleSet names of roles to match
+         * @return a collection of hudson roles with names that exist in user role set
          */
-        public static CollabNetRole getRole(String name) {
-            for (CollabNetRole role: CollabNetRoles.getAllRoles()) {
-                if (role.getName().equals(name)) {
-                    return role;
-                }
-            }
-            return null;
-        }
-
-        /**
-         * Get the roles matching a set of role names.
-         *
-         * @param names to match
-         * @return a collection of matching roles.  If a name doesn't match
-         *         any CollabNetRole, it will be skipped.
-         */
-        public static Collection<CollabNetRole> getRoles(Collection<String> 
-                                                         names) {
-            Collection<CollabNetRole> matchRoles = 
-                new ArrayList<CollabNetRole>();
-            for (String name: names) {
-                CollabNetRole role = CollabNetRoles.getRole(name);
-                if (role != null) {
+        public static Collection<CollabNetRole> getMatchingRoles(Set<String> userRoleSet) {
+            Collection<CollabNetRole> matchRoles = new ArrayList<CollabNetRole>();
+            for (CollabNetRole role : getAllRoles()) {
+                if (userRoleSet.contains(role.getName())) {
                     matchRoles.add(role);
                 }
             }
@@ -108,12 +87,12 @@ public class CNProjectACL extends ACL {
         public static Collection<CollabNetRole> getAllRoles() {
             if (CollabNetRoles.roles.isEmpty()) {
                 roles = new ArrayList<CollabNetRole>();
-                Collection<Permission> tempPermission = 
+                Collection<Permission> tempPermission =
                     new ArrayList<Permission>();
                 tempPermission.add(Hudson.READ);
                 tempPermission.add(Item.READ);
                 roles.add(new CollabNetRole("Hudson Read", "Allows users " +
-                                            "read-access to Hudson jobs.", 
+                                            "read-access to Hudson jobs.",
                                             tempPermission));
                 tempPermission.clear();
                 tempPermission.add(AbstractProject.BUILD);
@@ -122,17 +101,17 @@ public class CNProjectACL extends ACL {
                 tempPermission.add(Item.BUILD);
                 roles.add(new CollabNetRole("Hudson Build/Cancel", "Allow " +
                                             "users to start a new build, or " +
-                                            "to cancel a build.", 
+                                            "to cancel a build.",
                                             tempPermission));
                 tempPermission.clear();
                 tempPermission.add(Item.CONFIGURE);
                 roles.add(new CollabNetRole("Hudson Configure", "Allow users" +
-                                            " to configure a build.", 
+                                            " to configure a build.",
                                             tempPermission));
                 tempPermission.clear();
                 tempPermission.add(Item.DELETE);
-                roles.add(new CollabNetRole("Hudson Delete", "Allow users to " 
-                                            + "delete builds.", 
+                roles.add(new CollabNetRole("Hudson Delete", "Allow users to "
+                                            + "delete builds.",
                                             tempPermission));
                 tempPermission.clear();
                 // add build promotion as a permission, if the build promotion
@@ -158,12 +137,12 @@ public class CNProjectACL extends ACL {
                             tempPermission.add(promotePermission);
                         }
                     }
-                } 
+                }
                 // We'll add the role whether or not there's a
                 // permission to associated with it.
-                roles.add(new CollabNetRole("Hudson Promote", 
+                roles.add(new CollabNetRole("Hudson Promote",
                                             "Allow users to " +
-                                            "promote builds.", 
+                                            "promote builds.",
                                             tempPermission));
                 tempPermission.clear();
             }
@@ -179,17 +158,6 @@ public class CNProjectACL extends ACL {
                 names.add(role.getName());
             }
             return names;
-        }
-
-        /**
-         * @return an ordered List of Role descriptions.
-         */
-        public static List<String> getDescriptions() {
-            List<String> descriptions = new ArrayList<String>();
-            for (CollabNetRole role: CollabNetRoles.getAllRoles()) {
-                descriptions.add(role.getDescription());
-            }
-            return descriptions;
         }
 
         /**
@@ -231,7 +199,7 @@ public class CNProjectACL extends ACL {
             }
             return permissions;
         }
-        
+
     }
 
 }
