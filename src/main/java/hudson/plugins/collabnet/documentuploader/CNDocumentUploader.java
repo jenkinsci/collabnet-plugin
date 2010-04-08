@@ -13,7 +13,6 @@ import hudson.FilePath.FileCallable;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
 import hudson.model.BuildListener;
-import hudson.model.Descriptor;
 import hudson.model.Result;
 import hudson.model.Action;
 import hudson.model.TaskListener;
@@ -552,15 +551,10 @@ public class CNDocumentUploader extends Notifier {
             return null;
         }
         String id = null;
-        final FileStorageApp sfsa = new FileStorageApp(this.cna);
+
         try {
-            id = filePath.act(new FileCallable<String>() {
-                @Override
-                public String invoke(File f, VirtualChannel channel) 
-                throws IOException, RemoteException {      
-                    return sfsa.uploadFile(f);
-                }
-            });
+            // must upload to same session so temp file will be available later for creation of document
+            id = filePath.act(new RemoteFileUploader(getCollabNetUrl(), getUsername(), cna.getSessionId()));
         } catch (RemoteException re) {
             this.log("upload file", re);
         } catch (IOException ioe) {
@@ -571,6 +565,37 @@ public class CNDocumentUploader extends Notifier {
                      "InterruptedException: " + ie.getMessage());
         }
         return id;
+    }
+
+    /**
+     * Private class that can perform upload function.
+     */
+    private static class RemoteFileUploader implements FileCallable<String> {
+
+        private String mUrl;
+        private String mUsername;
+        private String mSessionId;
+
+        /**
+         * Constructor. Needs to have old sessionId, since the uploaded file is only available to the same session.
+         * @param url collabnet url
+         * @param username collabnet username
+         * @param sessionId collabnet sessionId
+         */
+        public RemoteFileUploader(String url, String username, String sessionId) {
+            mUrl = url;
+            mUsername = username;
+            mSessionId = sessionId;
+        }
+
+        /**
+         * @see FileCallable#invoke(File, VirtualChannel)
+         */
+        public String invoke(File f, VirtualChannel channel) throws IOException {
+            CollabNetApp cnApp = CNHudsonUtil.recreateCollabNetApp(mUrl, mUsername, mSessionId);
+            FileStorageApp sfsa = new FileStorageApp(cnApp);
+            return sfsa.uploadFile(f);
+        }
     }
 
     /**

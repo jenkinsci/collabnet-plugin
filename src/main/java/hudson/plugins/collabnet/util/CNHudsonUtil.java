@@ -50,6 +50,19 @@ public class CNHudsonUtil {
     }
 
     /**
+     * @param url
+     * @param username
+     * @param sessionId
+     * @return collabnet app, if one can be created; null otherwise.
+     */
+    public static CollabNetApp recreateCollabNetApp(String url, String username, String sessionId) {
+        if (CommonUtil.unset(url)) {
+            return null;
+        }
+        return new CollabNetApp(url, username, null, sessionId);
+    }
+
+    /**
      * Get a CollabNetApp, given a StaplerRequest with url, username, and
      * password set.  If login fails, null will be returned.
      */

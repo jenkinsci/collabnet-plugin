@@ -51,7 +51,7 @@ import org.kohsuke.stapler.StaplerResponse;
  * Hudson plugin to update files from the Hudson workspace 
  * to the CollabNet File Release System.
  */
-public class CNFileRelease extends Notifier implements Serializable {
+public class CNFileRelease extends Notifier {
     // listener is used for logging and will only be
     // set at the beginning of perform.
     private transient BuildListener listener = null;
@@ -371,8 +371,7 @@ public class CNFileRelease extends Notifier implements Serializable {
      * @throws IOException
      * @throws InterruptedException
      */
-    public int uploadFiles(AbstractBuild<?, ?> build,
-            final String releaseId) throws IOException, InterruptedException {
+    public int uploadFiles(AbstractBuild<?, ?> build, String releaseId) throws IOException, InterruptedException {
         int numUploaded = 0;
         final FrsApp fa = new FrsApp(this.cna);
         this.log("Uploading file to project '" + this.getProject() + 
@@ -423,22 +422,14 @@ public class CNFileRelease extends Notifier implements Serializable {
                     }
                 }
                 try {
-                    final String url = getCollabNetUrl();
-                    final String username = getUsername();
-                    final String password = getPassword();
-                    String path = uploadFilePath.act(new FileCallable<String>() {
-                        @Override
-                        public String invoke(File f, VirtualChannel channel)
-                            throws IOException {
-                            CollabNetApp cnApp = CNHudsonUtil.getCollabNetApp(url, username, password);
-                            FileStorageApp fsApp = new FileStorageApp(cnApp);
-                            FrsApp frsApp = new FrsApp(cnApp);
-                            String fileId = fsApp.uploadFile(f);
-                            FrsFileSoapDO fileSoap = frsApp.createFrsFile(releaseId, f.getName(),
-                                CNFileRelease.getMimeType(f), fileId);
-                            return fileSoap.getPath();
-                        }
-                    });
+                    // HACK: start - for artf63323
+                    // FileStorageApp must be preloaded by current classloader for "invoke" call below to work on slave
+                    new FileStorageApp(this.cna);
+                    // HACK: end
+                    String path = uploadFilePath.act(
+                        new RemoteFrsFileUploader(getCollabNetUrl(), getUsername(), cna.getSessionId(), releaseId)
+                    );
+
                     this.log("Uploaded file " + uploadFilePath.getName() + " -> " + this.getFileUrl(path));
                     numUploaded++;
                 } catch (RemoteException re) {
@@ -455,6 +446,43 @@ public class CNFileRelease extends Notifier implements Serializable {
             }
         }
         return numUploaded;
+    }
+
+    /**
+     * Private class that can perform upload function.
+     */
+    private static class RemoteFrsFileUploader implements FileCallable<String> {
+
+        private String mServerUrl;
+        private String mUsername;
+        private String mSessionId;
+        private String mReleaseId;
+
+        /**
+         * Constructor. Needs to have old sessionId, since the uploaded file is only available to the same session.
+         * @param serverUrl collabnet serverUrl
+         * @param username collabnet username
+         * @param sessionId collabnet sessionId
+         * @param releaseId the id of the release to create file in
+         */
+        public RemoteFrsFileUploader(String serverUrl, String username, String sessionId, String releaseId) {
+            mServerUrl = serverUrl;
+            mUsername = username;
+            mSessionId = sessionId;
+            mReleaseId = releaseId;
+        }
+
+        /**
+         * @see FileCallable#invoke(File, VirtualChannel)
+         */
+        public String invoke(File f, VirtualChannel channel) throws IOException {
+            CollabNetApp cnApp = CNHudsonUtil.recreateCollabNetApp(mServerUrl, mUsername, mSessionId);
+            FileStorageApp fsApp = new FileStorageApp(cnApp);
+            FrsApp frsApp = new FrsApp(cnApp);
+            String fileId = fsApp.uploadFile(f);
+            FrsFileSoapDO fileDO = frsApp.createFrsFile(mReleaseId, f.getName(), CNFileRelease.getMimeType(f), fileId);
+            return fileDO.getPath();
+        }
     }
 
     /**

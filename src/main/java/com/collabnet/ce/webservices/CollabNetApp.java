@@ -53,6 +53,19 @@ public class CollabNetApp {
     }
 
     /**
+     * Creates a new session to the server without actually authenticating, relying only on values passed in.
+     *
+     * @param url of the CollabNet server.
+     * @param username to login as.
+     * @param password to login with.
+     * @param sessionId the session id
+     */
+    public CollabNetApp(String url, String username, String password, String sessionId) {
+        this(url, username);
+        this.sessionId = sessionId;
+    }
+
+    /**
      * Creates a new CollabNetApp without a session.
      *
      * @param url of the CollabNet server.
