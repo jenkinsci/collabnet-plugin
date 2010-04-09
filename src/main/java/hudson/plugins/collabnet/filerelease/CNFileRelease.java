@@ -12,6 +12,7 @@ import hudson.FilePath;
 import hudson.FilePath.FileCallable;
 import hudson.model.AbstractBuild;
 import hudson.model.BuildListener;
+import hudson.model.FreeStyleProject;
 import hudson.model.Hudson;
 import hudson.model.Result;
 import hudson.model.TaskListener;
@@ -392,9 +393,9 @@ public class CNFileRelease extends Notifier {
                 // skip empty fields
                 continue;
             }
-            this.log("Upload files matching " + file_pattern + ":");
-            for (FilePath uploadFilePath : this.getFilePaths(build, 
-                                                             file_pattern)) {
+
+            FilePath[] filePaths = this.getFilePaths(build, file_pattern);
+            for (FilePath uploadFilePath : filePaths) {
                 // check if a file already exists
                 String fileId = null;
                 try {
@@ -495,10 +496,21 @@ public class CNFileRelease extends Notifier {
      */
     private FilePath[] getFilePaths(AbstractBuild<?, ?> build, 
                                     String pattern) {
-        FilePath workspace = build.getWorkspace();
+        FilePath workspace;
+        if (FreeStyleProject.class.isInstance(build.getProject())) { // generic instanceof causes compilation error
+            // our standard project
+            workspace = build.getWorkspace();
+        } else {
+            // promoted build - use the project's workspace, since the build doesn't always account for custom workspace
+            // may be a bug with promoted build?
+            workspace = build.getProject().getRootProject().getWorkspace();
+        }
+
+        String logEntry = "Searching ant pattern '" + pattern + "'";
         FilePath[] uploadFilePaths = new FilePath[0];
         try {
             uploadFilePaths = workspace.list(pattern);
+            logEntry += " in " + workspace.absolutize().getRemote();
         } catch (IOException ioe) {
             this.log("Could not list workspace due to IOException: " 
                      + ioe.getMessage());
@@ -506,6 +518,8 @@ public class CNFileRelease extends Notifier {
             this.log("Could not list workspace due to " +
                      "InterruptedException: " + ie.getMessage());
         }
+        logEntry += " : found " + uploadFilePaths.length + " entry(ies)";
+        log(logEntry);
         return uploadFilePaths;
     }
 
