@@ -159,7 +159,8 @@ public class CNAuthProjectProperty extends JobProperty<Job<?, ?>> {
      *
      */
     private void loadRoles() {
-        if (!CommonUtil.isEmpty(projectId) && !projectId.equals("")) {
+        String projectIdStr = getProjectId();
+        if (!CommonUtil.isEmpty(projectIdStr)) {
             CNConnection conn = CNConnection.getInstance();
             if (conn == null) {
                 log.warning("Cannot loadRoles, incorrect authentication type.");
@@ -172,16 +173,14 @@ public class CNAuthProjectProperty extends JobProperty<Job<?, ?>> {
                     roleNames.add(role.getName());
                     descriptions.add(role.getDescription());
                 }
-                conn.addRoles(projectId, roleNames, descriptions);
+                conn.addRoles(projectIdStr, roleNames, descriptions);
             }
             
             if (this.grantDefaultRoles()) {
                 // load up some default roles
                 // this should be an option later
-                conn.grantRoles(projectId, this.getDefaultUserRoles(),
-                                conn.getUsers(projectId));
-                conn.grantRoles(projectId, this.getDefaultAdminRoles(),
-                                conn.getAdmins(projectId));
+                conn.grantRoles(projectIdStr, this.getDefaultUserRoles(), conn.getUsers(projectIdStr));
+                conn.grantRoles(projectIdStr, this.getDefaultAdminRoles(), conn.getAdmins(projectIdStr));
             }
         }   
     }
