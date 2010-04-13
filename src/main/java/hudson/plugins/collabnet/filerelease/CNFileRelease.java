@@ -33,7 +33,6 @@ import hudson.plugins.promoted_builds.Promotion;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.Serializable;
 import java.rmi.RemoteException;
 import java.util.Collection;
 import java.util.Map;
@@ -122,7 +121,7 @@ public class CNFileRelease extends Notifier {
      *
      * @param message A string to print to the console.
      */
-    private void log(String message) {
+    private void logConsole(String message) {
         if (this.listener != null) {
             message = "CollabNet FileRelease: " + message;
             this.listener.getLogger().println(message);
@@ -136,7 +135,7 @@ public class CNFileRelease extends Notifier {
      * @param re The RemoteException that was thrown.
      */
     private void log(String methodName, RemoteException re) {
-        this.log(methodName + " failed due to " + re.getClass().getName() + 
+        this.logConsole(methodName + " failed due to " + re.getClass().getName() +
                  ": " + re.getMessage());
     }
 
@@ -295,7 +294,7 @@ public class CNFileRelease extends Notifier {
                                                 this.getUsername(), 
                                                 this.getPassword());
         if (this.cna == null) {
-            this.log("Critical Error: login to " + this.getCollabNetUrl() + 
+            this.logConsole("Critical Error: login to " + this.getCollabNetUrl() +
                      " failed.  Setting build status to UNSTABLE (or worse).");
             Result previousBuildStatus = build.getResult();
             build.setResult(previousBuildStatus.combine(Result.UNSTABLE));
@@ -375,7 +374,7 @@ public class CNFileRelease extends Notifier {
     public int uploadFiles(AbstractBuild<?, ?> build, String releaseId) throws IOException, InterruptedException {
         int numUploaded = 0;
         final FrsApp fa = new FrsApp(this.cna);
-        this.log("Uploading file to project '" + this.getProject() + 
+        this.logConsole("Uploading file to project '" + this.getProject() +
                  "', package '" + this.getPackage() + "', release '" + 
                  this.getRelease() + "' on host '" + this.getCollabNetUrl() + 
                  "' as user '" + this.getUsername() + "'.");
@@ -385,7 +384,7 @@ public class CNFileRelease extends Notifier {
             try {
                 file_pattern = getInterpreted(build, uninterp_fp); 
             } catch (IllegalArgumentException e) {
-                this.log("File pattern " + uninterp_fp + " contained a bad "
+                this.logConsole("File pattern " + uninterp_fp + " contained a bad "
                          + "env var.  Skipping.");
                 continue;
             }
@@ -409,13 +408,13 @@ public class CNFileRelease extends Notifier {
                         // delete existing file
                         try {
                             fa.deleteFrsFile(fileId);
-                            this.log("Deleted previously uploaded file: " + 
+                            this.logConsole("Deleted previously uploaded file: " +
                                      uploadFilePath.getName());
                         } catch (RemoteException re) {
                             this.log("delete file", re);
                         }                    
                     } else {
-                        this.log("File " + uploadFilePath.getName() + 
+                        this.logConsole("File " + uploadFilePath.getName() +
                                  " already exists in the file release " +
                                  "system and overwrite is set to false.  " +
                                  "Skipping.");
@@ -431,16 +430,16 @@ public class CNFileRelease extends Notifier {
                         new RemoteFrsFileUploader(getCollabNetUrl(), getUsername(), cna.getSessionId(), releaseId)
                     );
 
-                    this.log("Uploaded file " + uploadFilePath.getName() + " -> " + this.getFileUrl(path));
+                    this.logConsole("Uploaded file " + uploadFilePath.getName() + " -> " + this.getFileUrl(path));
                     numUploaded++;
                 } catch (RemoteException re) {
                     this.log("upload file", re);
                 } catch (IOException ioe) {
-                    this.log("Could not upload file due to IOException: " 
+                    this.logConsole("Could not upload file due to IOException: "
                              + ioe.toString());
                     ioe.printStackTrace(this.listener.error("error"));
                 } catch (InterruptedException ie) {
-                    this.log("Could not upload file due to " +
+                    this.logConsole("Could not upload file due to " +
                              "InterruptedException: " + ie.getMessage());
                 }
                 
@@ -512,14 +511,14 @@ public class CNFileRelease extends Notifier {
             uploadFilePaths = workspace.list(pattern);
             logEntry += " in " + workspace.absolutize().getRemote();
         } catch (IOException ioe) {
-            this.log("Could not list workspace due to IOException: " 
+            this.logConsole("Could not list workspace due to IOException: "
                      + ioe.getMessage());
         } catch (InterruptedException ie) {
-            this.log("Could not list workspace due to " +
+            this.logConsole("Could not list workspace due to " +
                      "InterruptedException: " + ie.getMessage());
         }
         logEntry += " : found " + uploadFilePaths.length + " entry(ies)";
-        log(logEntry);
+        logConsole(logEntry);
         return uploadFilePaths;
     }
 
@@ -541,7 +540,7 @@ public class CNFileRelease extends Notifier {
             CNHudsonUtil.logoff(cna);
             this.cna = null;
         } else {
-            this.log("logoff failed. Not logged in!");
+            this.logConsole("logoff failed. Not logged in!");
         }
     }
 
@@ -555,7 +554,7 @@ public class CNFileRelease extends Notifier {
     public String getReleaseId() {
         String projectId = this.getProjectId();
         if (projectId == null) {
-            this.log("Critical Error: projectId cannot be found for " + 
+            this.logConsole("Critical Error: projectId cannot be found for " +
                      this.getProject() + ".  This could mean that the project "
                      + "does not exist OR that the user logging in does not " 
                      + "have access to that project.  " +
@@ -564,14 +563,14 @@ public class CNFileRelease extends Notifier {
         }
         String packageId = this.getPackageId(projectId);
         if (packageId == null) {
-            this.log("Critical Error: packageId cannot be found for " + 
+            this.logConsole("Critical Error: packageId cannot be found for " +
                      this.getPackage() + ".  " +
                      "Setting build status to UNSTABLE (or worse).");
             return null;
         }
         String releaseId = this.getReleaseId(packageId);
         if (releaseId == null) {
-            this.log("Critical Error: releaseId cannot be found for " + 
+            this.logConsole("Critical Error: releaseId cannot be found for " +
                      this.getRelease() + ".  " +
                      "Setting build status to UNSTABLE (or worse).");
             return null;
@@ -586,7 +585,7 @@ public class CNFileRelease extends Notifier {
      */
     public String getProjectId() {
         if (this.cna == null) {
-            this.log("Cannot getProjectId, not logged in!");
+            this.logConsole("Cannot getProjectId, not logged in!");
             return null;
         }
         return CNHudsonUtil.getProjectId(this.cna, this.getProject());
@@ -600,7 +599,7 @@ public class CNFileRelease extends Notifier {
      */
     public String getPackageId(String projectId) {
         if (this.cna == null) {
-            this.log("Cannot getPackageId, not logged in!");
+            this.logConsole("Cannot getPackageId, not logged in!");
             return null;
         }
         return CNHudsonUtil.getPackageId(this.cna, this.getPackage(), 
@@ -615,7 +614,7 @@ public class CNFileRelease extends Notifier {
      */
     public String getReleaseId(String packageId) {
         if (this.cna == null) {
-            this.log("Cannot getReleaseId, not logged in!");
+            this.logConsole("Cannot getReleaseId, not logged in!");
             return null;
         }
         return CNHudsonUtil.getReleaseId(this.cna, packageId, 
@@ -646,7 +645,7 @@ public class CNFileRelease extends Notifier {
         try {
             return CommonUtil.getInterpreted(envVars, str);
         } catch (IllegalArgumentException iae) {
-            this.log(iae.getMessage());
+            this.logConsole(iae.getMessage());
             throw iae;
         }
     }

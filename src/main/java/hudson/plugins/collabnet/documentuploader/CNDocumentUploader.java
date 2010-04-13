@@ -119,7 +119,7 @@ public class CNDocumentUploader extends Notifier {
      *
      * @param message A string to print to the console.
      */
-    private void log(String message) {
+    private void logConsole(String message) {
         if (this.listener != null) {
             message = "CollabNet Document Uploader: " + message;
             this.listener.getLogger().println(message);
@@ -261,7 +261,7 @@ public class CNDocumentUploader extends Notifier {
                                                 this.getUsername(), 
                                                 this.getPassword());
         if (this.cna == null) {
-            this.log("Critical Error: login to " + this.getCollabNetUrl() + 
+            this.logConsole("Critical Error: login to " + this.getCollabNetUrl() +
                      " failed.  Setting build status to UNSTABLE (or worse).");
             Result previousBuildStatus = build.getResult();
             build.setResult(previousBuildStatus.combine(Result.UNSTABLE));
@@ -270,7 +270,7 @@ public class CNDocumentUploader extends Notifier {
         }
         String projectId = this.getProjectId();
         if (projectId == null) {
-            this.log("Critical Error: Unable to find project '" + 
+            this.logConsole("Critical Error: Unable to find project '" +
                      this.getProject() + "'.  " + 
                      "Setting build status to UNSTABLE (or worse).");
             Result previousBuildStatus = build.getResult();
@@ -287,7 +287,7 @@ public class CNDocumentUploader extends Notifier {
         } catch (RemoteException re) {
             this.log("findOrCreatePath", re);
             // if this fails, cannot continue
-            this.log("Critical Error: Unable to create a path for '" + 
+            this.logConsole("Critical Error: Unable to create a path for '" +
                      path + "'.  Setting build status to " +
                      "UNSTABLE (or worse).");
             Result previousBuildStatus = build.getResult();
@@ -348,7 +348,7 @@ public class CNDocumentUploader extends Notifier {
             throws IOException, InterruptedException {
         int numUploaded = 0;
         String path = this.getInterpreted(build, this.getUploadPath());
-        this.log("Uploading files to project '" + this.getProject() + 
+        this.logConsole("Uploading files to project '" + this.getProject() +
                  "', folder '" + path + "' on host '" + 
                  this.getCollabNetUrl() + "' as user '" + this.getUsername() 
                  + "'.");
@@ -357,8 +357,7 @@ public class CNDocumentUploader extends Notifier {
             try {
                 file_pattern = getInterpreted(build, uninterp_fp); 
             } catch (IllegalArgumentException e) {
-                this.log("File pattern " + uninterp_fp + " contained a bad "
-                         + "env var.  Skipping.");
+                this.logConsole("File pattern " + uninterp_fp + " contained a bad env var.  Skipping.");
                 continue;
             }
             if (file_pattern.equals("")) {
@@ -370,8 +369,7 @@ public class CNDocumentUploader extends Notifier {
             for (FilePath uploadFilePath : filePaths) {
                 String fileId = this.uploadFile(uploadFilePath);
                 if (fileId == null) {
-                    this.log("Failed to upload " + uploadFilePath.getName() 
-                             + ".");
+                    this.logConsole("Failed to upload " + uploadFilePath.getName() + ".");
                     continue;
                 }
                 String docId = null;
@@ -381,10 +379,11 @@ public class CNDocumentUploader extends Notifier {
                                                    CNDocumentUploader.
                                                    getMimeType(uploadFilePath),
                                                    build);
-                    this.log("Uploaded " + uploadFilePath.getName() + " -> " 
+                    this.logConsole("Uploaded " + uploadFilePath.getName() + " -> "
                              + this.getDocUrl(docId));
                     numUploaded++;
                 } catch (RemoteException re) {
+                    logConsole("Upload file failed: " + re.getMessage());
                     this.log("updateOrCreateDoc", re);
                 }
             }
@@ -392,10 +391,8 @@ public class CNDocumentUploader extends Notifier {
         if (this.includeBuildLog()) {
             String fileId = this.uploadBuildLog(build);
             if (fileId == null) {
-                    this.log("Failed to upload " + build.getLogFile().getName() 
-                             + ".");
-            }
-            else {
+                this.logConsole("Failed to upload " + build.getLogFile().getName() + ".");
+            } else {
                 String docId = null;
                 try {
                     docId = this.updateOrCreateDoc(folderId, fileId, 
@@ -404,10 +401,10 @@ public class CNDocumentUploader extends Notifier {
                                                    getMimeType(build.
                                                                getLogFile()),
                                                    build);
-                    this.log("Uploaded " + build.getLogFile().getName() 
-                             + " -> " + this.getDocUrl(docId));
+                    this.logConsole("Uploaded " + build.getLogFile().getName() + " -> " + this.getDocUrl(docId));
                     numUploaded++;
                 } catch (RemoteException re) {
+                    logConsole("Upload log failed: " + re.getMessage());
                     this.log("updateOrCreateDoc", re);
                 }
             }
@@ -451,14 +448,14 @@ public class CNDocumentUploader extends Notifier {
             uploadFilePaths = workspace.list(pattern);
             logEntry += " in " + workspace.absolutize().getRemote();
         } catch (IOException ioe) {
-            this.log("Could not list workspace due to IOException: " 
+            this.logConsole("Could not list workspace due to IOException: "
                      + ioe.getMessage());
         } catch (InterruptedException ie) {
-            this.log("Could not list workspace due to " +
+            this.logConsole("Could not list workspace due to " +
                      "InterruptedException: " + ie.getMessage());
         }
         logEntry += " : found " + uploadFilePaths.length + " entry(ies)";
-        log(logEntry);
+        logConsole(logEntry);
         return uploadFilePaths;
     }
 
@@ -540,7 +537,7 @@ public class CNDocumentUploader extends Notifier {
      */
     private String uploadBuildLog(AbstractBuild <?, ?> build) {
         if (this.cna == null) {
-            this.log("Cannot call updateSucceedingBuild, not logged in!");
+            this.logConsole("Cannot call updateSucceedingBuild, not logged in!");
             return null;
         }
         String id = null;
@@ -561,7 +558,7 @@ public class CNDocumentUploader extends Notifier {
      */
     private String uploadFile(FilePath filePath) {
         if (this.cna == null) {
-            this.log("Cannot call uploadFile, not logged in!");
+            this.logConsole("Cannot call uploadFile, not logged in!");
             return null;
         }
         String id = null;
@@ -572,10 +569,10 @@ public class CNDocumentUploader extends Notifier {
         } catch (RemoteException re) {
             this.log("upload file", re);
         } catch (IOException ioe) {
-            this.log("Could not upload file due to IOException: " 
+            this.logConsole("Could not upload file due to IOException: "
                      + ioe.getMessage());
         } catch (InterruptedException ie) {
-            this.log("Could not upload file due to " +
+            this.logConsole("Could not upload file due to " +
                      "InterruptedException: " + ie.getMessage());
         }
         return id;
@@ -627,7 +624,7 @@ public class CNDocumentUploader extends Notifier {
      */
     public String getProjectId() {
         if (this.cna == null) {
-            this.log("Cannot getProjectId, not logged in!");
+            this.logConsole("Cannot getProjectId, not logged in!");
             return null;
         }
         return CNHudsonUtil.getProjectId(this.cna, this.getProject());
@@ -647,7 +644,7 @@ public class CNDocumentUploader extends Notifier {
         try {
             return CommonUtil.getInterpreted(build.getEnvironment(TaskListener.NULL), str);
         } catch (IllegalArgumentException iae) {
-            this.log(iae.getMessage());
+            this.logConsole(iae.getMessage());
             throw iae;
         }
     }
