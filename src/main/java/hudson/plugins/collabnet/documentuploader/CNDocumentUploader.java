@@ -564,6 +564,11 @@ public class CNDocumentUploader extends Notifier {
         String id = null;
 
         try {
+            // HACK: start
+            // All soap App must be preloaded by current classloader for "invoke" call below to work on slave
+            new CollabNetApp(getCollabNetUrl(), getUsername(), null, cna.getSessionId());
+            new FileStorageApp(this.cna);
+            // HACK: end
             // must upload to same session so temp file will be available later for creation of document
             id = filePath.act(new RemoteFileUploader(getCollabNetUrl(), getUsername(), cna.getSessionId()));
         } catch (RemoteException re) {

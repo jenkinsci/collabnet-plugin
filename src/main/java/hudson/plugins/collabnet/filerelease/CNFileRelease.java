@@ -422,8 +422,9 @@ public class CNFileRelease extends Notifier {
                     }
                 }
                 try {
-                    // HACK: start - for artf63323
-                    // FileStorageApp must be preloaded by current classloader for "invoke" call below to work on slave
+                    // HACK: start
+                    // All soap App must be preloaded by current classloader for "invoke" call below to work on slave
+                    new CollabNetApp(getCollabNetUrl(), getUsername(), null, cna.getSessionId());
                     new FileStorageApp(this.cna);
                     // HACK: end
                     String path = uploadFilePath.act(
