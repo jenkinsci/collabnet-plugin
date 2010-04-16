@@ -5,6 +5,7 @@ import hudson.model.Hudson;
 import hudson.model.Item;
 import hudson.plugins.collabnet.util.CommonUtil;
 import hudson.plugins.promoted_builds.Promotion;
+import hudson.scm.SCM;
 import hudson.security.ACL;
 import hudson.security.Permission;
 
@@ -116,8 +117,7 @@ public class CNProjectACL extends ACL {
                 tempPermission.clear();
                 // add build promotion as a permission, if the build promotion
                 // plugin is present.
-                if (Hudson.getInstance().
-                    getPlugin("promoted-builds") != null) {
+                if (Hudson.getInstance().getPlugin("promoted-builds") != null) {
                     // check if we have the PROMOTE permission
                     Field promote = null;
                     Field[] promotionFields = Promotion.class.getFields();
@@ -137,13 +137,17 @@ public class CNProjectACL extends ACL {
                             tempPermission.add(promotePermission);
                         }
                     }
-                }
-                // We'll add the role whether or not there's a
-                // permission to associated with it.
-                roles.add(new CollabNetRole("Hudson Promote",
+
+                    roles.add(new CollabNetRole("Hudson Promote",
                                             "Allow users to " +
                                             "promote builds.",
                                             tempPermission));
+                    tempPermission.clear();
+                }
+
+                tempPermission.add(SCM.TAG);
+                roles.add(new CollabNetRole("Hudson SCM Tag", "Allow users to create scm tags from a build page", 
+                    tempPermission));
                 tempPermission.clear();
             }
             return CollabNetRoles.roles;
