@@ -1,6 +1,9 @@
 <div>
   <p>
-    Authorization information queried from the appserver can be cached in Hudson to reduce appserver load.  Setting
-    this value to zero or below turns off all caching.
+    Authorization information queried from the appserver can be cached in Hudson to improve page load and reduce
+    appserver load.  Cached permissions does not persist across user sessions, and setting this value to zero or below
+    turns off all caching.
+
+    It is highly recommended that this at least be set to a small value to prevent generating excessive appserver load.
   </p>
 </div>
