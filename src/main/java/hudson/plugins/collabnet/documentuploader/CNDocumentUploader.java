@@ -125,6 +125,25 @@ public class CNDocumentUploader extends Notifier {
             this.listener.getLogger().println(message);
         }
     }
+
+
+    /**
+     * Log a message to the console, including stack trace.  Logging will only work once the 
+     * listener is set. Otherwise, it will fail (silently).
+     *
+     * @param message A string to print to the console.
+     * @param exception the exception containing the stack trace to log
+     */
+    private void logConsole(String message, Exception exception) {
+        if (this.listener != null) {
+            message = "CollabNet Document Uploader: " + message;
+            this.listener.getLogger().println(message);
+
+            // now print the stack trace
+            exception.printStackTrace(this.listener.error("error"));
+        }
+    }
+
     
     /**
      * Convenience method to log RemoteExceptions.  
@@ -404,7 +423,7 @@ public class CNDocumentUploader extends Notifier {
                     this.logConsole("Uploaded " + build.getLogFile().getName() + " -> " + this.getDocUrl(docId));
                     numUploaded++;
                 } catch (RemoteException re) {
-                    logConsole("Upload log failed: " + re.getMessage());
+                    logConsole("Upload log failed: " + re.getMessage(), re);
                     this.log("updateOrCreateDoc", re);
                 }
             }
@@ -564,21 +583,14 @@ public class CNDocumentUploader extends Notifier {
         String id = null;
 
         try {
-            // HACK: start
-            // All soap App must be preloaded by current classloader for "invoke" call below to work on slave
-            new CollabNetApp(getCollabNetUrl(), getUsername(), null, cna.getSessionId());
-            new FileStorageApp(this.cna);
-            // HACK: end
             // must upload to same session so temp file will be available later for creation of document
             id = filePath.act(new RemoteFileUploader(getCollabNetUrl(), getUsername(), cna.getSessionId()));
         } catch (RemoteException re) {
-            this.log("upload file", re);
+            this.logConsole("upload file failed", re);
         } catch (IOException ioe) {
-            this.logConsole("Could not upload file due to IOException: "
-                     + ioe.getMessage());
+            this.logConsole("Could not upload file due to IOException: " + ioe.getMessage(), ioe);
         } catch (InterruptedException ie) {
-            this.logConsole("Could not upload file due to " +
-                     "InterruptedException: " + ie.getMessage());
+            this.logConsole("Could not upload file due to InterruptedException: " + ie.getMessage());
         }
         return id;
     }

@@ -412,7 +412,7 @@ public class CNFileRelease extends Notifier {
                                      uploadFilePath.getName());
                         } catch (RemoteException re) {
                             this.log("delete file", re);
-                        }                    
+                        }
                     } else {
                         this.logConsole("File " + uploadFilePath.getName() +
                                  " already exists in the file release " +
@@ -424,7 +424,6 @@ public class CNFileRelease extends Notifier {
                 try {
                     // HACK: start
                     // All soap App must be preloaded by current classloader for "invoke" call below to work on slave
-                    new CollabNetApp(getCollabNetUrl(), getUsername(), null, cna.getSessionId());
                     new FileStorageApp(this.cna);
                     // HACK: end
                     String path = uploadFilePath.act(
