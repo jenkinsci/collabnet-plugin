@@ -19,6 +19,7 @@ import org.kohsuke.stapler.StaplerResponse;
 import javax.servlet.ServletException;
 import java.io.IOException;
 import java.net.URL;
+import java.rmi.RemoteException;
 import java.util.Collection;
 import java.util.logging.Logger;
 
@@ -126,10 +127,18 @@ public class TeamForge extends SubversionRepositoryBrowser {
         }
     }
 
+    /**
+     * Get the name of the project
+     * @return project name
+     */
     public String getProject() {
         return this.project;
     }
 
+    /**
+     * Get the name of the repository.
+     * @return repository name
+     */
     public String getRepo() {
         return this.repo;
     }
@@ -162,13 +171,18 @@ public class TeamForge extends SubversionRepositoryBrowser {
      * @return the list of all possible repos, given the login and project.
      */
     public String[] getRepos() {
-        CollabNetApp cna = CNHudsonUtil.getCollabNetApp(this.getCollabNetUrl(),
-                                                        this.getUsername(), 
-                                                        this.getPassword());
-        Collection<String> repos = ComboBoxUpdater.ReposUpdater
-            .getRepoList(cna, this.getProject());
+        CollabNetApp cna = CNHudsonUtil.getCollabNetApp(getCollabNetUrl(), getUsername(), getPassword());
+        String[] reposArray;
+        Collection<String> repos;
+        try {
+            String projectId = cna.getProjectId(this.getProject());
+            repos = ComboBoxUpdater.ReposUpdater.getRepoList(cna, projectId);
+            reposArray = repos.toArray(new String[repos.size()]);
+        } catch (RemoteException e) {
+            reposArray = new String[0];
+        }
         CNHudsonUtil.logoff(cna);
-        return repos.toArray(new String[0]);
+        return reposArray;
     }
 
     public URL getFileLink(SubversionChangeLogSet.Path path) 
@@ -216,7 +230,7 @@ public class TeamForge extends SubversionRepositoryBrowser {
         CollabNetApp cna = CNHudsonUtil.getCollabNetApp(this.getCollabNetUrl(), 
                                                         this.getUsername(), 
                                                         this.getPassword());
-        return CNHudsonUtil.getScmViewerUrl(cna, getCollabNetUrl(), this.getProject(), 
+        return CNHudsonUtil.getScmViewerUrl(cna, getCollabNetUrl(), this.getProject(),
                                             this.getRepo());
     }
 
@@ -224,7 +238,7 @@ public class TeamForge extends SubversionRepositoryBrowser {
         CollabNetApp cna = CNHudsonUtil.getCollabNetApp(this.getCollabNetUrl(), 
                                                         this.getUsername(), 
                                                         this.getPassword());
-        return CNHudsonUtil.getSystemId(cna, this.getProject(), 
+        return CNHudsonUtil.getSystemId(cna, this.getProject(),
                                         this.getRepo());
     }
 
