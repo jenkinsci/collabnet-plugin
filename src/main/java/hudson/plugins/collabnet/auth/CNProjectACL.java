@@ -100,6 +100,7 @@ public class CNProjectACL extends ACL {
                 tempPermission.add(AbstractProject.ABORT);
                 tempPermission.add(AbstractProject.WORKSPACE);
                 tempPermission.add(Item.BUILD);
+                tempPermission.add(SCM.TAG); // if you have permission to build, you can create tag
                 roles.add(new CollabNetRole("Hudson Build/Cancel", "Allow " +
                                             "users to start a new build, or " +
                                             "to cancel a build.",
@@ -144,11 +145,6 @@ public class CNProjectACL extends ACL {
                                             tempPermission));
                     tempPermission.clear();
                 }
-
-                tempPermission.add(SCM.TAG);
-                roles.add(new CollabNetRole("Hudson SCM Tag", "Allow users to create scm tags from a build page", 
-                    tempPermission));
-                tempPermission.clear();
             }
             return CollabNetRoles.roles;
         }
