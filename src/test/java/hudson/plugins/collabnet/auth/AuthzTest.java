@@ -17,7 +17,7 @@ import org.jvnet.hudson.test.HudsonTestCase;
 public class AuthzTest extends HudsonTestCase {
     // TODO: write a script to set this up on a test instance.
     public static final String TEST_ADMIN_USER = 
-        System.getProperty("admin_user");;
+        System.getProperty("admin_user");
     private static final String TEST_ADMIN_GROUP = 
         System.getProperty("admin_group");
     private static final String TEST_ADMIN_GROUP_MEMBER = 
