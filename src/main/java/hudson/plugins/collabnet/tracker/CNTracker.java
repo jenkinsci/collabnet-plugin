@@ -23,6 +23,7 @@ import hudson.tasks.BuildStepMonitor;
 import hudson.tasks.Notifier;
 import hudson.tasks.Publisher;
 import hudson.util.FormValidation;
+import hudson.util.Secret;
 import net.sf.json.JSONObject;
 import org.apache.axis.utils.StringUtils;
 import org.kohsuke.stapler.QueryParameter;
@@ -44,7 +45,7 @@ public class CNTracker extends Notifier {
     // data from jelly
     private boolean override_auth = true;
     private String username = null;
-    private String password = null;
+    private final Secret password;
     private String collabNetUrl = null;
     private String project = null;
     private String tracker = null;
@@ -93,7 +94,7 @@ public class CNTracker extends Notifier {
                      boolean always_update, boolean close_issue, 
                      String release, boolean override_auth) {
         this.username = username;
-        this.password = password;
+        this.password = Secret.fromString(password);
         this.collabNetUrl = CNHudsonUtil.sanitizeCollabNetUrl(collabNetUrl);
         this.project = project;
         this.tracker = tracker;
@@ -163,7 +164,7 @@ public class CNTracker extends Notifier {
      */
     public String getPassword() {
         if (this.overrideAuth()) {
-            return this.password;
+            return this.password==null ? null : this.password.toString();
         } else {
             return getTeamForgeShareDescriptor().getPassword();
         }

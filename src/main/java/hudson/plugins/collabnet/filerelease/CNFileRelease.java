@@ -39,6 +39,7 @@ import java.util.Map;
 
 import javax.activation.MimetypesFileTypeMap;
 
+import hudson.util.Secret;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 
@@ -65,7 +66,7 @@ public class CNFileRelease extends Notifier {
     private boolean override_auth = true;
     private String url;
     private String username;
-    private String password;
+    private Secret password;
     private String project;
     private String rpackage;
     private String release;
@@ -97,7 +98,7 @@ public class CNFileRelease extends Notifier {
                          boolean override_auth) {
         this.url = CNHudsonUtil.sanitizeCollabNetUrl(url);
         this.username = username;
-        this.password = password;
+        this.password = Secret.fromString(password);
         this.project = project;
         this.rpackage = rpackage;
         this.release = release;
@@ -173,7 +174,7 @@ public class CNFileRelease extends Notifier {
      */
     public String getPassword() {
         if (this.overrideAuth()) {
-            return this.password;
+            return this.password==null ? null : this.password.toString();
         } else {
             return getTeamForgeShareDescriptor().getPassword();
         }
@@ -380,7 +381,7 @@ public class CNFileRelease extends Notifier {
                  "' as user '" + this.getUsername() + "'.");
         // upload files
         for (String uninterp_fp : this.getFilePatterns()) {
-            String file_pattern = "";
+            String file_pattern;
             try {
                 file_pattern = getInterpreted(build, uninterp_fp); 
             } catch (IllegalArgumentException e) {
@@ -632,7 +633,7 @@ public class CNFileRelease extends Notifier {
      */
     private String getInterpreted(AbstractBuild<?, ?> build, String str)
             throws IOException, InterruptedException {
-        Map<String, String> envVars = null;
+        Map<String, String> envVars;
         if (Hudson.getInstance().getPlugin("promoted-builds") != null
             && build.getClass().equals(Promotion.class)) {
             // if this is a promoted build, get the env vars from

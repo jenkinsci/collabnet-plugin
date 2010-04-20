@@ -1,6 +1,7 @@
 package hudson.plugins.collabnet.browser;
 
 import hudson.plugins.collabnet.util.CNHudsonUtil;
+import hudson.util.Secret;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 /**
@@ -10,13 +11,13 @@ import org.kohsuke.stapler.DataBoundConstructor;
 public class OverrideAuth {
     public String collabneturl;
     public String username;
-    public String password;
+    public Secret password;
     
     @DataBoundConstructor
     public OverrideAuth(String collabneturl, String username, 
                         String password) {
         this.collabneturl = CNHudsonUtil.sanitizeCollabNetUrl(collabneturl);
         this.username = username;
-        this.password = password;
+        this.password = Secret.fromString(password);
     }
 }

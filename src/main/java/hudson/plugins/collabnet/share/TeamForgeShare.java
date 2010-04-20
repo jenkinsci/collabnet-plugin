@@ -12,6 +12,7 @@ import hudson.plugins.collabnet.util.CNHudsonUtil;
 import hudson.util.FormValidation;
 import java.util.logging.Logger;
 
+import hudson.util.Secret;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 
@@ -50,7 +51,7 @@ public class TeamForgeShare extends JobProperty<Job<?, ?>> {
         private static Logger log = Logger.getLogger("TeamForgeShareDescriptor");
         private String collabNetUrl = null;
         private String username = null;
-        private String password = null;
+        private Secret password = null;
         private boolean useGlobal = false;
     
         public TeamForgeShareDescriptor() {
@@ -79,7 +80,7 @@ public class TeamForgeShare extends JobProperty<Job<?, ?>> {
                 JSONObject config = json.getJSONObject("useglobal");
                 collabNetUrl = CNHudsonUtil.sanitizeCollabNetUrl(config.getString("collabneturl"));
                 username = config.getString("username");
-                password = config.getString("password");
+                password = Secret.fromString(config.getString("password"));
             } else {
                 this.useGlobal = false;
                 collabNetUrl = null;
@@ -103,7 +104,7 @@ public class TeamForgeShare extends JobProperty<Job<?, ?>> {
         }
         
         public String getPassword() {
-            return this.password;
+            return this.password==null ? null : this.password.toString();
         }
         
         /**

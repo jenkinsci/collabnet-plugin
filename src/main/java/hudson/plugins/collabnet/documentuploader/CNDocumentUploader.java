@@ -39,6 +39,7 @@ import java.util.logging.Logger;
 import javax.activation.MimetypesFileTypeMap;
 import javax.servlet.ServletException;
 
+import hudson.util.Secret;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 
@@ -65,7 +66,7 @@ public class CNDocumentUploader extends Notifier {
     private boolean override_auth = true;
     private String url;
     private String username;
-    private String password;
+    private Secret password;
     private String project;
     private String uploadPath;
     private String description;
@@ -95,7 +96,7 @@ public class CNDocumentUploader extends Notifier {
                               boolean includeBuildLog, boolean override_auth) {
         this.url = CNHudsonUtil.sanitizeCollabNetUrl(url);
         this.username = username;
-        this.password = password;
+        this.password = Secret.fromString(password);
         this.project = project;
         this.uploadPath = uploadPath;
         this.description = description;
@@ -189,7 +190,7 @@ public class CNDocumentUploader extends Notifier {
      */
     public String getPassword() {
         if (this.overrideAuth()) {
-            return this.password;
+            return this.password==null ? null : this.password.toString();
         } else {
             return getTeamForgeShareDescriptor().getPassword();
         }
@@ -825,8 +826,6 @@ public class CNDocumentUploader extends Notifier {
         
         /**
          * Check that a password is present and allows login.
-         *
-         * @param password
          */
         public FormValidation doPasswordCheck(StaplerRequest req) {
             return CNFormFieldValidator.loginCheck(req);
@@ -837,7 +836,6 @@ public class CNDocumentUploader extends Notifier {
          *
          * @param req contains parameters from 
          *            the config.jelly.
-         * @param rsp contains http response data (unused).
          * @throws IOException
          * @throws ServletException
          */
@@ -850,7 +848,6 @@ public class CNDocumentUploader extends Notifier {
          *
          * @param req StaplerRequest which contains parameters from 
          *            the config.jelly.
-         * @param rsp contains http response data (unused).
          * @throws IOException
          * @throws ServletException
          */
@@ -861,9 +858,6 @@ public class CNDocumentUploader extends Notifier {
         /**
          * Form validation for the file patterns.
          *
-         * @param req StaplerRequest which contains parameters from 
-         *            the config.jelly.
-         * @param rsp contains http response data (unused).
          * @throws IOException
          * @throws ServletException
          */

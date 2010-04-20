@@ -11,6 +11,7 @@ import hudson.scm.RepositoryBrowser;
 import hudson.scm.SubversionChangeLogSet;
 import hudson.scm.SubversionRepositoryBrowser;
 import hudson.util.FormValidation;
+import hudson.util.Secret;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
@@ -28,7 +29,7 @@ public class TeamForge extends SubversionRepositoryBrowser {
 
     private String collabneturl;
     private String username;
-    private String password;
+    private Secret password;
     private String project;
     private String repo;
     private boolean overrideAuth;
@@ -55,7 +56,7 @@ public class TeamForge extends SubversionRepositoryBrowser {
                 this.overrideAuth = true;
                 this.collabneturl = CNHudsonUtil.sanitizeCollabNetUrl(collabneturl);
                 this.username = username;
-                this.password = password;
+                this.password = Secret.fromString(password);
             }
         }
         this.project = project;
@@ -69,7 +70,7 @@ public class TeamForge extends SubversionRepositoryBrowser {
                      String project, String repo, boolean overrideAuth) {
         this.collabneturl = CNHudsonUtil.sanitizeCollabNetUrl(collabneturl);
         this.username = username;
-        this.password = password;
+        this.password = Secret.fromString(password);
         this.project = project;
         this.repo = repo;
         this.overrideAuth = overrideAuth;
@@ -121,7 +122,7 @@ public class TeamForge extends SubversionRepositoryBrowser {
      */
     public String getPassword() {
         if (this.overrideAuth()) {
-            return this.password;
+            return this.password==null ? null : this.password.toString();
         } else {
             return getTeamForgeShareDescriptor().getPassword();
         }
