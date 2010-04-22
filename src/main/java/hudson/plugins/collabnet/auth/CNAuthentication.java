@@ -118,10 +118,18 @@ public class CNAuthentication implements Authentication {
             ", authenticated=" + this.isAuthenticated() + "]";
     }
 
+    /**
+     * Determine whether we have authenticated to CTF in the browser.
+     * @return true if authenticated
+     */
     public boolean isCNAuthed() {
         return this.cnauthed;
     }
 
+    /**
+     * Set whether we have authenticated to CTF in the browser.
+     * @param cnauthed true if current session is CTF authenticated in browser
+     */
     public void setCNAuthed(boolean cnauthed) {
         this.cnauthed = cnauthed;
     }
