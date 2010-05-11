@@ -578,5 +578,9 @@ public class CNDocumentUploader extends AbstractTeamForgeNotifier {
         public FormValidation doCheckUploadPath(CollabNetApp app, @QueryParameter String project, @QueryParameter String value) throws IOException {
             return CNFormFieldValidator.documentPathCheck(app,project,value);
         }
+
+        public FormValidation doCheckDescription(@QueryParameter String value) {
+            return CNFormFieldValidator.requiredCheck(value,"description");
+        }
     }
 }
