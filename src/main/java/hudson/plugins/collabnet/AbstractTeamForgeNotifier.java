@@ -43,8 +43,12 @@ public abstract class AbstractTeamForgeNotifier extends Notifier {
         this.project = project;
     }
 
+    /**
+     * If this notifier is configured with a separate credential, return it. Otherwise null.
+     * Used for form data binding.
+     */
     public ConnectionFactory getConnectionFactory() {
-        return new ConnectionFactory(url,username,password);
+        return override_auth ? new ConnectionFactory(url,username,password) : null;
     }
 
     /**

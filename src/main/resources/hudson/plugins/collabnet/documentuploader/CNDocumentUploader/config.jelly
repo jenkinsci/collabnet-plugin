@@ -3,9 +3,11 @@
  xmlns:c="/hudson/plugins/collabnet/tags">
   <j:choose>
     <j:when test="${descriptor.canInheritAuth()}">
-      <f:optionalBlock title="Override the Global CollabNet Configuration" field="overrideAuth">
-        <c:property field="connectionFactory" />
-      </f:optionalBlock>
+      <f:nested>
+        <table style="width:100%">
+          <c:optionalProperty title="Override the Global CollabNet Configuration" field="connectionFactory" />
+        </table>
+      </f:nested>
     </j:when>
     <j:otherwise>
       <c:property field="connectionFactory" />

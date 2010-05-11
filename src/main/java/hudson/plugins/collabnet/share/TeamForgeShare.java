@@ -5,18 +5,12 @@ import hudson.model.Hudson;
 import hudson.model.Job;
 import hudson.model.JobProperty;
 import hudson.model.JobPropertyDescriptor;
-
-import hudson.plugins.collabnet.util.CNFormFieldValidator;
-
-import hudson.plugins.collabnet.util.CNHudsonUtil;
-import hudson.util.FormValidation;
-import java.util.logging.Logger;
-
+import hudson.plugins.collabnet.ConnectionFactory;
 import hudson.util.Secret;
-import org.kohsuke.stapler.QueryParameter;
+import net.sf.json.JSONObject;
 import org.kohsuke.stapler.StaplerRequest;
 
-import net.sf.json.JSONObject;
+import java.util.logging.Logger;
 
 /**
  * The TeamForgeShare descriptor holds global data to be shared with
@@ -75,20 +69,26 @@ public class TeamForgeShare extends JobProperty<Job<?, ?>> {
     
         @Override
         public boolean configure(StaplerRequest staplerRequest, JSONObject json) throws FormException {
-            if (json.has("useglobal")) {
-                this.useGlobal = true;
-                JSONObject config = json.getJSONObject("useglobal");
-                collabNetUrl = CNHudsonUtil.sanitizeCollabNetUrl(config.getString("collabneturl"));
-                username = config.getString("username");
-                password = Secret.fromString(config.getString("password"));
+            if (json.has("connectionFactory")) {
+                setConnectionFactory(staplerRequest.bindJSON(ConnectionFactory.class,json.getJSONObject("connectionFactory")));
             } else {
-                this.useGlobal = false;
+                setConnectionFactory(null);
+            }
+            return true; 
+        }
+
+        public void setConnectionFactory(ConnectionFactory cf) {
+            useGlobal = cf!=null;
+            if (useGlobal) {
+                collabNetUrl = cf.getUrl();
+                username = cf.getUsername();
+                password = cf.getPassword();
+            } else {
                 collabNetUrl = null;
                 username = null;
                 password = null;
             }
             save();
-            return true; 
         }
 
         public boolean useGlobal() {
@@ -98,13 +98,17 @@ public class TeamForgeShare extends JobProperty<Job<?, ?>> {
         public String getCollabNetUrl() {
             return this.collabNetUrl;
         }
-        
+
         public String getUsername() {
             return this.username;
         }
-        
+
         public String getPassword() {
-            return this.password==null ? null : this.password.toString();
+            return Secret.toString(this.password);
+        }
+
+        public ConnectionFactory getConnectionFactory() {
+            return useGlobal ? new ConnectionFactory(collabNetUrl,username,password) : null;
         }
     }
 }

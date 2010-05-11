@@ -40,7 +40,7 @@ public class Util {
      */
     public static HtmlElement getFirstHtmlElementByName(HtmlPage page, 
                                                         String name) {
-        List<HtmlElement> elements = page.getHtmlElementsByName(name);
+        List<HtmlElement> elements = page.getElementsByName(name);
         if (elements.isEmpty()) {
             return null;
         } else {
@@ -55,7 +55,7 @@ public class Util {
      */
     public static HtmlElement getElementWithLabel(HtmlPage page, String name, 
                                                   String label) {
-        List<HtmlElement> elems = page.getHtmlElementsByName(name);
+        List<HtmlElement> elems = page.getElementsByName(name);
         HtmlElement match = null;
         for (HtmlElement elem: elems) {
             String elemLabel = Util.findLabel(elem);
@@ -89,9 +89,7 @@ public class Util {
      */
     public static String findLabel(DomNode node) {
         Iterable<DomNode> siblings = node.getParentNode().getChildren();
-        Iterator<DomNode> it = siblings.iterator();
-        while (it.hasNext()) {
-            DomNode sibling = it.next();
+        for (DomNode sibling : siblings) {
             if (sibling instanceof HtmlLabel) {
                 HtmlLabel label = (HtmlLabel) sibling;
                 if (label.getReferencedElement().equals(node)) {
@@ -169,7 +167,7 @@ public class Util {
      */
     public static void clickRadio(HtmlPage page, String name, String value) 
         throws Exception {
-        List<HtmlElement> radios = page.getHtmlElementsByName(name);
+        List<HtmlElement> radios = page.getElementsByName(name);
         HtmlInput radioToClick = null;
         for(HtmlElement radio: radios) {
             assert(radio instanceof HtmlInput);
@@ -188,7 +186,7 @@ public class Util {
      */
     public static void checkRadioSelected(HtmlPage page, String name, 
                                           String value) {
-        List<HtmlElement> radios = page.getHtmlElementsByName(name);
+        List<HtmlElement> radios = page.getElementsByName(name);
         HtmlInput radioWithValue = null;
         for(HtmlElement radio: radios) {
             assert(radio instanceof HtmlInput);

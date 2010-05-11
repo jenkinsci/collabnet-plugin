@@ -17,7 +17,7 @@ import java.io.IOException;
  *
  * @author Kohsuke Kawaguchi
  */
-public class FilePattern implements Describable<FilePattern> {
+public class FilePattern extends AbstractDescribableImpl<FilePattern> {
     public final String value;
 
     @DataBoundConstructor
@@ -27,10 +27,6 @@ public class FilePattern implements Describable<FilePattern> {
 
     public String interpret(AbstractBuild<?,?> build, TaskListener listener) throws IOException, InterruptedException {
         return CommonUtil.getInterpreted(build.getEnvironment(listener), value);
-    }
-
-    public Descriptor<FilePattern> getDescriptor() {
-        return Hudson.getInstance().getDescriptorOrDie(getClass());
     }
 
     @Extension

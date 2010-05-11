@@ -14,11 +14,9 @@ import hudson.plugins.collabnet.AbstractTeamForgeNotifier;
 import hudson.plugins.collabnet.ConnectionFactory;
 import hudson.plugins.collabnet.util.CNFormFieldValidator;
 import hudson.plugins.collabnet.util.CNHudsonUtil;
-import hudson.plugins.collabnet.util.ComboBoxUpdater;
 import hudson.plugins.collabnet.util.CommonUtil;
 import hudson.remoting.VirtualChannel;
 import hudson.tasks.BuildStepMonitor;
-import hudson.util.ComboBoxModel;
 import hudson.util.FormValidation;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
@@ -28,7 +26,6 @@ import javax.servlet.ServletException;
 import java.io.File;
 import java.io.IOException;
 import java.rmi.RemoteException;
-import java.util.Collection;
 import java.util.logging.Logger;
 
 /**

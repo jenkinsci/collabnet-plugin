@@ -85,7 +85,7 @@ public class FileReleaseTest extends HudsonTestCase {
 
     public int getUniqueId(HtmlPage configurePage) {
         // the unique id we want is the last that's present on the page
-        List<HtmlElement> elems = configurePage.getHtmlElementsByName(URL_ID);
+        List<HtmlElement> elems = configurePage.getElementsByName(URL_ID);
         int id = -1;
         int unique_id = -1;
         for (HtmlElement elem: elems) {
