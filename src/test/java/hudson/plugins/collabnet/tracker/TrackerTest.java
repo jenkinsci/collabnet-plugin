@@ -1,27 +1,22 @@
 package hudson.plugins.collabnet.tracker;
 
-import com.collabnet.ce.webservices.CollabNetApp;
 import com.collabnet.ce.soap50.webservices.tracker.ArtifactSoapDO;
-
+import com.collabnet.ce.webservices.CollabNetApp;
 import com.gargoylesoftware.htmlunit.Page;
 import com.gargoylesoftware.htmlunit.html.HtmlCheckBoxInput;
-import com.gargoylesoftware.htmlunit.html.HtmlElement;
 import com.gargoylesoftware.htmlunit.html.HtmlForm;
 import com.gargoylesoftware.htmlunit.html.HtmlPage;
-
 import hudson.model.AbstractBuild;
 import hudson.model.Descriptor;
 import hudson.model.Project;
 import hudson.model.TaskListener;
+import hudson.plugins.collabnet.util.CNHudsonUtil;
+import hudson.plugins.collabnet.util.CommonUtil;
+import hudson.plugins.collabnet.util.HudsonConstants;
+import hudson.plugins.collabnet.util.Util;
 import hudson.tasks.Builder;
 import hudson.tasks.Shell;
 import hudson.util.DescribableList;
-
-import hudson.plugins.collabnet.util.CommonUtil;
-import hudson.plugins.collabnet.util.CNHudsonUtil;
-import hudson.plugins.collabnet.util.HudsonConstants;
-import hudson.plugins.collabnet.util.Util;
-
 import org.jvnet.hudson.test.HudsonTestCase;
 
 public class TrackerTest extends HudsonTestCase {

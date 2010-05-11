@@ -1,9 +1,6 @@
 package hudson.plugins.collabnet.tracker;
 
 import hudson.plugins.collabnet.CNHudsonTestCase;
-import hudson.plugins.collabnet.ConnectionFactory;
-import hudson.plugins.collabnet.filerelease.CNFileRelease;
-import hudson.plugins.collabnet.share.TeamForgeShare;
 
 /**
  * Tests tracker integration.
@@ -16,22 +13,19 @@ public class CNTrackerTest extends CNHudsonTestCase {
 
         roundtripAndAssertIntegrity(new CNTracker(
                 createConnectionFactory(),
-                "aaa", "bbb", "ccc", "ddd", "p", true, true, true, "eee"),FIELDS);
+                "aaa", "bbb", "ccc", "ddd", Priority.P3, true, true, true, "eee"),FIELDS);
         // note that because filePatterns is minimum 1, new FilePattern[0] test would fail
 
         roundtripAndAssertIntegrity(new CNTracker(
-                null,
-                "abc","def","ghi","jkl","P",false,false,false,"mno"),FIELDS);
+                null,"abc","def","ghi","jkl",Priority.P5,false,false,false,"mno"),FIELDS);
     }
 
     /**
      * Makes sure that help link exists on all three options.
      */
     public void testHelpLink() throws Exception {
-        assertHelpExists(CNFileRelease.class,
-                // FIELDS-connectionFactory
-                "project,pkg,release,filePatterns,overwrite");
+        assertHelpExists(CNTracker.class,FIELDS+",-connectionFactory");
     }
 
-    private static final String FIELDS = "connectionFactory,project,pkg,release,filePatterns,overwrite";
+    private static final String FIELDS = "connectionFactory,project,tracker,title,assignUser,priority,attachLog,alwaysUpdate,closeOnSuccess,release";
 }

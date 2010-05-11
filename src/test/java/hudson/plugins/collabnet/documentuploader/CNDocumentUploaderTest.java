@@ -29,9 +29,7 @@ public class CNDocumentUploaderTest extends CNHudsonTestCase {
      * Makes sure that help link exists on all three options.
      */
     public void testHelpLink() throws Exception {
-        assertHelpExists(CNDocumentUploader.class,
-                // FIELDS-connectionFactory
-                "project,uploadPath,description,filePatterns,includeBuildLog");
+        assertHelpExists(CNDocumentUploader.class,FIELDS+",-connectionFactory");
     }
 
     private static final String FIELDS = "connectionFactory,project,uploadPath,description,filePatterns,includeBuildLog";

@@ -27,7 +27,7 @@ import java.util.Collection;
 import java.util.logging.Logger;
 
 public class CNTracker extends AbstractTeamForgeNotifier {
-    private static int DEFAULT_PRIORITY = 3;
+    private static int DEFAULT_PRIORITY = Priority.DEFAULT.n;
 
     // listener is used for logging and will only be
     // set at the beginning of perform.
@@ -37,7 +37,7 @@ public class CNTracker extends AbstractTeamForgeNotifier {
     private String tracker = null;
     private String title = null;
     private String assign_user = null;
-    private int priority = DEFAULT_PRIORITY;
+    private int priority = DEFAULT_PRIORITY; // for compatibility reason this has to be persisted as an integer
     private boolean attach_log = true;
     private boolean always_update = false;
     private boolean close_issue = true;
@@ -73,14 +73,14 @@ public class CNTracker extends AbstractTeamForgeNotifier {
     @DataBoundConstructor
     public CNTracker(ConnectionFactory connectionFactory,
                      String project, String tracker, String title, 
-                     String assignUser, String priority, boolean attachLog,
+                     String assignUser, Priority priority, boolean attachLog,
                      boolean alwaysUpdate, boolean closeOnSuccess, 
                      String release) {
         super(connectionFactory,project);
         this.tracker = tracker;
         this.title = title;
         this.assign_user = assignUser;
-        this.priority = Integer.parseInt(priority);
+        this.priority = priority.n;
         this.attach_log = attachLog;
         this.always_update = alwaysUpdate;
         this.close_issue = closeOnSuccess;
@@ -148,8 +148,8 @@ public class CNTracker extends AbstractTeamForgeNotifier {
     /**
      * @return the priority to set new Tracker Artifacts to.
      */
-    public int getPriority() {
-        return this.priority;
+    public Priority getPriority() {
+        return Priority.valueOf(this.priority);
     }
     
     /**

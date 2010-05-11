@@ -31,25 +31,10 @@
     <f:combobox />
   </f:entry>
 
-  <f:entry name="cntracker.priority" title="Priority" 
-   help="${rootHelpURL}/help-priority.html">
-    <select class="setting-input" name="cntracker.priority">
-      <f:option value="1" selected="${instance.priority==1}">
-       1 - Highest
-      </f:option>
-      <f:option value="2" selected="${instance.priority==2}">
-       2 - High
-      </f:option>
-      <f:option value="3" selected="${instance.priority==3}">
-       3 - Medium
-      </f:option>
-      <f:option value="4" selected="${instance.priority==4}">
-       4 - Low
-      </f:option>
-      <f:option value="5" selected="${instance.priority==5}">
-       5 - Lowest
-      </f:option>
-     </select>
+  <f:entry title="Priority" field="priority">
+    <f:enum>
+      ${it.displayName}
+    </f:enum>
   </f:entry>
 
   <f:entry title="Attach build log?" field="attachLog">

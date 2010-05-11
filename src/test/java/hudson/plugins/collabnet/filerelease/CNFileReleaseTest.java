@@ -32,9 +32,7 @@ public class CNFileReleaseTest extends CNHudsonTestCase {
      * Makes sure that help link exists on all three options.
      */
     public void testHelpLink() throws Exception {
-        assertHelpExists(CNFileRelease.class,
-                // FIELDS-connectionFactory
-                "project,pkg,release,filePatterns,overwrite");
+        assertHelpExists(CNFileRelease.class,FIELDS+",-connectionFactory");
     }
 
     private static final String FIELDS = "connectionFactory,project,pkg,release,filePatterns,overwrite";
