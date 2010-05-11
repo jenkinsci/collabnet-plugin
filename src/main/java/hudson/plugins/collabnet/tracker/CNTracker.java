@@ -6,35 +6,27 @@ import com.collabnet.ce.webservices.FileStorageApp;
 import com.collabnet.ce.webservices.TrackerApp;
 import hudson.Extension;
 import hudson.Launcher;
-import hudson.model.AbstractBuild;
-import hudson.model.AbstractProject;
-import hudson.model.BuildListener;
-import hudson.model.Hudson;
-import hudson.model.Result;
-import hudson.model.TaskListener;
+import hudson.model.*;
+import hudson.plugins.collabnet.AbstractTeamForgeNotifier;
+import hudson.plugins.collabnet.ConnectionFactory;
 import hudson.plugins.collabnet.share.TeamForgeShare;
 import hudson.plugins.collabnet.util.CNFormFieldValidator;
 import hudson.plugins.collabnet.util.CNHudsonUtil;
 import hudson.plugins.collabnet.util.ComboBoxUpdater;
 import hudson.plugins.collabnet.util.CommonUtil;
-import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.BuildStepMonitor;
-import hudson.tasks.Notifier;
-import hudson.tasks.Publisher;
+import hudson.util.ComboBoxModel;
 import hudson.util.FormValidation;
-import hudson.util.Secret;
-import net.sf.json.JSONObject;
-import org.apache.axis.utils.StringUtils;
+import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
-import org.kohsuke.stapler.StaplerResponse;
 
 import java.io.IOException;
 import java.rmi.RemoteException;
 import java.util.Collection;
 import java.util.logging.Logger;
 
-public class CNTracker extends Notifier {
+public class CNTracker extends AbstractTeamForgeNotifier {
     private static int DEFAULT_PRIORITY = 3;
 
     // listener is used for logging and will only be
@@ -42,11 +34,6 @@ public class CNTracker extends Notifier {
     private transient BuildListener listener = null;
     
     // data from jelly
-    private boolean override_auth = true;
-    private String username = null;
-    private final Secret password;
-    private String collabNetUrl = null;
-    private String project = null;
     private String tracker = null;
     private String title = null;
     private String assign_user = null;
@@ -65,46 +52,39 @@ public class CNTracker extends Notifier {
     /**
      * Constructs a new CNTracker instance.
      *
-     * @param username to login as.
-     * @param password to login with.
-     * @param collabNetUrl URL of the CollabNet server.
-     * @param project project name.
      * @param tracker tracker name.
      * @param title title to use when create new tracker artifacts OR to find
      *              existing tracker artifacts.
-     * @param assign_user user to assign new tracker artifacts to.
+     * @param assignUser user to assign new tracker artifacts to.
      * @param priority of new tracker artifacts.
-     * @param attach_log if true, Hudson build logs will be uploaded and
+     * @param attachLog if true, Hudson build logs will be uploaded and
      *                   attached when creating/updating tracker artifacts.
-     * @param always_update if true, always update the tracker artifacts (or
+     * @param alwaysUpdate if true, always update the tracker artifacts (or
      *                      create one), even if build is successful and
      *                      the tracker artifact is closed.  If false, only
      *                      update when the tracker artifact is failing
      *                      or is open.
-     * @param close_issue if true, the tracker artifact will be closed if the
+     * @param closeOnSuccess if true, the tracker artifact will be closed if the
      *                    Hudson build is successful.  Otherwise, open issues
      *                    will be updated with a successful message, but
      *                    remain open.
      * @param release to report the tracker artifact in.
      */
-    public CNTracker(String username, String password, String collabNetUrl, 
+    @DataBoundConstructor
+    public CNTracker(ConnectionFactory connectionFactory,
                      String project, String tracker, String title, 
-                     String assign_user, String priority, boolean attach_log, 
-                     boolean always_update, boolean close_issue, 
-                     String release, boolean override_auth) {
-        this.username = username;
-        this.password = Secret.fromString(password);
-        this.collabNetUrl = CNHudsonUtil.sanitizeCollabNetUrl(collabNetUrl);
-        this.project = project;
+                     String assignUser, String priority, boolean attachLog,
+                     boolean alwaysUpdate, boolean closeOnSuccess, 
+                     String release) {
+        super(connectionFactory,project);
         this.tracker = tracker;
         this.title = title;
-        this.assign_user = assign_user;
+        this.assign_user = assignUser;
         this.priority = Integer.parseInt(priority);
-        this.attach_log = attach_log;
-        this.always_update = always_update;
-        this.close_issue = close_issue;
+        this.attach_log = attachLog;
+        this.always_update = alwaysUpdate;
+        this.close_issue = closeOnSuccess;
         this.release = release;
-        this.override_auth = override_auth;
     }
 
     /**
@@ -141,53 +121,6 @@ public class CNTracker extends Notifier {
     }
 
     /**
-     * @return whether or not auth is overriden
-     */
-    public boolean overrideAuth() {
-        return this.override_auth;
-    }
-
-    /**
-     * @return username to login as.
-     */
-    public String getUsername() {
-        if (this.overrideAuth()) {
-            return this.username;            
-        } else {
-            return getTeamForgeShareDescriptor().getUsername();
-        }
-    }
-    
-    /**
-     * @return password to login with.
-     */
-    public String getPassword() {
-        if (this.overrideAuth()) {
-            return this.password==null ? null : this.password.toString();
-        } else {
-            return getTeamForgeShareDescriptor().getPassword();
-        }
-    }
-
-    /**
-     * @return URL of the CollabNet server.
-     */
-    public String getCollabNetUrl() {
-        if (this.overrideAuth()) {
-            return this.collabNetUrl;
-        } else {
-            return getTeamForgeShareDescriptor().getCollabNetUrl();
-        }
-    }
-    
-    /**
-     * @return project name.
-     */
-    public String getProject() {
-        return this.project;
-    }
-    
-    /**
      * @return tracker name.
      */
     public String getTracker() {
@@ -222,7 +155,7 @@ public class CNTracker extends Notifier {
     /**
      * @return true, if logs should be attached to Tracker Artifacts.
      */
-    public boolean attachLog() {
+    public boolean getAttachLog() {
         return this.attach_log;
     }
     
@@ -230,7 +163,7 @@ public class CNTracker extends Notifier {
      * @return true, if artifact creation/update should happen, even if
      *         the Hudson build is successful and the artifact is not open.
      */
-    public boolean alwaysUpdate() {
+    public boolean getAlwaysUpdate() {
         return this.always_update;
     }
     
@@ -238,7 +171,7 @@ public class CNTracker extends Notifier {
      * @return true, if artifacts should be closed when the Hudson build
      *         succeeds.
      */
-    public boolean closeOnSuccess() {
+    public boolean getCloseOnSuccess() {
         return this.close_issue;
     }
     
@@ -268,8 +201,7 @@ public class CNTracker extends Notifier {
         CollabNetApp cna = CNHudsonUtil.getCollabNetApp(this.getCollabNetUrl(),
                                                         this.getUsername(), 
                                                         this.getPassword());
-        Collection<String> projects = ComboBoxUpdater.ProjectsUpdater
-            .getProjectList(cna);
+        Collection<String> projects = ComboBoxUpdater.getProjectList(cna);
         CNHudsonUtil.logoff(cna);
         return projects.toArray(new String[0]);
     }
@@ -282,8 +214,7 @@ public class CNTracker extends Notifier {
                                                         this.getUsername(), 
                                                         this.getPassword());
         String projectId = this.getProjectId(this.getProject());
-        Collection<String> trackers = ComboBoxUpdater.TrackersUpdater
-            .getTrackerList(cna, projectId);
+        Collection<String> trackers = ComboBoxUpdater.getTrackerList(cna, projectId);
         CNHudsonUtil.logoff(cna);
         return trackers.toArray(new String[0]);
     }
@@ -296,8 +227,7 @@ public class CNTracker extends Notifier {
                                                         this.getUsername(), 
                                                         this.getPassword());
         String projectId = this.getProjectId(this.getProject());
-        Collection<String> users = ComboBoxUpdater.UsersUpdater
-            .getUserList(cna, projectId);
+        Collection<String> users = ComboBoxUpdater.getUserList(cna, projectId);
         CNHudsonUtil.logoff(cna);
         return users.toArray(new String[0]);
     }
@@ -310,8 +240,7 @@ public class CNTracker extends Notifier {
                                                         this.getUsername(), 
                                                         this.getPassword());
         String projectId = this.getProjectId(this.getProject());
-        Collection<String> releases = ComboBoxUpdater.ReleasesUpdater
-            .getProjectReleaseList(cna, projectId);
+        Collection<String> releases = ComboBoxUpdater.getProjectReleaseList(cna, projectId);
         CNHudsonUtil.logoff(cna);
         return releases.toArray(new String[0]);
     }
@@ -340,16 +269,16 @@ public class CNTracker extends Notifier {
                                                 this.getUsername(),
                                                 this.getPassword());
         if (this.cna == null) {
-            this.log("Critical Error: login to " + this.collabNetUrl + 
+            this.log("Critical Error: login to " + this.getCollabNetUrl() +
                      " failed.  Setting build status to UNSTABLE (or worse).");
             Result previousBuildStatus = build.getResult();
             build.setResult(previousBuildStatus.combine(Result.UNSTABLE));
             return false;
         }
-        String projectId = this.getProjectId(this.project);
+        String projectId = this.getProjectId(getProject());
         if (projectId == null) {
             this.log("Critical Error: projectId cannot be found for " + 
-                     this.project + ".  This could mean that the project " +
+                     this.getProject() + ".  This could mean that the project " +
                      "does not exist OR that the user logging in does not " +
                      "have access to that project.  " +
                      "Setting build status to UNSTABLE (or worse).");
@@ -386,7 +315,7 @@ public class CNTracker extends Notifier {
         } else if (issue == null &&
                buildStatus.isBetterOrEqualTo(Result.SUCCESS)) {
             this.log("Build is successful!");
-            if (this.alwaysUpdate()) {
+            if (this.getAlwaysUpdate()) {
                 String description = "The build has succeeded.  For " +
                     "more info, see " + this.getBuildUrl(build);
                 this.createNewTrackerArtifact(projectId, trackerId, 
@@ -401,7 +330,7 @@ public class CNTracker extends Notifier {
         // close or update existing  fail -> succeed
         else if (issue.getStatusClass().equals("Open") &&
                  buildStatus.isBetterOrEqualTo(Result.SUCCESS)) {
-            if (this.closeOnSuccess()) {
+            if (this.getCloseOnSuccess()) {
                 this.log("Build succeeded; closing issue.");
                 this.closeSucceedingBuild(issue, build);
             } else {
@@ -414,7 +343,7 @@ public class CNTracker extends Notifier {
         else if (issue.getStatusClass().equals("Close") && 
                  buildStatus.isWorseThan(Result.SUCCESS)) {
             // create new or reopen?
-            if (this.alwaysUpdate()) {
+            if (this.getAlwaysUpdate()) {
                 this.log("Build is not successful; re-opening issue.");
                 this.updateFailingBuild(issue, build);
             } else {
@@ -428,7 +357,7 @@ public class CNTracker extends Notifier {
         } else if (issue.getStatusClass().equals("Close") &&
                    buildStatus.isBetterOrEqualTo(Result.SUCCESS)) {
             this.log("Build continues to be successful!");
-            if (this.alwaysUpdate()) {
+            if (this.getAlwaysUpdate()) {
                 this.updateSucceedingBuild(issue, build);
             }
         } else {
@@ -495,14 +424,12 @@ public class CNTracker extends Notifier {
         }
         String title = this.getInterpreted(build, this.getTitle());
         TrackerApp ta = new TrackerApp(this.cna);
-        ArtifactSoapDO asd = null;
         try {
-            asd = ta.findLastTrackerArtifact(trackerId, title);
+            return ta.findLastTrackerArtifact(trackerId, title);
         } catch (RemoteException re) {
             this.log("findTrackerArtifact", re);
             return null;
         }
-        return asd;
     }
     
     /**
@@ -524,9 +451,8 @@ public class CNTracker extends Notifier {
             this.log("Cannot call createNewTrackerArtifact, not logged in!");
             return null;
         }
-        ArtifactSoapDO asd = null;
         String buildLogId = null;
-        if (this.attachLog()) {
+        if (this.getAttachLog()) {
             buildLogId = this.uploadBuildLog(build);
             if (buildLogId != null) {
                 this.log("Successfully uploaded build log.");
@@ -542,7 +468,7 @@ public class CNTracker extends Notifier {
                                                             this.getRelease());
         TrackerApp ta = new TrackerApp(this.cna);
         try {
-            asd = ta.createNewTrackerArtifact(trackerId, title,
+            ArtifactSoapDO asd = ta.createNewTrackerArtifact(trackerId, title,
                                               description, null, null, status,
                                               null, this.priority, 0, 
                                               assignTo, releaseId, null, 
@@ -551,12 +477,12 @@ public class CNTracker extends Notifier {
             this.log("Created tracker artifact '" + title + "' in tracker '" 
                      + this.getTracker() + "' in project '" + this.getProject()
                      + "' on behalf of '" + this.getUsername() + "' at " 
-                     + this.getArtifactUrl(asd) + ".");          
+                     + this.getArtifactUrl(asd) + ".");
+            return asd;
         } catch (RemoteException re) {
             this.log("createNewTrackerArtifact", re);
             return null;
         }
-        return asd;
     }
     
     /**
@@ -569,7 +495,7 @@ public class CNTracker extends Notifier {
         if (!CNHudsonUtil.isUserMember(this.cna, this.assign_user, 
                                               projectId)) {
             this.log("User (" + this.assign_user + ") is not a member of " +
-                     "the project (" + this.project + ").  " + "Instead " +
+                     "the project (" + this.getProject() + ").  " + "Instead " +
                      "any new issues filed will be assigned to 'None'.");
             valid_user = null;
         }
@@ -589,7 +515,7 @@ public class CNTracker extends Notifier {
             return;
         }
         String buildLogId = null;
-        if (this.attachLog()) {
+        if (this.getAttachLog()) {
             buildLogId = this.uploadBuildLog(build);
             if (buildLogId != null) {
                 this.log("Successfully uploaded build log.");
@@ -638,7 +564,7 @@ public class CNTracker extends Notifier {
             return;
         }
         String buildLogId = null;
-        if (this.attachLog()) {
+        if (this.getAttachLog()) {
             buildLogId = this.uploadBuildLog(build);
             if (buildLogId != null) {
                 this.log("Successfully uploaded build log.");
@@ -679,7 +605,7 @@ public class CNTracker extends Notifier {
             return;
         }
         String buildLogId = null;
-        if (this.attachLog()) {
+        if (this.getAttachLog()) {
             buildLogId = this.uploadBuildLog(build);
             if (buildLogId != null) {
                 this.log("Successfully uploaded build log.");
@@ -776,40 +702,9 @@ public class CNTracker extends Notifier {
     }
 
     @Extension
-    public static final class DescriptorImpl extends BuildStepDescriptor<Publisher> {
+    public static final class DescriptorImpl extends AbstractTeamForgeNotifier.DescriptorImpl {
         private static Logger log = Logger.getLogger("CNTrackerDescriptor");
 
-        /* use to make sure fields are generated with unique names on html */
-        private static int smUniqueIdCounter = 0;
-
-        /**
-         * Basic constructor.
-         */
-        public DescriptorImpl() {
-            super(CNTracker.class);
-        }
-
-        /**
-         * @return a unique integer, used to uniquely identify an instance of this plugin on a page.
-         */
-        public synchronized int getUniqueId() {
-            int returnVal = smUniqueIdCounter;
-            if (returnVal == (Integer.MAX_VALUE - 1)) {
-                smUniqueIdCounter = 0;
-            } else {
-                smUniqueIdCounter++;
-            }
-            return returnVal;
-        }
-
-        @Override
-        /**
-         * * Allows this plugin to be used as a promotion task.
-         */
-         public boolean isApplicable(Class<? extends AbstractProject> jobType) {
-            return true;
-        }
-        
         /**
          * @return human readable name used in the configuration screen.
          */
@@ -819,99 +714,11 @@ public class CNTracker extends Notifier {
         }
 
         /**
-         * @return the url for the help files.
-         */
-        public static String getHelpUrl() {
-            return "/plugin/collabnet/tracker/";
-        }
-
-        /**
-         * @return the help file for tracker.
-         */
-        @Override
-        public String getHelpFile() {
-            return getHelpUrl() + "help.html";
-        }
-
-        /**
-         * @return true if there is auth data that can be inherited.
-         */
-        public boolean canInheritAuth() {
-            return getTeamForgeShareDescriptor().useGlobal();
-        }
-        
-        /**
-         * Creates a new instance of {@link CNTracker} from 
-         * a submitted form.
-         *
-         * @param req config page parameters.
-         * @param formData data specific to this section, in json form.
-         * @return new CNTracker instance.
-         * @throws FormException
-         */
-        @Override
-        public CNTracker newInstance(StaplerRequest req, JSONObject formData) 
-            throws FormException {
-            boolean override_auth = false;
-            String username = null;
-            String password = null;
-            String collabneturl = null;
-            if (formData.has("override_auth")) {
-                override_auth = true;
-                Object authObject = formData.get("override_auth");
-                if (authObject instanceof JSONObject) {
-                    username = (String)((JSONObject) authObject)
-                        .get("username");
-                    password = (String)((JSONObject) authObject)
-                        .get("password");
-                    collabneturl = (String)((JSONObject) authObject)
-                        .get("collabneturl");
-                } else if (authObject.equals(Boolean.TRUE)) {
-                    username = (String) formData.get("username");
-                    password = (String) formData.get("password");
-                    collabneturl = (String) formData.get("collabneturl");
-                } else {
-                    override_auth = false;
-                }
-            } else if (!this.canInheritAuth()){
-                override_auth = true;
-                username = (String)formData.get("username");
-                password = (String)formData.get("password");
-                collabneturl = (String)formData.get("collabneturl");
-            }
-            return new CNTracker(username, password, collabneturl,
-                                 (String)formData.get("project"),
-                                 (String)formData.get("tracker"),
-                                 StringUtils.
-                                 strip((String)formData.get("title")),
-                                 StringUtils.
-                                 strip((String)formData.get("assign_user")),
-                                 (String)formData.get("priority"),
-                                 CommonUtil.getBoolean("attach_log", formData),
-                                 CommonUtil.getBoolean("always_update", 
-                                                       formData),
-                                 CommonUtil.getBoolean("close_issue", 
-                                                       formData),
-                                 StringUtils.
-                                 strip((String)formData.get("release")), 
-                                 override_auth);
-        }
-        
-        /**
-         * Form validation for the project field.
-         *
-         * @param req StaplerRequest which contains parameters from the config.jelly.
-         */
-        public FormValidation doCheckProject(CollabNetApp app, @QueryParameter String value) {
-            return CNFormFieldValidator.projectCheck(app,value);
-        }
-        
-        /**
          * Form validation for the tracker field.
          *
          * @param req StaplerRequest which contains parameters from the config.jelly.
          */
-        public FormValidation doTrackerCheck(StaplerRequest req) {
+        public FormValidation doCheckTracker(StaplerRequest req) {
             return CNFormFieldValidator.trackerCheck(req);
         }
         
@@ -920,7 +727,7 @@ public class CNTracker extends Notifier {
          *
          * @param req StaplerRequest which contains parameters from the config.jelly.
          */
-        public FormValidation doAssignCheck(StaplerRequest req) {
+        public FormValidation doCheckAssign(StaplerRequest req) {
             return CNFormFieldValidator.assignCheck(req);
         }
         
@@ -937,11 +744,10 @@ public class CNTracker extends Notifier {
         
         /**
          * Form validation for the release field.
-         *
-         * @param req StaplerRequest which contains parameters from the config.jelly.
          */
-        public FormValidation doReleaseCheck(StaplerRequest req) {
-            return CNFormFieldValidator.releaseCheck(req);
+        public FormValidation doCheckRelease(CollabNetApp cna, @QueryParameter String project,
+                                @QueryParameter("package") String rpackage, @QueryParameter String release) {
+            return CNFormFieldValidator.releaseCheck(cna,project,rpackage,release,false);
         }
 
         /**********************************************
@@ -949,60 +755,29 @@ public class CNTracker extends Notifier {
          **********************************************/
 
         /**
-         * Gets a list of projects to choose from and write them as a 
-         * JSON string into the response data.
-         *
-         * @param req contains parameters from 
-         *            the config.jelly.
-         * @param rsp http response data.
-         * @throws IOException
-         */
-        public void doGetProjects(StaplerRequest req, StaplerResponse rsp) 
-            throws IOException {
-            new ComboBoxUpdater.ProjectsUpdater(req, rsp).update();
-        }
-
-        /**
          * Gets a list of trackers to choose from and write them as a 
          * JSON string into the response data.
-         *
-         * @param req contains parameters from 
-         *            the config.jelly.
-         * @param rsp http response data.
-         * @throws IOException
          */
-        public void doGetTrackers(StaplerRequest req, StaplerResponse rsp) 
-            throws IOException {
-            new ComboBoxUpdater.TrackersUpdater(req, rsp).update();
+        public ComboBoxModel doFillTrackerItems(CollabNetApp cna, @QueryParameter String project) {
+            return ComboBoxUpdater.getTrackers(cna,project);
         }
 
         /**
          * Gets a list of projectUsers to choose from and write them as a 
          * JSON string into the response data.
-         *
-         * @param req contains parameters from 
-         *            the config.jelly.
-         * @param rsp http response data.
-         * @throws IOException
          */
-        public void doGetProjectUsers(StaplerRequest req, StaplerResponse rsp) 
+        public ComboBoxModel doFillAssignUserItems(CollabNetApp cna, @QueryParameter String project)
             throws IOException {
-            new ComboBoxUpdater.UsersUpdater(req, rsp).update();
+            return ComboBoxUpdater. getUsers(cna,project);
         }
         
         /**
-         * Gets a list of releases to choose from and write them as a 
+         * Gets a list of releases to choose from and write them as a
          * JSON string into the response data.
-         *
-         * @param req contains parameters from 
-         *            the config.jelly.
-         * @param rsp http response data.
-         * @throws IOException
          */
-        public void doGetReleases(StaplerRequest req, StaplerResponse rsp) 
-            throws IOException {
-            new ComboBoxUpdater.ReleasesUpdater(req, rsp).update();
+        public ComboBoxModel doFillReleaseItems(CollabNetApp cna,
+                @QueryParameter String project, @QueryParameter("package") String _package) {
+            return ComboBoxUpdater.getReleases(cna,project,_package);
         }
-
     }
 }

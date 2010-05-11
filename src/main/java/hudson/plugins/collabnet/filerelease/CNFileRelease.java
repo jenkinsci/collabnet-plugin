@@ -3,56 +3,42 @@ package hudson.plugins.collabnet.filerelease;
 
 import com.collabnet.ce.soap50.webservices.frs.FrsFileSoapDO;
 import com.collabnet.ce.webservices.CollabNetApp;
-import com.collabnet.ce.webservices.FrsApp;
 import com.collabnet.ce.webservices.FileStorageApp;
-
+import com.collabnet.ce.webservices.FrsApp;
 import hudson.Extension;
-import hudson.Launcher;
 import hudson.FilePath;
 import hudson.FilePath.FileCallable;
-import hudson.model.AbstractBuild;
-import hudson.model.BuildListener;
-import hudson.model.FreeStyleProject;
-import hudson.model.Hudson;
-import hudson.model.Result;
-import hudson.model.TaskListener;
-import hudson.remoting.VirtualChannel;
-import hudson.tasks.BuildStepDescriptor;
-import hudson.tasks.BuildStepMonitor;
-import hudson.tasks.Notifier;
-import hudson.tasks.Publisher;
-import hudson.util.FormValidation;
-
+import hudson.Launcher;
+import hudson.model.*;
+import hudson.plugins.collabnet.AbstractTeamForgeNotifier;
+import hudson.plugins.collabnet.ConnectionFactory;
+import hudson.plugins.collabnet.documentuploader.FilePattern;
 import hudson.plugins.collabnet.share.TeamForgeShare;
 import hudson.plugins.collabnet.util.CNFormFieldValidator;
 import hudson.plugins.collabnet.util.CNHudsonUtil;
 import hudson.plugins.collabnet.util.ComboBoxUpdater;
 import hudson.plugins.collabnet.util.CommonUtil;
-
 import hudson.plugins.promoted_builds.Promotion;
+import hudson.remoting.VirtualChannel;
+import hudson.tasks.BuildStepMonitor;
+import hudson.util.ComboBoxModel;
+import hudson.util.FormValidation;
+import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.QueryParameter;
 
+import javax.activation.MimetypesFileTypeMap;
 import java.io.File;
 import java.io.IOException;
 import java.rmi.RemoteException;
 import java.util.Collection;
 import java.util.Map;
 
-import javax.activation.MimetypesFileTypeMap;
-
-import hudson.util.Secret;
-import net.sf.json.JSONArray;
-import net.sf.json.JSONObject;
-
-import org.kohsuke.stapler.QueryParameter;
-import org.kohsuke.stapler.StaplerRequest;
-import org.kohsuke.stapler.StaplerResponse;
-
 
 /**
  * Hudson plugin to update files from the Hudson workspace 
  * to the CollabNet File Release System.
  */
-public class CNFileRelease extends Notifier {
+public class CNFileRelease extends AbstractTeamForgeNotifier {
     // listener is used for logging and will only be
     // set at the beginning of perform.
     private transient BuildListener listener = null;
@@ -63,15 +49,10 @@ public class CNFileRelease extends Notifier {
     private transient CollabNetApp cna = null;
 
     // Variables from the form
-    private boolean override_auth = true;
-    private String url;
-    private String username;
-    private Secret password;
-    private String project;
     private String rpackage;
     private String release;
     private boolean overwrite;
-    private String[] file_patterns;
+    private FilePattern[] file_patterns;
 
     private transient static TeamForgeShare.TeamForgeShareDescriptor
         shareDescriptor = null;
@@ -79,12 +60,9 @@ public class CNFileRelease extends Notifier {
     /**
      * Creates a new CNFileRelease object.
      *
-     * @param url for the CollabNet server, i.e. http://forge.collab.net
-     * @param username used to log into the CollabNet server.
-     * @param password for the logging-in user.
-     * @param project where the files will be uploaded.  The project 
+     * @param project where the files will be uploaded.  The project
      *                contains the package.
-     * @param rpackage where the files will be uploaded.  The package contains
+     * @param pkg where the files will be uploaded.  The package contains
      *                the release.
      * @param release where the files will be uploaded.
      * @param overwrite whether or not to overwrite existing files.
@@ -92,19 +70,15 @@ public class CNFileRelease extends Notifier {
      *                     ant-style patterns will be uploaded to the 
      *                     CollabNet server.
      */
-    public CNFileRelease(String url, String username, String password,
-                         String project, String rpackage, String release, 
-                         boolean overwrite, String[] filePatterns, 
-                         boolean override_auth) {
-        this.url = CNHudsonUtil.sanitizeCollabNetUrl(url);
-        this.username = username;
-        this.password = Secret.fromString(password);
-        this.project = project;
-        this.rpackage = rpackage;
+    @DataBoundConstructor
+    public CNFileRelease(ConnectionFactory connectionFactory,
+                         String project, String pkg, String release,
+                         boolean overwrite, FilePattern[] filePatterns) {
+        super(connectionFactory,project);
+        this.rpackage = pkg;
         this.release = release;
         this.overwrite = overwrite;
         this.file_patterns = filePatterns;
-        this.override_auth = override_auth;
     }
 
     /**
@@ -141,56 +115,9 @@ public class CNFileRelease extends Notifier {
     }
 
     /**
-     * @return whether or not auth is overriden
-     */
-    public boolean overrideAuth() {
-        return this.override_auth;
-    }
-
-    /**
-     * @return the url for the CollabNet server.
-     */
-    public String getCollabNetUrl() {
-        if (this.overrideAuth()) {
-            return this.url;
-        } else {
-            return getTeamForgeShareDescriptor().getCollabNetUrl();
-        }
-    }
-
-    /**
-     * @return the username used for logging in.
-     */
-    public String getUsername() {
-        if (this.overrideAuth()) {
-            return this.username;            
-        } else {
-            return getTeamForgeShareDescriptor().getUsername();
-        }
-    }
-
-    /**
-     * @return the password used for logging in.
-     */
-    public String getPassword() {
-        if (this.overrideAuth()) {
-            return Secret.toString(this.password);
-        } else {
-            return getTeamForgeShareDescriptor().getPassword();
-        }
-    }
-
-    /**
-     * @return the project where the files are uploaded.
-     */
-    public String getProject() {
-        return this.project;
-    }
-
-    /**
      * @return the package of the release where the files are uploaded.
      */
-    public String getPackage() {
+    public String getPkg() {
         return this.rpackage;
     }
 
@@ -204,18 +131,18 @@ public class CNFileRelease extends Notifier {
     /**
      * @return whether or not existing files should be overwritten.
      */
-    public boolean overwrite() {
+    public boolean isOverwrite() {
         return this.overwrite;
     }
 
     /**
      * @return the ant-style file patterns.
      */
-    public String[] getFilePatterns() {
+    public FilePattern[] getFilePatterns() {
         if (this.file_patterns != null) {
             return this.file_patterns;
         } else {
-            return new String[0];
+            return new FilePattern[0];
         }
     }
 
@@ -237,8 +164,7 @@ public class CNFileRelease extends Notifier {
         CollabNetApp cna = CNHudsonUtil.getCollabNetApp(this.getCollabNetUrl(),
                                                         this.getUsername(), 
                                                         this.getPassword());
-        Collection<String> projects = ComboBoxUpdater.ProjectsUpdater
-            .getProjectList(cna);
+        Collection<String> projects = ComboBoxUpdater.getProjectList(cna);
         CNHudsonUtil.logoff(cna);
         return projects.toArray(new String[projects.size()]);
     }
@@ -251,9 +177,7 @@ public class CNFileRelease extends Notifier {
         CollabNetApp cna = CNHudsonUtil.getCollabNetApp(this.getCollabNetUrl(),
                                                         this.getUsername(), 
                                                         this.getPassword());
-        String projectId = CNHudsonUtil.getProjectId(cna, this.getProject());
-        Collection<String> packages = ComboBoxUpdater.PackagesUpdater
-            .getPackageList(cna, projectId);
+        Collection<String> packages = ComboBoxUpdater.getPackages(cna, this.getProject());
         CNHudsonUtil.logoff(cna);
         return packages.toArray(new String[packages.size()]);
     }
@@ -267,8 +191,7 @@ public class CNFileRelease extends Notifier {
                                                         this.getUsername(), 
                                                         this.getPassword());
         String packageId = this.getPackageId(this.getProjectId());
-        Collection<String> releases = ComboBoxUpdater.ReleasesUpdater
-            .getReleaseList(cna, packageId);
+        Collection<String> releases = ComboBoxUpdater.getReleaseList(cna, packageId);
         CNHudsonUtil.logoff(cna);
         return releases.toArray(new String[releases.size()]);
     }
@@ -376,14 +299,16 @@ public class CNFileRelease extends Notifier {
         int numUploaded = 0;
         final FrsApp fa = new FrsApp(this.cna);
         this.logConsole("Uploading file to project '" + this.getProject() +
-                 "', package '" + this.getPackage() + "', release '" + 
+                 "', package '" + this.getPkg() + "', release '" +
                  this.getRelease() + "' on host '" + this.getCollabNetUrl() + 
                  "' as user '" + this.getUsername() + "'.");
         // upload files
-        for (String uninterp_fp : this.getFilePatterns()) {
+        for (FilePattern uninterp_fp : this.getFilePatterns()) {
             String file_pattern;
             try {
-                file_pattern = getInterpreted(build, uninterp_fp); 
+                // TODO: this handling and FilePattern.interpret are inconsistent.
+                // probably it should be adjusted.
+                file_pattern = getInterpreted(build, uninterp_fp.value);
             } catch (IllegalArgumentException e) {
                 this.logConsole("File pattern " + uninterp_fp + " contained a bad "
                          + "env var.  Skipping.");
@@ -405,7 +330,7 @@ public class CNFileRelease extends Notifier {
                     this.log("find file", re);
                 }
                 if (fileId != null) {
-                    if (this.overwrite()) {
+                    if (this.isOverwrite()) {
                         // delete existing file
                         try {
                             fa.deleteFrsFile(fileId);
@@ -565,7 +490,7 @@ public class CNFileRelease extends Notifier {
         String packageId = this.getPackageId(projectId);
         if (packageId == null) {
             this.logConsole("Critical Error: packageId cannot be found for " +
-                     this.getPackage() + ".  " +
+                     this.getPkg() + ".  " +
                      "Setting build status to UNSTABLE (or worse).");
             return null;
         }
@@ -603,7 +528,7 @@ public class CNFileRelease extends Notifier {
             this.logConsole("Cannot getPackageId, not logged in!");
             return null;
         }
-        return CNHudsonUtil.getPackageId(this.cna, this.getPackage(), 
+        return CNHudsonUtil.getPackageId(this.cna, this.getPkg(),
                                          projectId);
     }
 
@@ -655,27 +580,7 @@ public class CNFileRelease extends Notifier {
      * The CNFileRelease Descriptor class.
      */
     @Extension
-    public static final class DescriptorImpl 
-        extends BuildStepDescriptor<Publisher> {
-
-        private static int unique = 0;
-
-        public DescriptorImpl() {
-            super(CNFileRelease.class);
-        }
-
-        /**
-         * @return a unique integer, used to identify an instance
-         *         of the File Release plugin on a page.
-         */
-        public synchronized int getUniqueId() {
-            int return_value = unique;
-            unique++;
-            if (unique >= Integer.MAX_VALUE) {
-                unique = 0;
-            }
-            return return_value;
-        }
+    public static final class DescriptorImpl extends AbstractTeamForgeNotifier.DescriptorImpl {
 
         /**
          * @return string to display for configuration screen.
@@ -686,189 +591,39 @@ public class CNFileRelease extends Notifier {
         }
 
         /**
-         * @return the url that contains the help files.
-         */
-        public static String getHelpUrl() {
-            return "/plugin/collabnet/filerelease/";
-        }
-
-        /**
-         * @return a relative url to the main help file.
-         */
-        @Override
-        public String getHelpFile() {
-            return getHelpUrl() + "help.html";
-        }
-
-        /**
-         * @return true if there is auth data that can be inherited.
-         */
-        public boolean canInheritAuth() {
-            return getTeamForgeShareDescriptor().useGlobal();
-        }
-
-        /**
-         * Allows this plugin to be used as a promotion task.
-         *
-         * @param jobType a class to check for applicability.
-         * @return true if CNFileRelease is applicable to this job.
-         */
-        @Override
-        public boolean isApplicable(java.lang.Class<? 
-                                    extends hudson.model.AbstractProject> 
-                                    jobType) {
-            return true;
-        }
-
-        /**
-         * Creates a new instance of {@link CNFileRelease} from a submitted 
-         * form.
-         *
-         * @param req config page parameters.
-         * @param formData data specific to this section, in json form.
-         * @return new CNFileRelease object, instantiated from the 
-         *         configuration form vars.
-         * @throws FormException
-         */
-        @Override
-        public CNFileRelease newInstance(StaplerRequest req, 
-                                         JSONObject formData) 
-            throws FormException {
-            boolean override_auth = false;
-            String username = null;
-            String password = null;
-            String collabneturl = null;
-            if (formData.has("override_auth")) {
-                override_auth = true;
-                Object authObject = formData.get("override_auth");
-                if (authObject instanceof JSONObject) {
-                    username = (String)((JSONObject) authObject)
-                        .get("username");
-                    password = (String)((JSONObject) authObject)
-                        .get("password");
-                    collabneturl = (String)((JSONObject) authObject)
-                        .get("collabneturl");
-                } else if (authObject.equals(Boolean.TRUE)) {
-                    username = (String) formData.get("username");
-                    password = (String) formData.get("password");
-                    collabneturl = (String) formData.get("collabneturl");
-                } else {
-                    override_auth = false;
-                }
-            } else if (!this.canInheritAuth()) {
-                override_auth = true;
-                username = (String)formData.get("username");
-                password = (String)formData.get("password");
-                collabneturl = (String)formData.get("collabneturl");
-            }
-            Object fileData = formData.get("files");
-            JSONObject[] jpats;
-            if (fileData instanceof JSONArray) {
-                JSONArray patData = (JSONArray) fileData;
-                jpats = (JSONObject []) JSONArray.toArray(patData, 
-                                                          JSONObject.class);
-            } else if (fileData instanceof JSONObject) {
-                jpats = new JSONObject[1];
-                jpats[0] = (JSONObject) fileData;
-            } else {
-                jpats = new JSONObject[0];
-            }
-            String[] patterns = new String[jpats.length];
-            for (int i = 0; i < jpats.length; i++) {
-                patterns[i] = (String) jpats[i].get("file");
-            }            
-            return new CNFileRelease(collabneturl, 
-                                     username, 
-                                     password, 
-                                     (String)formData.get("project"),  
-                                     (String)formData.get("package"), 
-                                     (String)formData.get("release"), 
-                                     CommonUtil.getBoolean("overwrite", 
-                                                           formData),
-                                     patterns, override_auth);
-        }
-
-        /**
-         * Form validation for the project field.
-         *
-         * @return the form validation
-         */
-        public FormValidation doCheckProject(CollabNetApp app, @QueryParameter String value) {
-            return CNFormFieldValidator.projectCheck(app,value);
-        }
-
-        /**
          * Form validation for package.
          *
-         * @param req StaplerRequest which contains parameters from the config.jelly.
          * @return the form validation
          */
-        public FormValidation doPackageCheck(StaplerRequest req) {
-            return CNFormFieldValidator.packageCheck(req);
+        public FormValidation doCheckPkg(CollabNetApp cna, @QueryParameter String project, @QueryParameter("package") String rpackage) {
+            return CNFormFieldValidator.packageCheck(cna,project,rpackage);
         }
 
         /**
          * Form validation for release.
          *
-         * @param req StaplerRequest which contains parameters from the config.jelly.
          * @return the form validation
          */
-        public FormValidation doReleaseCheck(StaplerRequest req) {
-            return CNFormFieldValidator.releaseCheck(req);
-        }
-
-        /**
-         * Form validation for the file patterns.
-         *
-         * @param value
-         * @param name of field
-         * @return the form validation
-         */
-        public FormValidation doUnRequiredInterpretedCheck(
-                @QueryParameter String value, @QueryParameter String name) throws FormValidation {
-            return CNFormFieldValidator.unrequiredInterpretedCheck(value, name);
-        }
-        
-        /**
-         * Gets a list of projects to choose from and write them as a 
-         * JSON string into the response data.
-         *
-         * @param req contains parameters from 
-         *            the config.jelly.
-         * @param rsp http response data.
-         * @throws IOException
-         */
-        public void doGetProjects(StaplerRequest req, StaplerResponse rsp) 
-            throws IOException {
-            new ComboBoxUpdater.ProjectsUpdater(req, rsp).update();
+        public FormValidation doCheckRelease(CollabNetApp cna, @QueryParameter String project,
+                                @QueryParameter("package") String rpackage, @QueryParameter String release) {
+            return CNFormFieldValidator.releaseCheck(cna,project,rpackage,release,true);
         }
 
         /**
          * Gets a list of packages to choose from and write them as a 
          * JSON string into the response data.
-         *
-         * @param req contains parameters from 
-         *            the config.jelly.
-         * @param rsp http response data.
-         * @throws IOException
          */
-        public void doGetPackages(StaplerRequest req, StaplerResponse rsp) 
-            throws IOException {
-            new ComboBoxUpdater.PackagesUpdater(req, rsp).update();
+        public ComboBoxModel doFillPkgItems(CollabNetApp cna, @QueryParameter String project) {
+            return ComboBoxUpdater.getPackages(cna,project);
         }
 
         /**
          * Gets a list of releases to choose from and write them as a 
          * JSON string into the response data.
-         *
-         * @param req contains parameters from 
-         *            the config.jelly.
-         * @param rsp http response data.
-         * @throws IOException
          */
-        public void doGetReleases(StaplerRequest req, StaplerResponse rsp) 
-            throws IOException {
-            new ComboBoxUpdater.ReleasesUpdater(req, rsp).update();
+        public ComboBoxModel doFillReleaseItems(CollabNetApp cna,
+                @QueryParameter String project, @QueryParameter("package") String _package) {
+            return ComboBoxUpdater.getReleases(cna,project,_package);
         }
     }
 }

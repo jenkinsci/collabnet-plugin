@@ -2,145 +2,44 @@
  xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form" 
  xmlns:c="/hudson/plugins/collabnet/tags">
 
-  <script src="${rootURL}/plugin/collabnet/scripts/cnauth_override.js" type="text/javascript" />
-
-  <j:set var="cnfr_id" value="${descriptor.getUniqueId()}" />
-
-  <j:set var="rootHelpURL" value="${descriptor.getHelpUrl()}"/>
-
   <j:choose>
     <j:when test="${descriptor.canInheritAuth()}">
       <f:nested>
         <table style="width:100%">
-          <j:set var="cnfr_override" value="false" />
-          <j:choose>
-            <j:when test="${instance != null}">
-              <j:set var="cnfr_override"
-                value="${instance.overrideAuth()}" />
-            </j:when>
-          </j:choose>
-          <c:cnOptionalBlock id="${cnfr_id}.cnfr.override_auth"
-           name="${cnfr_id}.cnfr.override_auth"
-           title="Override the Global CollabNet Configuration"
-           checked="${cnfr_override}"
-           onclick="document.getElementById('${cnfr_id}.cnfr.password').onchange()"
-             >
-           <c:cnAuth prefix="${cnfr_id}.cnfr"
-            checkUrlRoot="${rootURL}/publisher/CNFileRelease"
-            helpUrlRoot="${rootHelpURL}" url="${instance.getCollabNetUrl()}"
-            username="${instance.username}" password="${instance.password}"
-            onchange="document.getElementById('_${cnfr_id}_cnfr_project').onchange();"
-           />
-          </c:cnOptionalBlock>
+          <c:optionalProperty title="Override the Global CollabNet Configuration" field="connectionFactory" />
         </table>
       </f:nested>
     </j:when>
     <j:otherwise>
-      <c:cnAuth prefix="${cnfr_id}.cnfr"
-       checkUrlRoot="${rootURL}/publisher/CNFileRelease"
-       helpUrlRoot="${rootHelpURL}" url="${instance.getCollabNetUrl()}"
-       username="${instance.username}" password="${instance.password}"
-       onchange="document.getElementById('_${cnfr_id}_cnfr_project').onchange();" />
+      <c:property field="connectionFactory" />
     </j:otherwise>
   </j:choose>
 
-  <f:entry title="Project" help="${rootHelpURL}/help-project.html">
-    <c:updatableComboBox name="cnfr.project" id="_${cnfr_id}_cnfr_project"
-     clazz="setting-input validated" value="${instance.project}"
-     items="${instance.getProjects()}"
-     checkUrl="'${rootURL}/publisher/CNFileRelease/projectCheck?project=' +
-       escape(document.getElementById('_${cnfr_id}_cnfr_project').value) +
-       '&amp;' + get_auth_param_str('${cnfr_id}.cnfr')"
-     updateUrl="'${rootURL}/publisher/CNFileRelease/getProjects?' +
-       get_auth_param_str('${cnfr_id}.cnfr')"
-     onchange="
-       document.getElementById('_${cnfr_id}_cnfr_package').onchange();"/>
+  <f:entry title="Project" field="project">
+    <f:combobox />
   </f:entry>
 
-  <f:entry title="Package" help="${rootHelpURL}/help-package.html">
-    <c:updatableComboBox name="cnfr.package" id="_${cnfr_id}_cnfr_package"
-     clazz="setting-input validated" value="${instance.package}"
-     items="${instance.getPackages()}"
-     checkUrl="'${rootURL}/publisher/CNFileRelease/packageCheck?package=' +
-       escape(this.value) +'&amp;project=' +
-       escape(document.getElementById('_${cnfr_id}_cnfr_project').value) +
-       '&amp;' + get_auth_param_str('${cnfr_id}.cnfr')"
-     updateUrl="'${rootURL}/publisher/CNFileRelease/getPackages?' +
-       get_auth_param_str('${cnfr_id}.cnfr') +
-       '&amp;project=' +
-       escape(document.getElementById('_${cnfr_id}_cnfr_project').value)"
-     onchange="
-       document.getElementById('_${cnfr_id}_cnfr_release').onchange();"
-    />
+  <f:entry title="Package" field="pkg">
+    <f:combobox />
   </f:entry>
 
-  <f:entry title="Release" help="${rootHelpURL}/help-release.html">
-    <c:updatableComboBox name="cnfr.release" id="_${cnfr_id}_cnfr_release" 
-     clazz="setting-input validated" value="${instance.release}" 
-     items="${instance.getReleases()}" 
-     checkUrl="'${rootURL}/publisher/CNFileRelease/releaseCheck?release=' + 
-       escape(this.value) + '&amp;package=' + 
-       escape(document.getElementById('_${cnfr_id}_cnfr_package').value) + 
-       '&amp;project=' + 
-       escape(document.getElementById('_${cnfr_id}_cnfr_project').value) + 
-       '&amp;' + get_auth_param_str('${cnfr_id}.cnfr') +
-       '&amp;required=true'" 
-     updateUrl="'${rootURL}/publisher/CNFileRelease/getReleases?' + 
-       get_auth_param_str('${cnfr_id}.cnfr') +
-       '&amp;project=' + 
-       escape(document.getElementById('_${cnfr_id}_cnfr_project').value) +
-       '&amp;package=' + 
-       escape(document.getElementById('_${cnfr_id}_cnfr_package').value)" />
+  <f:entry title="Release" field="release">
+    <f:combobox />
   </f:entry>
 
+  <f:entry title="Overwrite existing files?" field="overwrite">
+    <c:booleanRadio />
+  </f:entry>
 
-  <f:entry title="Overwrite existing files?" 
-   help="${rootHelpURL}/help-overwrite.html">
-  <span>
-      <f:radio name="${cnfr_id}.cnfr.overwrite" id="overwrite_yes" title="Yes" 
-       value="true" checked="${instance.overwrite() != false}">
-      </f:radio>
-      <label for="overwrite_yes">Yes</label>
-      <f:radio name="${cnfr_id}.cnfr.overwrite" id="overwrite_no" title="No" 
-       value="false" checked="${instance.overwrite() == false}">
-      </f:radio>
-      <label for="overwrite_no">No</label>
-    </span>
+  <f:entry title="File Patterns to Upload" field="filePatterns">
+      <f:repeatable field="filePatterns" minimum="1" noAddButton="true">
+        <f:textbox field="value" />
+        <div align="right">
+          <input type="button" value="Add File Pattern"
+           class="repeatable-add show-if-last" />
+          <input type="button" value="Delete File Pattern"
+           class="repeatable-delete show-if-not-only" />
+        </div>
+      </f:repeatable>
   </f:entry>
-  <f:entry title="File Patterns to Upload" 
-   help="${rootHelpURL}/help-filepattern.html">
-    <link rel="stylesheet" href="/plugin/collabnet/css/style.css" 
-     type="text/css"/>
-    <j:choose>
-      <j:when test="${instance != null}">
-        <f:repeatable name="cnfr.files" var="file" 
-         items="${instance.getFilePatterns()}" minimum="1" noAddButton="true">
-          <f:textbox name="cnfr.file" value="${file}" 
-           checkUrl="'${rootURL}/publisher/CNFileRelease/' + 
-             'unRequiredInterpretedCheck?value='+escape(this.value)" />
-            <div align="right">
-              <input type="button" value="Add File Pattern" 
-               class="repeatable-add show-if-last" />
-              <input type="button" value="Delete File Pattern" 
-               class="repeatable-delete show-if-not-only"/> 
-            </div>
-        </f:repeatable>
-      </j:when>
-      <j:otherwise>
-        <f:repeatable name="cnfr.files" var="file" 
-         items="${['']}" minimum="1" noAddButton="true">
-          <f:textbox name="cnfr.file" value="${file}" 
-           checkUrl="'${rootURL}/publisher/CNFileRelease/' + 
-             'unRequiredInterpretedCheck?value='+escape(this.value)" />
-            <div align="right">
-              <input type="button" value="Add File Pattern" 
-               class="repeatable-add show-if-last" />
-              <input type="button" value="Delete File Pattern" 
-               class="repeatable-delete show-if-not-only"/> 
-            </div>
-        </f:repeatable>
-      </j:otherwise>
-    </j:choose>
-  </f:entry>
-  
 </j:jelly>

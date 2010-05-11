@@ -2,67 +2,24 @@
  xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form" 
  xmlns:c="/hudson/plugins/collabnet/tags">
 
-  <script src="${rootURL}/plugin/collabnet/scripts/cnauth_override.js" type="text/javascript" />
-
-  <j:set var="rootHelpURL" value="${descriptor.getHelpUrl()}" />
-
-
   <j:choose>
     <j:when test="${descriptor.canInheritAuth()}">
       <f:nested>
         <table style="width:100%">
-          <j:set var="cnbrow_override" value="false" />
-          <j:choose>
-            <j:when test="${instance != null}">
-              <j:set var="cnbr_override" 
-                value="${instance.overrideAuth()}" />
-            </j:when>
-          </j:choose>
-          <c:cnOptionalBlock id="cnbr.override_auth" 
-           name="cnbr.override_auth" 
-           title="Override the Global CollabNet Configuration"
-           checked="${cnbr_override}" 
-           onclick="document.getElementById('cnbr.password').onchange();cnbr_project_update();"
-             >
-           <c:cnAuth prefix="cnbr" 
-            checkUrlRoot="${rootURL}/descriptorByName/hudson.plugins.collabnet.browser.TeamForge" 
-            helpUrlRoot="${rootHelpURL}" url="${instance.getCollabNetUrl()}" 
-            username="${instance.username}" password="${instance.password}" 
-            onchange="document.getElementById('cnbr_project').onchange();"
-           />
-          </c:cnOptionalBlock>
+          <c:optionalProperty title="Override the Global CollabNet Configuration" field="connectionFactory" />
         </table>
       </f:nested>
     </j:when>
     <j:otherwise>
-      <c:cnAuth prefix="cnbr" 
-        checkUrlRoot="${rootURL}/descriptorByName/hudson.plugins.collabnet.browser.TeamForge" 
-        helpUrlRoot="${rootHelpURL}" url="${instance.getCollabNetUrl()}" 
-        username="${instance.username}" password="${instance.password}" 
-        onchange="document.getElementById('cnbr_project').onchange();" />
+      <c:property field="connectionFactory" />
     </j:otherwise>
   </j:choose>
 
-  <f:entry title="Project" help="${rootHelpURL}/help-project.html">
-    <c:updatableComboBox name="cnbr.project" value="${instance.project}" 
-     id="cnbr_project" clazz="setting-input validated"
-     items="${instance.getProjects()}"
-     checkUrl="'${rootURL}/descriptorByName/hudson.plugins.collabnet.browser.TeamForge/projectCheck?' +
-       'project=' + escape(this.value) + '&amp;' + get_auth_param_str('cnbr')"
-     updateUrl="'${rootURL}/descriptorByName/hudson.plugins.collabnet.browser.TeamForge/getProjects?' +
-       get_auth_param_str('cnbr')" />
+  <f:entry title="Project" field="project">
+    <f:combobox />
   </f:entry>
 
-  <f:entry title="Repository Name" help="${rootHelpURL}/help-repo.html">
-    <c:updatableComboBox name="cnbr.repo" value="${instance.repo}" 
-     id="cnbr_repo" clazz="setting-input validated"
-     items="${instance.getRepos()}"
-     checkUrl="'${rootURL}/descriptorByName/hudson.plugins.collabnet.browser.TeamForge/repoCheck?' +
-       'repo=' + escape(this.value) + '&amp;project=' + 
-       escape(document.getElementById('cnbr_project').value) + '&amp;' +
-       get_auth_param_str('cnbr')"
-     updateUrl="'${rootURL}/descriptorByName/hudson.plugins.collabnet.browser.TeamForge/getRepos?' + 'project=' + 
-       escape(document.getElementById('cnbr_project').value) + '&amp;' +
-       get_auth_param_str('cnbr')" />
+  <f:entry title="Repository Name" field="repo">
+    <f:combobox />
   </f:entry>
 </j:jelly>

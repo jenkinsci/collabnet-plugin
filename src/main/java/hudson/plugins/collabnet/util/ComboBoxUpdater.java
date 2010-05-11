@@ -4,18 +4,15 @@ import com.collabnet.ce.webservices.CollabNetApp;
 import com.collabnet.ce.webservices.FrsApp;
 import com.collabnet.ce.webservices.ScmApp;
 import com.collabnet.ce.webservices.TrackerApp;
+import hudson.util.ComboBoxModel;
+import net.sf.json.JSONObject;
+import org.kohsuke.stapler.StaplerRequest;
+import org.kohsuke.stapler.StaplerResponse;
 
 import java.io.IOException;
 import java.rmi.RemoteException;
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.logging.Logger;
-
-import net.sf.json.JSONObject;
-
-import org.kohsuke.stapler.StaplerRequest;
-import org.kohsuke.stapler.StaplerResponse;
 
 /**
  * These classes are used to update the list of items for a combo box.
@@ -23,264 +20,152 @@ import org.kohsuke.stapler.StaplerResponse;
 public abstract class ComboBoxUpdater {
     protected static Logger log = Logger.getLogger("ComboBoxUpdater");
 
-    protected final StaplerRequest request;
-    protected final StaplerResponse response;
-
-    protected ComboBoxUpdater(StaplerRequest req, StaplerResponse rsp) {
-        this.request = req;
-        this.response = rsp;
-    }
-
-    protected abstract Collection<String> getList();
-
-    public void update() throws IOException {
-        Collection<String> list = this.getList();
-        this.response.setContentType("text/plain;charset=UTF-8");
-        JSONObject jsonObj = new JSONObject();
-        jsonObj.element("items", list);
-        this.response.getWriter().print(jsonObj.toString());
+    private ComboBoxUpdater() {
     }
 
     /**
-     * Class to update a list of projects.  Requires the login info (url,
-     * username, password) be set.
+     * @return a list of projects which has been sanitized.
      */
-    public static class ProjectsUpdater extends ComboBoxUpdater {
-        
-        public ProjectsUpdater(StaplerRequest req, StaplerResponse rsp) {
-            super(req, rsp);
-        }
-
-        protected Collection<String> getList() {
-            CollabNetApp cna = CNHudsonUtil.getCollabNetApp(this.request);
-            Collection<String> list = getProjectList(cna);
-            CNHudsonUtil.logoff(cna);
-            return list;
-        }
-
-        /**
-         * @return a list of projects which has been sanitized.
-         */
-        public static Collection<String> getProjectList(CollabNetApp cna) {
-            Collection<String> projects = Collections.emptyList();
-            if (cna != null) {
-                try {
-                    projects = cna.getProjects();
-                } catch (RemoteException re) {
-                    CommonUtil.logRE(log, "getProjectList", re);
-                }
+    public static ComboBoxModel getProjectList(CollabNetApp cna) {
+        if (cna != null) {
+            try {
+                return new ComboBoxModel(cna.getProjects());
+            } catch (RemoteException re) {
+                CommonUtil.logRE(log, "getProjectList", re);
             }
-            return CommonUtil.sanitizeForJS(projects);
+        }
+        return EMPTY_MODEL;
+    }
+
+    /**
+     * Obtains the list of packages in the given project.
+     */
+    public static ComboBoxModel getPackages(CollabNetApp cna, String project) {
+        if (cna==null)    return EMPTY_MODEL;
+
+        String projectId = CNHudsonUtil.getProjectId(cna, project);
+        if (projectId==null)    return EMPTY_MODEL;
+
+        FrsApp fa = new FrsApp(cna);
+        try {
+            return new ComboBoxModel(fa.getPackages(projectId));
+        } catch (RemoteException re) {
+            return EMPTY_MODEL;
+        }
+    }
+
+    public static ComboBoxModel getReleases(CollabNetApp cna, String project, String rpackage) {
+        if (cna==null)    return EMPTY_MODEL;
+
+        String projectId = CNHudsonUtil.getProjectId(cna, project);
+        if (projectId==null)    return EMPTY_MODEL;
+
+        if (CommonUtil.unset(rpackage)) {
+            return getProjectReleaseList(cna, projectId);
+        } else {
+            String packageId = CNHudsonUtil.getPackageId(cna, rpackage, projectId);
+            return getReleaseList(cna, packageId);
         }
     }
 
     /**
-     * Class to update a list of packages.  Requires that the login info (url,
-     * username, password) be set, as well as the project.
+     * @return a list of releases in the package which has been sanitized.
      */
-    public static class PackagesUpdater extends ComboBoxUpdater {
-        
-        public PackagesUpdater(StaplerRequest req, StaplerResponse rsp) {
-            super(req, rsp);
-        }
-
-        protected Collection<String> getList() {
-            CollabNetApp cna = CNHudsonUtil.getCollabNetApp(this.request);
-            String project = request.getParameter("project");
-            String projectId = CNHudsonUtil.getProjectId(cna, project);
-            Collection<String> list = getPackageList(cna, projectId);
-            CNHudsonUtil.logoff(cna);
-            return list;
-        }
-
-        /**
-         * @return a list of packages which has been sanitized.
-         */
-        public static Collection<String> getPackageList(CollabNetApp cna, 
-                                                        String projectId) {
-            Collection<String> packages = Collections.emptyList();
-            if (cna != null && projectId != null) {
-                FrsApp fa = new FrsApp(cna);
-                try {
-                    packages = fa.getPackages(projectId);
-                } catch (RemoteException re) {
-                    CommonUtil.logRE(log, "getPackageList", re);
-                }
+    public static ComboBoxModel getReleaseList(CollabNetApp cna, String packageId) {
+        if (cna != null && packageId != null) {
+            FrsApp fa = new FrsApp(cna);
+            try {
+                return new ComboBoxModel(fa.getReleases(packageId));
+            } catch (RemoteException re) {
+                CommonUtil.logRE(log, "getReleaseList", re);
             }
-            return CommonUtil.sanitizeForJS(packages);
         }
+        return EMPTY_MODEL;
     }
 
     /**
-     * Class to update the list of releases.  Requires a StaplerRequest with
-     * login info (url, username, password), project, and (optionally) package.
+     * @return a list of all releases in the project which has been
+     *         sanitized.
      */
-    public static class ReleasesUpdater extends ComboBoxUpdater {
-        
-        public ReleasesUpdater(StaplerRequest req, StaplerResponse rsp) {
-            super(req, rsp);
-        }
-
-        protected Collection<String> getList() {
-            CollabNetApp cna = CNHudsonUtil.getCollabNetApp(this.request);
-            String project = request.getParameter("project");
-            String projectId = CNHudsonUtil.getProjectId(cna, project);
-            String rpackage = request.getParameter("package");
-            Collection<String> list = Collections.emptyList();
-            if (CommonUtil.unset(rpackage)) {
-                list = getProjectReleaseList(cna, projectId);
-            } else {
-                String packageId = CNHudsonUtil.getPackageId(cna, rpackage, 
-                                                             projectId);
-                list = getReleaseList(cna, packageId);
+    public static ComboBoxModel getProjectReleaseList(CollabNetApp cna, String projectId) {
+        if (cna != null && projectId != null) {
+            FrsApp fa = new FrsApp(cna);
+            try {
+                return new ComboBoxModel(fa.getProjectReleases(projectId));
+            } catch (RemoteException re) {
+                CommonUtil.logRE(log, "getProjectReleaseList", re);
             }
-            CNHudsonUtil.logoff(cna);
-            return list;
         }
+        return EMPTY_MODEL;
+    }
 
-        /**
-         * @return a list of releases in the package which has been sanitized.
-         */
-        public static Collection<String> getReleaseList(CollabNetApp cna, 
-                                                        String packageId) {
-            Collection<String> releases = Collections.emptyList();
-            if (cna != null && packageId != null) {
-                FrsApp fa = new FrsApp(cna);
-                try {
-                    releases = fa.getReleases(packageId);
-                } catch (RemoteException re) {
-                    CommonUtil.logRE(log, "getReleaseList", re);
-                }
-            }
-            return CommonUtil.sanitizeForJS(releases);
-        }
-
-        /**
-         * @return a list of all releases in the project which has been 
-         *         sanitized.
-         */
-        public static Collection<String> getProjectReleaseList
-            (CollabNetApp cna, String projectId) {
-            Collection<String> releases = Collections.emptyList();
-            if (cna != null && projectId != null) {
-                FrsApp fa = new FrsApp(cna);
-                try {
-                    releases = fa.getProjectReleases(projectId);
-                } catch (RemoteException re) {
-                    CommonUtil.logRE(log, "getProjectReleaseList", re);
-                }
-            }
-            return CommonUtil.sanitizeForJS(releases);
-        }
+    public static ComboBoxModel getRepos(CollabNetApp cna, String project) {
+        String projectId = CNHudsonUtil.getProjectId(cna, project);
+        ComboBoxModel list = getRepoList(cna, projectId);
+        CNHudsonUtil.logoff(cna);
+        return list;
     }
 
     /**
-     * Class to update a list of repos.  Requires the login info (url,
-     * username, password) and project be set.
+     * @return a list of repos which has been sanitized.
      */
-    public static class ReposUpdater extends ComboBoxUpdater {
-        
-        public ReposUpdater(StaplerRequest req, StaplerResponse rsp) {
-            super(req, rsp);
-        }
-
-        protected Collection<String> getList() {
-            CollabNetApp cna = CNHudsonUtil.getCollabNetApp(this.request);
-            String project = request.getParameter("project");
-            String projectId = CNHudsonUtil.getProjectId(cna, project);
-            Collection<String> list = getRepoList(cna, projectId);
-            CNHudsonUtil.logoff(cna);
-            return list;
-        }
-
-        /**
-         * @return a list of repos which has been sanitized.
-         */
-        public static Collection<String> getRepoList(CollabNetApp cna, 
-                                                     String projectId) {
-            Collection<String> repos = Collections.emptyList();
-            if (cna != null) {
-                ScmApp sa = new ScmApp(cna);
-                try {
-                    repos = sa.getRepos(projectId);
-                } catch (RemoteException re) {
-                    CommonUtil.logRE(log, "getRepoList", re);
-                }
+    public static ComboBoxModel getRepoList(CollabNetApp cna,
+                                                 String projectId) {
+        if (cna != null) {
+            ScmApp sa = new ScmApp(cna);
+            try {
+                return new ComboBoxModel(sa.getRepos(projectId));
+            } catch (RemoteException re) {
+                CommonUtil.logRE(log, "getRepoList", re);
             }
-            return CommonUtil.sanitizeForJS(repos);
         }
+        return EMPTY_MODEL;
+    }
+
+    public static ComboBoxModel getTrackers(CollabNetApp cna, String project) {
+        String projectId = CNHudsonUtil.getProjectId(cna, project);
+        ComboBoxModel list = getTrackerList(cna, projectId);
+        CNHudsonUtil.logoff(cna);
+        return list;
     }
 
     /**
-     * Class to update a list of trackers.  Requires that the login info (url,
-     * username, password) be set, as well as the project.
+     * @return a list of trackers which has been sanitized.
      */
-    public static class TrackersUpdater extends ComboBoxUpdater {
-        
-        public TrackersUpdater(StaplerRequest req, StaplerResponse rsp) {
-            super(req, rsp);
-        }
-
-        protected Collection<String> getList() {
-            CollabNetApp cna = CNHudsonUtil.getCollabNetApp(this.request);
-            String project = request.getParameter("project");
-            String projectId = CNHudsonUtil.getProjectId(cna, project);
-            Collection<String> list = getTrackerList(cna, projectId);
-            CNHudsonUtil.logoff(cna);
-            return list;
-        }
-
-        /**
-         * @return a list of trackers which has been sanitized.
-         */
-        public static Collection<String> getTrackerList(CollabNetApp cna, 
-                                                        String projectId) {
-            Collection<String> trackers = Collections.emptyList();
-            if (cna != null && projectId != null) {
-                TrackerApp ta = new TrackerApp(cna);
-                try {
-                    trackers = ta.getTrackers(projectId);
-                } catch (RemoteException re) {
-                    CommonUtil.logRE(log, "getTrackerList", re);
-                }
+    public static ComboBoxModel getTrackerList(CollabNetApp cna,
+                                                    String projectId) {
+        if (cna != null && projectId != null) {
+            TrackerApp ta = new TrackerApp(cna);
+            try {
+                return new ComboBoxModel(ta.getTrackers(projectId));
+            } catch (RemoteException re) {
+                CommonUtil.logRE(log, "getTrackerList", re);
             }
-            return CommonUtil.sanitizeForJS(trackers);
         }
+        return EMPTY_MODEL;
     }
-    
+
+    public static ComboBoxModel getUsers(CollabNetApp cna, String project) {
+        String projectId = CNHudsonUtil.getProjectId(cna, project);
+        ComboBoxModel list = getUserList(cna, projectId);
+        CNHudsonUtil.logoff(cna);
+        return list;
+    }
+
     /**
-     * Class to update a list of project users.  Requires that the login info 
-     * (url, username, password) be set, as well as the project.
+     * @return a list of usernames which has been sanitized.
      */
-    public static class UsersUpdater extends ComboBoxUpdater {
-        
-        public UsersUpdater(StaplerRequest req, StaplerResponse rsp) {
-            super(req, rsp);
-        }
-
-        protected Collection<String> getList() {
-            CollabNetApp cna = CNHudsonUtil.getCollabNetApp(this.request);
-            String project = request.getParameter("project");
-            String projectId = CNHudsonUtil.getProjectId(cna, project);
-            Collection<String> list = getUserList(cna, projectId);
-            CNHudsonUtil.logoff(cna);
-            return list;
-        }
-
-        /**
-         * @return a list of usernames which has been sanitized.
-         */
-        public static Collection<String> getUserList(CollabNetApp cna, 
-                                                     String projectId) {
-            Collection<String> users = Collections.emptyList();
-            if (cna != null && projectId != null) {
-                try {
-                    users = cna.getUsers(projectId);
-                } catch (RemoteException re) {
-                    CommonUtil.logRE(log, "getUserList", re);
-                }
+    public static ComboBoxModel getUserList(CollabNetApp cna,
+                                                 String projectId) {
+        if (cna != null && projectId != null) {
+            try {
+                return new ComboBoxModel(cna.getUsers(projectId));
+            } catch (RemoteException re) {
+                CommonUtil.logRE(log, "getUserList", re);
             }
-            return CommonUtil.sanitizeForJS(users);
         }
+        return EMPTY_MODEL;
     }
+
+    private static final ComboBoxModel EMPTY_MODEL = new ComboBoxModel();
 }

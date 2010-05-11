@@ -129,9 +129,9 @@ public abstract class AbstractTeamForgeNotifier extends Notifier {
          * @return the list of all possible projects, given the login data.
          */
         public ComboBoxModel doFillProjectItems(CollabNetApp cna) {
-            Collection<String> projects = ComboBoxUpdater.ProjectsUpdater.getProjectList(cna);
+            ComboBoxModel projects = ComboBoxUpdater.getProjectList(cna);
             CNHudsonUtil.logoff(cna);
-            return new ComboBoxModel(projects);
+            return projects;
         }
     }
 

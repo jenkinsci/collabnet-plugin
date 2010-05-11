@@ -191,8 +191,7 @@ public class CNConnection {
      * @return all project names, sanitized for JS.
      */
     public Collection<String> getProjects() {
-        return ComboBoxUpdater.ProjectsUpdater
-            .getProjectList(this.getCollabNetApp());
+        return ComboBoxUpdater.getProjectList(this.getCollabNetApp());
     }
 
     /**
@@ -218,8 +217,7 @@ public class CNConnection {
      * @return a Collection of all users that are members of the project.
      */
     public Collection<String> getUsers(String projectId) {
-        return ComboBoxUpdater.UsersUpdater
-            .getUserList(this.getCollabNetApp(), projectId);
+        return ComboBoxUpdater.getUserList(this.getCollabNetApp(), projectId);
     }
 
     /**

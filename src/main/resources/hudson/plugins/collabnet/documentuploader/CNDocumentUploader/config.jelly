@@ -39,6 +39,6 @@
   </f:entry>
 
   <f:entry title="Upload build log?" field="includeBuildLog">
-    <c:booleanRadio true="Yes" false="No" />
+    <c:booleanRadio />
   </f:entry>
 </j:jelly>

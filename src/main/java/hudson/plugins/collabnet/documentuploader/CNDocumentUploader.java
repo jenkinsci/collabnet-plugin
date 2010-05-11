@@ -22,7 +22,6 @@ import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 
 import javax.activation.MimetypesFileTypeMap;
-import javax.servlet.ServletException;
 import java.io.File;
 import java.io.IOException;
 import java.rmi.RemoteException;
@@ -578,16 +577,6 @@ public class CNDocumentUploader extends AbstractTeamForgeNotifier {
          */
         public FormValidation doCheckUploadPath(CollabNetApp app, @QueryParameter String project, @QueryParameter String value) throws IOException {
             return CNFormFieldValidator.documentPathCheck(app,project,value);
-        }
-
-        /**
-         * Form validation for the file patterns.
-         *
-         * @throws IOException
-         * @throws ServletException
-         */
-        public FormValidation doCheckFilePatterns(@QueryParameter String value) throws FormValidation {
-            return CNFormFieldValidator.unrequiredInterpretedCheck(value, "file patterns");
         }
     }
 }

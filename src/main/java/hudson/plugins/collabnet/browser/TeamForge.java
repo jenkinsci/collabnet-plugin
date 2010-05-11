@@ -3,6 +3,7 @@ package hudson.plugins.collabnet.browser;
 import com.collabnet.ce.webservices.CollabNetApp;
 import hudson.Extension;
 import hudson.model.Descriptor;
+import hudson.plugins.collabnet.ConnectionFactory;
 import hudson.plugins.collabnet.share.TeamForgeShare;
 import hudson.plugins.collabnet.util.CNFormFieldValidator;
 import hudson.plugins.collabnet.util.CNHudsonUtil;
@@ -10,12 +11,12 @@ import hudson.plugins.collabnet.util.ComboBoxUpdater;
 import hudson.scm.RepositoryBrowser;
 import hudson.scm.SubversionChangeLogSet;
 import hudson.scm.SubversionRepositoryBrowser;
+import hudson.util.ComboBoxModel;
 import hudson.util.FormValidation;
 import hudson.util.Secret;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
-import org.kohsuke.stapler.StaplerResponse;
 
 import javax.servlet.ServletException;
 import java.io.IOException;
@@ -41,23 +42,15 @@ public class TeamForge extends SubversionRepositoryBrowser {
      * DataBoundConstructor for building the object from form data.
      */
     @DataBoundConstructor
-    public TeamForge(String collabneturl, String username, String password, 
-                     String project, String repo, OverrideAuth override_auth) 
+    public TeamForge(ConnectionFactory connectionFactory, String project, String repo)
     { 
-        if (override_auth != null) {
+        if (connectionFactory != null) {
             this.overrideAuth = true;
-            this.collabneturl = override_auth.collabneturl;
-            this.username = override_auth.username;
-            this.password = override_auth.password;
+            this.collabneturl = connectionFactory.getUrl();
+            this.username = connectionFactory.getUsername();
+            this.password = connectionFactory.getPassword();
         } else {
-            if (collabneturl == null && username == null && password == null) {
-                this.overrideAuth = false;
-            } else {
-                this.overrideAuth = true;
-                this.collabneturl = CNHudsonUtil.sanitizeCollabNetUrl(collabneturl);
-                this.username = username;
-                this.password = Secret.fromString(password);
-            }
+            this.overrideAuth = false;
         }
         this.project = project;
         this.repo = repo;
@@ -122,10 +115,16 @@ public class TeamForge extends SubversionRepositoryBrowser {
      */
     public String getPassword() {
         if (this.overrideAuth()) {
-            return this.password==null ? null : this.password.toString();
+            return Secret.toString(this.password);
         } else {
             return getTeamForgeShareDescriptor().getPassword();
         }
+    }
+
+    public ConnectionFactory getConnectionFactory() {
+        if (this.overrideAuth())
+            return new ConnectionFactory(getCollabNetUrl(),getUsername(),getPassword());
+        return null;
     }
 
     /**
@@ -153,37 +152,6 @@ public class TeamForge extends SubversionRepositoryBrowser {
             shareDescriptor = TeamForgeShare.getTeamForgeShareDescriptor();
         }
         return shareDescriptor;
-    }
-
-    /**
-     * @return the list of all possible projects, given the login data.
-     */
-    public String[] getProjects() {
-        CollabNetApp cna = CNHudsonUtil.getCollabNetApp(this.getCollabNetUrl(),
-                                                        this.getUsername(), 
-                                                        this.getPassword());
-        Collection<String> projects = ComboBoxUpdater.ProjectsUpdater
-            .getProjectList(cna);
-        CNHudsonUtil.logoff(cna);
-        return projects.toArray(new String[0]);
-    }
-
-    /**
-     * @return the list of all possible repos, given the login and project.
-     */
-    public String[] getRepos() {
-        CollabNetApp cna = CNHudsonUtil.getCollabNetApp(getCollabNetUrl(), getUsername(), getPassword());
-        String[] reposArray;
-        Collection<String> repos;
-        try {
-            String projectId = cna.getProjectId(this.getProject());
-            repos = ComboBoxUpdater.ReposUpdater.getRepoList(cna, projectId);
-            reposArray = repos.toArray(new String[repos.size()]);
-        } catch (RemoteException e) {
-            reposArray = new String[0];
-        }
-        CNHudsonUtil.logoff(cna);
-        return reposArray;
     }
 
     public URL getFileLink(SubversionChangeLogSet.Path path) 
@@ -278,9 +246,6 @@ public class TeamForge extends SubversionRepositoryBrowser {
 
         /**
          * Form validation for the project field.
-         *
-         * @param req contains parameters from 
-         *            the config.jelly.
          */
         public FormValidation doCheckProject(CollabNetApp app, @QueryParameter String value) {
             return CNFormFieldValidator.projectCheck(app,value);
@@ -293,36 +258,24 @@ public class TeamForge extends SubversionRepositoryBrowser {
          *            the config.jelly.
          * @throws ServletException
          */
-        public FormValidation doRepoCheck(StaplerRequest req) {
+        public FormValidation doCheckRepo(StaplerRequest req) {
             return CNFormFieldValidator.repoCheck(req);
         }
 
         /**
          * Gets a list of projects to choose from and write them as a 
          * JSON string into the response data.
-         *
-         * @param req contains parameters from 
-         *            the config.jelly.
-         * @param rsp http response data.
-         * @throws IOException
          */
-        public void doGetProjects(StaplerRequest req, StaplerResponse rsp) 
-            throws IOException {
-            new ComboBoxUpdater.ProjectsUpdater(req, rsp).update();
+        public ComboBoxModel doFillProjectItems(CollabNetApp cna) throws IOException {
+            return ComboBoxUpdater.getProjectList(cna);
         }
 
         /**
          * Gets a list of repos to choose from and write them as a 
          * JSON string into the response data.
-         *
-         * @param req contains parameters from 
-         *            the config.jelly.
-         * @param rsp http response data.
-         * @throws IOException
          */
-        public void doGetRepos(StaplerRequest req, StaplerResponse rsp) 
-            throws IOException {
-            new ComboBoxUpdater.ReposUpdater(req, rsp).update();
+        public ComboBoxModel doFillRepoItems(CollabNetApp cna, @QueryParameter String project) {
+            return ComboBoxUpdater.getRepos(cna,project);
         }
     }
 }

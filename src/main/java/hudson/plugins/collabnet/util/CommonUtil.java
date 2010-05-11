@@ -88,6 +88,7 @@ public class CommonUtil {
      * @param collection list of strings to sanitize
      * @return collection of sanitized strings.
      */
+    @Deprecated // marshalling related details should be done only at the very end
     public static Collection<String> sanitizeForJS(Collection<String> collection) {
         Collection<String> sanitized = new ArrayList<String>();
         for (String c: collection) {

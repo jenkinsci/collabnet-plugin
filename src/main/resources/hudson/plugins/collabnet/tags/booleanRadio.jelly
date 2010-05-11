@@ -30,17 +30,17 @@ THE SOFTWARE.
     <st:attribute name="field">
       Databinding field.
     </st:attribute>
-    <st:attribute name="true" use="required">
-      Text to be displayed for the 'true' value
+    <st:attribute name="true">
+      Text to be displayed for the 'true' value. Defaults to 'Yes'.
     </st:attribute>
-    <st:attribute name="false" use="required">
-      Text to be displayed for the 'false' value
+    <st:attribute name="false">
+      Text to be displayed for the 'false' value. Defaults to 'No'.
     </st:attribute>
   </st:documentation>
   <f:prepareDatabinding />
 
   <f:radio name="_.${attrs.field}" value="true" checked="${instance[field]}" />
-  <label class="attach-previous">${attrs['true']}</label>
+  <label class="attach-previous">${attrs['true']?:'%Yes'}</label>
   <f:radio name="_.${attrs.field}" value="false" checked="${!instance[field]}" />
-  <label class="attach-previous">${attrs['false']}</label>
+  <label class="attach-previous">${attrs['false']?:'%No'}</label>
 </j:jelly>

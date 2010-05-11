@@ -251,13 +251,10 @@ public abstract class CNFormFieldValidator {
      * Class to check that a package exists.  Expects a StaplerRequest with 
      * a url, username, password, project, and package.
      */
-    public static FormValidation packageCheck(StaplerRequest request) {
-        String rpackage = request.getParameter("package");
-        String project = request.getParameter("project");
+    public static FormValidation packageCheck(CollabNetApp cna, String project, String rpackage) {
         if (CommonUtil.unset(rpackage)) {
             return FormValidation.error("The package is required.");
         }
-        CollabNetApp cna = CNHudsonUtil.getCollabNetApp(request);
         String projectId = CNHudsonUtil.getProjectId(cna, project);
         if (projectId != null) {
             String packageId = CNHudsonUtil.getPackageId(cna, rpackage,
@@ -275,19 +272,14 @@ public abstract class CNFormFieldValidator {
      * Class to check that a release exists.  Expects a StaplerRequest with 
      * a url, username, password, project, package (optional), and release.
      */
-    public static FormValidation releaseCheck(StaplerRequest request) {
-        String release = request.getParameter("release");
-        String rpackage = request.getParameter("package");
-        String project = request.getParameter("project");
-        String required = request.getParameter("required");
+    public static FormValidation releaseCheck(CollabNetApp cna, String project, String rpackage, String release, boolean required) {
         if (CommonUtil.unset(release)) {
-            if (required.toLowerCase().equals("true")) {
+            if (required) {
                 return FormValidation.error("The release is required.");
             } else {
                 return FormValidation.ok();
             }
         }
-        CollabNetApp cna = CNHudsonUtil.getCollabNetApp(request);
         String projectId = CNHudsonUtil.getProjectId(cna, project);
         String packageId = CNHudsonUtil.getPackageId(cna, rpackage,
                                                      projectId);
