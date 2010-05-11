@@ -1,31 +1,27 @@
-package hudson.plugins.collabnet.filerelease;
+package hudson.plugins.collabnet.tracker;
 
-import hudson.model.FreeStyleProject;
 import hudson.plugins.collabnet.CNHudsonTestCase;
 import hudson.plugins.collabnet.ConnectionFactory;
-import hudson.plugins.collabnet.documentuploader.CNDocumentUploader;
-import hudson.plugins.collabnet.documentuploader.DocUploadTest;
-import hudson.plugins.collabnet.documentuploader.FilePattern;
+import hudson.plugins.collabnet.filerelease.CNFileRelease;
 import hudson.plugins.collabnet.share.TeamForgeShare;
-import org.jvnet.hudson.test.HudsonTestCase;
 
 /**
- * Test document upload facility.
+ * Tests tracker integration.
  *
- * Unlike {@link FileReleaseTest}, this version doesn't have any setUp/tearDown.
+ * Unlike {@link TrackerTest}, this version doesn't have any setUp/tearDown.
  */
-public class CNFileReleaseTest extends CNHudsonTestCase {
+public class CNTrackerTest extends CNHudsonTestCase {
     public void testConfigRoundtrip() throws Exception {
         setGlobalConnectionFactory();
 
-        roundtripAndAssertIntegrity(new CNFileRelease(
+        roundtripAndAssertIntegrity(new CNTracker(
                 createConnectionFactory(),
-                "aaa", "bbb", "ccc", true, new FilePattern[]{new FilePattern("ddd")}),FIELDS);
+                "aaa", "bbb", "ccc", "ddd", "p", true, true, true, "eee"),FIELDS);
         // note that because filePatterns is minimum 1, new FilePattern[0] test would fail
 
-        roundtripAndAssertIntegrity(new CNFileRelease(
+        roundtripAndAssertIntegrity(new CNTracker(
                 null,
-                "xxx", "yyy", "zzz", false, new FilePattern[]{new FilePattern("111"),new FilePattern("222")}),FIELDS);
+                "abc","def","ghi","jkl","P",false,false,false,"mno"),FIELDS);
     }
 
     /**
