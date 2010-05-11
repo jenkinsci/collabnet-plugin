@@ -13,7 +13,6 @@ import hudson.model.*;
 import hudson.plugins.collabnet.AbstractTeamForgeNotifier;
 import hudson.plugins.collabnet.ConnectionFactory;
 import hudson.plugins.collabnet.documentuploader.FilePattern;
-import hudson.plugins.collabnet.share.TeamForgeShare;
 import hudson.plugins.collabnet.util.CNFormFieldValidator;
 import hudson.plugins.collabnet.util.CNHudsonUtil;
 import hudson.plugins.collabnet.util.ComboBoxUpdater;
@@ -30,7 +29,6 @@ import javax.activation.MimetypesFileTypeMap;
 import java.io.File;
 import java.io.IOException;
 import java.rmi.RemoteException;
-import java.util.Collection;
 import java.util.Map;
 
 
@@ -53,9 +51,6 @@ public class CNFileRelease extends AbstractTeamForgeNotifier {
     private String release;
     private boolean overwrite;
     private FilePattern[] file_patterns;
-
-    private transient static TeamForgeShare.TeamForgeShareDescriptor
-        shareDescriptor = null;
 
     /**
      * Creates a new CNFileRelease object.
@@ -144,56 +139,6 @@ public class CNFileRelease extends AbstractTeamForgeNotifier {
         } else {
             return new FilePattern[0];
         }
-    }
-
-    /**
-     * @return the TeamForge share descriptor.
-     */
-    public static TeamForgeShare.TeamForgeShareDescriptor 
-        getTeamForgeShareDescriptor() {
-        if (shareDescriptor == null) {
-            shareDescriptor = TeamForgeShare.getTeamForgeShareDescriptor();
-        }
-        return shareDescriptor;
-    }
-
-    /**
-     * @return the list of all possible projects, given the login data.
-     */
-    public String[] getProjects() {
-        CollabNetApp cna = CNHudsonUtil.getCollabNetApp(this.getCollabNetUrl(),
-                                                        this.getUsername(), 
-                                                        this.getPassword());
-        Collection<String> projects = ComboBoxUpdater.getProjectList(cna);
-        CNHudsonUtil.logoff(cna);
-        return projects.toArray(new String[projects.size()]);
-    }
-
-    /**
-     * @return the list of all possible packages, given the login data and
-     *         the project.
-     */
-    public String[] getPackages() {
-        CollabNetApp cna = CNHudsonUtil.getCollabNetApp(this.getCollabNetUrl(),
-                                                        this.getUsername(), 
-                                                        this.getPassword());
-        Collection<String> packages = ComboBoxUpdater.getPackages(cna, this.getProject());
-        CNHudsonUtil.logoff(cna);
-        return packages.toArray(new String[packages.size()]);
-    }
-
-    /**
-     * @return the list of all possible releases, given the login data, the
-     *         project and the package.
-     */
-    public String[] getReleases() {
-        CollabNetApp cna = CNHudsonUtil.getCollabNetApp(this.getCollabNetUrl(),
-                                                        this.getUsername(), 
-                                                        this.getPassword());
-        String packageId = this.getPackageId(this.getProjectId());
-        Collection<String> releases = ComboBoxUpdater.getReleaseList(cna, packageId);
-        CNHudsonUtil.logoff(cna);
-        return releases.toArray(new String[releases.size()]);
     }
 
     @Override

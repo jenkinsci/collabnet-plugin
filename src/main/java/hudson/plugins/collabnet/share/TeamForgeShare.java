@@ -39,6 +39,11 @@ public class TeamForgeShare extends JobProperty<Job<?, ?>> {
             getDescriptor(TeamForgeShare.class);
     }
 
+    /**
+     * Singleton object that stores global configuration related to TeamForge.
+     *
+     * @see TeamForgeShare#getTeamForgeShareDescriptor()
+     */
     @Extension
     public static final class TeamForgeShareDescriptor 
         extends JobPropertyDescriptor {

@@ -6,10 +6,10 @@ import com.collabnet.ce.webservices.FileStorageApp;
 import com.collabnet.ce.webservices.TrackerApp;
 import hudson.Extension;
 import hudson.Launcher;
+import hudson.Util;
 import hudson.model.*;
 import hudson.plugins.collabnet.AbstractTeamForgeNotifier;
 import hudson.plugins.collabnet.ConnectionFactory;
-import hudson.plugins.collabnet.share.TeamForgeShare;
 import hudson.plugins.collabnet.util.CNFormFieldValidator;
 import hudson.plugins.collabnet.util.CNHudsonUtil;
 import hudson.plugins.collabnet.util.ComboBoxUpdater;
@@ -23,7 +23,6 @@ import org.kohsuke.stapler.StaplerRequest;
 
 import java.io.IOException;
 import java.rmi.RemoteException;
-import java.util.Collection;
 import java.util.logging.Logger;
 
 public class CNTracker extends AbstractTeamForgeNotifier {
@@ -45,9 +44,6 @@ public class CNTracker extends AbstractTeamForgeNotifier {
 
     // collabNet object
     private transient CollabNetApp cna = null;
-
-    private transient static TeamForgeShare.TeamForgeShareDescriptor 
-        shareDescriptor = null;
 
     /**
      * Constructs a new CNTracker instance.
@@ -138,11 +134,7 @@ public class CNTracker extends AbstractTeamForgeNotifier {
      * @return the user to assign new Tracker Artifacts to.
      */
     public String getAssignUser() {
-        if (this.assign_user == null || this.assign_user.equals("")) {
-            return null;
-        } else {
-            return this.assign_user;
-        }
+        return Util.fixEmpty(this.assign_user);
     }
     
     /**
@@ -181,68 +173,6 @@ public class CNTracker extends AbstractTeamForgeNotifier {
      */
     public String getRelease() {
         return this.release;
-    }
-
-    /**
-     * @return the TeamForge share descriptor.
-     */
-    public static TeamForgeShare.TeamForgeShareDescriptor 
-        getTeamForgeShareDescriptor() {
-        if (shareDescriptor == null) {
-            shareDescriptor = TeamForgeShare.getTeamForgeShareDescriptor();
-        }
-        return shareDescriptor;
-    }
-
-    /**
-     * @return the list of all possible projects, given the login data.
-     */
-    public String[] getProjects() {
-        CollabNetApp cna = CNHudsonUtil.getCollabNetApp(this.getCollabNetUrl(),
-                                                        this.getUsername(), 
-                                                        this.getPassword());
-        Collection<String> projects = ComboBoxUpdater.getProjectList(cna);
-        CNHudsonUtil.logoff(cna);
-        return projects.toArray(new String[0]);
-    }
-
-    /**
-     * @return the list of all possible trackers, given the login data.
-     */
-    public String[] getTrackers() {
-        CollabNetApp cna = CNHudsonUtil.getCollabNetApp(this.getCollabNetUrl(),
-                                                        this.getUsername(), 
-                                                        this.getPassword());
-        String projectId = this.getProjectId(this.getProject());
-        Collection<String> trackers = ComboBoxUpdater.getTrackerList(cna, projectId);
-        CNHudsonUtil.logoff(cna);
-        return trackers.toArray(new String[0]);
-    }
-
-    /**
-     * @return the list of all project members, given the login data.
-     */
-    public String[] getUsers() {
-        CollabNetApp cna = CNHudsonUtil.getCollabNetApp(this.getCollabNetUrl(),
-                                                        this.getUsername(), 
-                                                        this.getPassword());
-        String projectId = this.getProjectId(this.getProject());
-        Collection<String> users = ComboBoxUpdater.getUserList(cna, projectId);
-        CNHudsonUtil.logoff(cna);
-        return users.toArray(new String[0]);
-    }
-
-    /**
-     * @return the list of all possible releases, given the login data.
-     */
-    public String[] getReleases() {
-        CollabNetApp cna = CNHudsonUtil.getCollabNetApp(this.getCollabNetUrl(),
-                                                        this.getUsername(), 
-                                                        this.getPassword());
-        String projectId = this.getProjectId(this.getProject());
-        Collection<String> releases = ComboBoxUpdater.getProjectReleaseList(cna, projectId);
-        CNHudsonUtil.logoff(cna);
-        return releases.toArray(new String[0]);
     }
 
     @Override
