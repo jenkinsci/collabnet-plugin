@@ -1,23 +1,15 @@
 <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" 
  xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
-
-  <j:set var="rootHelpURL" value="${descriptor.getHelpUrl()}" />
-
   <f:entry title="CollabNet TeamForge URL" 
-   description="For example, https://forge.collab.net" 
-   help="${rootHelpURL}/help-collabnetUrl.html">
-    <f:textbox name="cnauth.collabneturl" value="${instance.getCollabNetUrl()}"
-     id="cnauth.collabneturl" 
-     checkUrl="'${rootURL}/securityRealms/CollabNetSecurityRealm/' + 
-       'collabNetUrlCheck?value=' + escape(this.value)" 
+   description="For example, https://forge.collab.net"
+   field="collabNetUrl">
+    <f:textbox id="cnauth.collabneturl" 
      onchange="authentication_update(escape(this.value));"/>
   </f:entry>
-  <f:entry title="Accept Single Sign-On token from TeamForge"
-     help="${rootHelpURL}/help-singleSignOnFromCTF.html">
-    <f:checkbox name="cnauth.enablessofrom" checked="${h.defaultToTrue(instance.enableSSOAuthFromCTF)}"/>
+  <f:entry title="Accept Single Sign-On token from TeamForge" field="enableSSOAuthFromCTF">
+    <f:checkbox default="true"/>
   </f:entry>
-  <f:entry title="Authenticate to TeamForge when signing on to Hudson"
-     help="${rootHelpURL}/help-singleSignOnToCTF.html">
-    <f:checkbox name="cnauth.enablessoto" checked="${h.defaultToTrue(instance.enableSSOAuthToCTF)}"/>
+  <f:entry title="Authenticate to TeamForge when signing on to Hudson" field="enableSSOAuthToCTF">
+    <f:checkbox default="true"/>
   </f:entry>
 </j:jelly>

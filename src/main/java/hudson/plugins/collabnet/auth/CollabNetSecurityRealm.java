@@ -9,9 +9,9 @@ import hudson.plugins.collabnet.util.CNHudsonUtil;
 import hudson.security.SecurityRealm;
 import hudson.util.FormValidation;
 import hudson.util.spring.BeanBuilder;
-import net.sf.json.JSONObject;
 import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.methods.GetMethod;
+import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 import org.springframework.web.context.WebApplicationContext;
@@ -33,13 +33,14 @@ public class CollabNetSecurityRealm extends SecurityRealm {
 
     private boolean mEnableSSORedirect = true;
 
-    public CollabNetSecurityRealm(String collabNetUrl, Boolean enableAuthFromCTF, Boolean enableAuthToCTF) {
+    @DataBoundConstructor
+    public CollabNetSecurityRealm(String collabNetUrl, boolean enableSSOAuthFromCTF, boolean enableSSOAuthToCTF) {
         this.collabNetUrl = CNHudsonUtil.sanitizeCollabNetUrl(collabNetUrl);
-        this.mEnableSSOAuthFromCTF = Boolean.TRUE.equals(enableAuthFromCTF);
-        this.mEnableSSOAuthToCTF = Boolean.TRUE.equals(enableAuthToCTF);
+        this.mEnableSSOAuthFromCTF = enableSSOAuthFromCTF;
+        this.mEnableSSOAuthToCTF = enableSSOAuthToCTF;
 
         CollabNetApp cn = new CollabNetApp(this.collabNetUrl);
-        int apiVersion[] = null;
+        int apiVersion[] = {0}; // so that a failure to retrieve the version doesn't result in NPE down the road
         try {
             apiVersion = CNHudsonUtil.getVersionArray(cn.getApiVersion());
         } catch (RemoteException re) {
@@ -108,10 +109,6 @@ public class CollabNetSecurityRealm extends SecurityRealm {
      */
     @Extension
     public static final class DescriptorImpl extends Descriptor<SecurityRealm> {
-        public DescriptorImpl() {
-            super(CollabNetSecurityRealm.class);
-        }
-
         /**
          * @return string to display for configuration screen.
          */
@@ -121,42 +118,11 @@ public class CollabNetSecurityRealm extends SecurityRealm {
         }
 
         /**
-         * @return the url for the help files.
-         */
-        public static String getHelpUrl() {
-            return "/plugin/collabnet/auth/";
-        }
-
-        /**
-         * @return the path to the help file.
-         */
-        @Override
-        public String getHelpFile() {
-            return getHelpUrl() + "help-securityRealm.html";
-        }
-
-        /**
-         * @param req config page parameters.
-         * @return new CollabNetSecurityRealm object, instantiated from the 
-         *         configuration form vars.
-         * @throws FormException
-         */
-        @Override
-        public CollabNetSecurityRealm newInstance(StaplerRequest req, 
-                                                  JSONObject formData) 
-            throws FormException {
-            return new CollabNetSecurityRealm(
-                (String)formData.get("collabneturl"),
-                (Boolean)formData.get("enablessofrom"),
-                (Boolean)formData.get("enablessoto"));
-        }
-
-        /**
          * Form validation for the CollabNet URL.
          *
          * @param value url
          */
-        public FormValidation doCollabNetUrlCheck(@QueryParameter String value) {
+        public FormValidation doCheckCollabNetUrl(@QueryParameter String value) {
             if (!Hudson.getInstance().hasPermission(Hudson.ADMINISTER)) return FormValidation.ok();
             String collabNetUrl = value;
             if (collabNetUrl == null || collabNetUrl.equals("")) {
