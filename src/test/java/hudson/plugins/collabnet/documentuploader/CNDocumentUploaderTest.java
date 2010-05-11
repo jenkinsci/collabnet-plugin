@@ -12,9 +12,15 @@ import org.jvnet.hudson.test.HudsonTestCase;
  */
 public class CNDocumentUploaderTest extends HudsonTestCase {
     public void testConfigRoundtrip() throws Exception {
+        // setting a global value would enable job configuration to choose the override or delegate to the default.
+        TeamForgeShare.getTeamForgeShareDescriptor().setConnectionFactory(
+            new ConnectionFactory("http://www.google.com/", "abc", "def")
+        );
+
         roundtrip(new CNDocumentUploader(
                 new ConnectionFactory("http://www.google.com/", "abc", "def"),
-                "project", "path", "description", new FilePattern[0], true));
+                "project", "path", "description", new FilePattern[]{new FilePattern("ddd")}, true));
+        // note that because filePatterns is minimum 1, new FilePattern[0] test would fail
 
         roundtrip(new CNDocumentUploader(
                 null, "project", "path", "description",
