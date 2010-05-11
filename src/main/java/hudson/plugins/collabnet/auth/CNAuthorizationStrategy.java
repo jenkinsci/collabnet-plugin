@@ -1,6 +1,7 @@
 package hudson.plugins.collabnet.auth;
 
 import hudson.Extension;
+import hudson.Util;
 import hudson.model.AbstractProject;
 import hudson.model.AbstractItem;
 import hudson.model.Computer;
@@ -12,20 +13,23 @@ import hudson.security.ACL;
 import hudson.security.AuthorizationStrategy;
 import hudson.util.FormValidation;
 
-import hudson.plugins.collabnet.util.CommonUtil;
 import hudson.plugins.collabnet.util.CNFormFieldValidator;
 
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Iterator;
 import java.util.logging.Logger;
 
 import net.sf.json.JSONObject;
 
+import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.StaplerResponse;
+
+import static hudson.Util.join;
+import static hudson.plugins.collabnet.util.CommonUtil.splitCommaStr;
+import static java.lang.Math.max;
 
 /**
  * Class for the CollabNet Authorization.
@@ -54,56 +58,50 @@ public class CNAuthorizationStrategy extends AuthorizationStrategy {
      *                  have all permissions in Hudson.
      * @param permCacheTimeoutMin the cache timeout in min, after which the cache entries are cleared. -1 to disable.
      */
-    public CNAuthorizationStrategy(String[] readUsers, String [] readGroups, 
+    public CNAuthorizationStrategy(String[] readUsers, String [] readGroups,
                                    String[] adminUsers, String [] adminGroups, int permCacheTimeoutMin)
     {
         this.readUsers = Arrays.asList(readUsers);
         this.readGroups = Arrays.asList(readGroups);
         this.adminUsers = Arrays.asList(adminUsers);
         this.adminGroups = Arrays.asList(adminGroups);
-        mAuthCacheTimeoutMin = permCacheTimeoutMin;
+        mAuthCacheTimeoutMin = max(0,permCacheTimeoutMin); // can't be negative
         this.rootACL = new CNRootACL(this.adminUsers, this.adminGroups, 
                                      this.readUsers, this.readGroups);
+    }
+
+    @DataBoundConstructor
+    public CNAuthorizationStrategy(String readUsersStr, String readGroupsStr, String adminUsersStr, String adminGroupsStr, int authCacheTimeoutMin) {
+        this(splitCommaStr(readUsersStr), splitCommaStr(readGroupsStr),
+             splitCommaStr(adminUsersStr), splitCommaStr(adminGroupsStr), max(0,authCacheTimeoutMin));
     }
 
     /**
      * @return a comma-delimited string of the read-only users.
      */
     public String getReadUsersStr() {
-        if (this.readUsers.isEmpty()) {
-            return "";
-        }
-        return CNAuthorizationStrategy.join(this.readUsers, ", ");
+        return join(this.readUsers, ", ");
     }
 
     /**
      * @return a comma-delimited string of the read-only groups.
      */
     public String getReadGroupsStr() {
-        if (this.readGroups.isEmpty()) {
-            return "";
-        }
-        return CNAuthorizationStrategy.join(this.readGroups, ", ");
+        return join(this.readGroups, ", ");
     }
 
     /**
      * @return a comma-delimited string of the admin users.
      */
     public String getAdminUsersStr() {
-        if (this.adminUsers.isEmpty()) {
-            return "";
-        }
-        return CNAuthorizationStrategy.join(this.adminUsers, ", ");
+        return join(this.adminUsers, ", ");
     }
 
     /**
      * @return a comma-delimited string of the admin groups.
      */
     public String getAdminGroupsStr() {
-        if (this.adminGroups.isEmpty()) {
-            return "";
-        }
-        return CNAuthorizationStrategy.join(this.adminGroups, ", ");
+        return join(this.adminGroups, ", ");
     }
 
     /**
@@ -120,27 +118,6 @@ public class CNAuthorizationStrategy extends AuthorizationStrategy {
      */
     public long getAuthCacheTimeoutMs() {
         return (long) (getAuthCacheTimeoutMin() * (60 * 1000));
-    }
-
-    /**
-     * Utility method to join a Collection of Strings together with a 
-     * delimiter.
-     * 
-     * @param strs a Collection of strings to join.
-     * @param delimiter a separator that should be between each string.
-     * @return a single string of the collection strings separated by the
-     *         delimiter value.
-     */
-    public static String join(Collection<String> strs, String delimiter) {
-        StringBuffer buf = new StringBuffer();
-        for (Iterator<String> it = strs.iterator(); it.hasNext();) {
-            String next = (String)it.next();
-            buf.append(next);
-            if (it.hasNext()) {
-                buf.append(delimiter);
-            } 
-        }
-        return buf.toString();        
     }
 
     /**
@@ -170,8 +147,7 @@ public class CNAuthorizationStrategy extends AuthorizationStrategy {
      */
     @Override
     public ACL getACL(Job <?, ?> job) {
-        CNAuthProjectProperty capp = (CNAuthProjectProperty)job.
-            getProperty(CNAuthProjectProperty.class);
+        CNAuthProjectProperty capp = job.getProperty(CNAuthProjectProperty.class);
         if (capp != null) {
             String projectId = capp.getProjectId();
             if (projectId != null && !projectId.equals("")) {
@@ -249,32 +225,6 @@ public class CNAuthorizationStrategy extends AuthorizationStrategy {
         }
 
         /**
-         * @param req config page parameters.
-         * @return new CNAuthorizationStrategy object, instantiated from the 
-         *         configuration form vars.
-         * @throws FormException
-         */
-        @Override
-        public CNAuthorizationStrategy newInstance(StaplerRequest req, 
-                                                  JSONObject formData) 
-            throws FormException {
-            String[] readUsers = CommonUtil.splitCommaStr((String)formData
-                                                          .get("readUsers"));
-            String[] readGroups = CommonUtil.splitCommaStr((String)formData
-                                                           .get("readGroups"));
-            String[] adminUsers = CommonUtil.splitCommaStr((String)formData
-                                                           .get("adminUsers"));
-            String[] adminGroups = CommonUtil
-                .splitCommaStr((String)formData.get("adminGroups"));
-            int permCacheTimeoutMin = formData.getInt("authCacheTimeoutMin");
-            if (permCacheTimeoutMin < 0) {
-                permCacheTimeoutMin = 0; // can't be negative
-            }
-
-            return new CNAuthorizationStrategy(readUsers, readGroups, adminUsers, adminGroups, permCacheTimeoutMin);
-        }
-
-        /**
          * @return the currently saved configured CollabNet url
          */
         public static String getCollabNetUrl() {
@@ -307,11 +257,7 @@ public class CNAuthorizationStrategy extends AuthorizationStrategy {
                 return true;
             }
             CNVersion desiredVersion = new CNVersion(GOOD_VERSION);
-            if (version.compareTo(desiredVersion) >= 0) {
-                return true;
-            } else {
-                return false;
-            }
+            return version.compareTo(desiredVersion) >= 0;
         }
 
         /**
@@ -341,17 +287,25 @@ public class CNAuthorizationStrategy extends AuthorizationStrategy {
         /**
          * Check that the users are valid.
          */
-        public FormValidation doUserCheck(@QueryParameter String value) {
+        public FormValidation doCheckAdminUsersStr(@QueryParameter String value) {
+            return CNFormFieldValidator.userListCheck(value);
+        }
+
+        public FormValidation doCheckReadUsersStr(@QueryParameter String value) {
             return CNFormFieldValidator.userListCheck(value);
         }
 
         /**
          * Check that the groups are valid.
          */
-        public FormValidation doGroupCheck(@QueryParameter String groups,
+        public FormValidation doCheckAdminGroupsStr(@QueryParameter String groups,
                 @QueryParameter String users) {
             return CNFormFieldValidator.groupListCheck(groups, users);
         } 
+
+        public FormValidation doCheckReadGroupsStr(@QueryParameter String value) {
+            return CNFormFieldValidator.groupListCheck(value,null);
+        }
 
         /**
          * Check that the timeout number is greater than or equal to 0

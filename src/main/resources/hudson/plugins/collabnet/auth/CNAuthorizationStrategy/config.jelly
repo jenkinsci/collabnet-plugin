@@ -1,17 +1,9 @@
 <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" 
  xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
 
-  <j:set var="rootHelpURL" value="${descriptor.getHelpUrl()}" />
   <j:set var="checkURL" value="${rootURL}/descriptor/hudson.plugins.collabnet.auth.CNAuthorizationStrategy" />
 
-  <j:choose>
-    <j:when test="${descriptor.isGoodCNVersion(descriptor.getCollabNetUrl())}">
-      <j:set var="error_style" value="display:none" />
-    </j:when>
-    <j:otherwise>
-      <j:set var="error_style" value="display:inline" />
-    </j:otherwise>
-  </j:choose>
+  <j:set var="error_style" value="display:${descriptor.isGoodCNVersion(descriptor.getCollabNetUrl())?'none':'inline'}" />
 
   <tr>
     <td class="setting-leftspace"></td>
@@ -52,37 +44,20 @@
       checkUrl="'${checkURL}/timeoutCheck?value=' + escape(this.value)" />
   </f:entry>
 
-  <f:entry title="Hudson Admin Users" 
-   help="${rootHelpURL}/help-hudsonAdminUsers.html">
-    <f:textbox name="cnas.adminUsers" value="${instance.getAdminUsersStr()}" 
-     id="cnas.adminUsers" 
-     checkUrl="'${checkURL}/userCheck?value=' + escape(this.value)" 
-     onchange="document.getElementById('cnas.adminGroups').onchange();" />
+  <f:entry title="Hudson Admin Users" field="adminUsersStr">
+    <f:textbox />
   </f:entry>
 
-  <f:entry title="Hudson Admin Groups" 
-    help="${rootHelpURL}/help-hudsonAdminGroups.html">
-    <f:textbox name="cnas.adminGroups" value="${instance.getAdminGroupsStr()}" 
-     id="cnas.adminGroups" 
-     checkUrl="'${checkURL}/' +
-       'groupCheck?groups=' + escape(this.value) + '&amp;users=' + 
-       escape(document.getElementById('cnas.adminUsers').value)" />
+  <f:entry title="Hudson Admin Groups" field="adminGroupsStr">
+    <f:textbox />
   </f:entry>
 
-  <f:entry title="Hudson Read-Only Users" 
-   help="${rootHelpURL}/help-hudsonReadUsers.html">
-    <f:textbox name="cnas.readUsers" value="${instance.getReadUsersStr()}" 
-     id="cnas.readUsers" 
-     checkUrl="'${checkURL}/' +
-       'userCheck?value=' + escape(this.value)" />
+  <f:entry title="Hudson Read-Only Users" field="readUsersStr">
+    <f:textbox />
   </f:entry>
 
-  <f:entry title="Hudson Read-Only Groups" 
-   help="${rootHelpURL}/help-hudsonReadGroups.html">
-    <f:textbox name="cnas.readGroups" value="${instance.getReadGroupsStr()}" 
-     id="cnas.readGroups" 
-     checkUrl="'${checkURL}/' +
-       'groupCheck?groups='  +escape(this.value)" />
+  <f:entry title="Hudson Read-Only Groups" field="readGroupsStr">
+    <f:textbox />
   </f:entry>
 
 </j:jelly>
