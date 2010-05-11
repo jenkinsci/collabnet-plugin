@@ -275,7 +275,6 @@ public class PblUploader extends Notifier implements java.io.Serializable {
     public boolean perform(AbstractBuild<?, ?> build, Launcher launcher,
             BuildListener listener) throws java.lang.InterruptedException,
             IOException {
-        boolean success = true;
         this.setupLogging(listener);
         this.log("");
         if (build.getResult() == Result.FAILURE) {
@@ -286,7 +285,7 @@ public class PblUploader extends Notifier implements java.io.Serializable {
         this.log("Uploading files to Project Build Library");
         this.log(this.getRemoteURL(build));
 
-        success = this.uploadFiles(build);
+        boolean success = this.uploadFiles(build);
         
         // add result to build page
         build.
@@ -298,7 +297,7 @@ public class PblUploader extends Notifier implements java.io.Serializable {
                                                           getRemoteURL(build)),
                                             success));
         
-        if (success == false) {
+        if (!success) {
             // set the build result to the worse of the current result
             // and UNSTABLE
             build.setResult(build.getResult().combine(Result.UNSTABLE));
@@ -320,7 +319,7 @@ public class PblUploader extends Notifier implements java.io.Serializable {
             throws IOException, InterruptedException {
         List<String> output = new ArrayList<String>();
         for (String uninterp_fp : this.getFilePatterns()) {
-            String file_pattern = "";
+            String file_pattern;
             try {
                 file_pattern = getInterpreted(build, uninterp_fp);
                 if (!file_pattern.equals("")){
@@ -602,8 +601,8 @@ public class PblUploader extends Notifier implements java.io.Serializable {
             String[] lines = response.getBody().split("\\n");
             this.log("Upload for file " + uploadFilePath.getName() + 
             " failed: ");
-            for (int i = 0; i < lines.length; i++) {
-                this.log(lines[i]);
+            for (String line : lines) {
+                this.log(line);
             }
             this.log(resultStr + ": FAILED");
         }
@@ -799,7 +798,7 @@ public class PblUploader extends Notifier implements java.io.Serializable {
          * @param name of field
          */
         public FormValidation doRequiredInterpretedCheck(
-                @QueryParameter String value, @QueryParameter String name) {
+                @QueryParameter String value, @QueryParameter String name) throws FormValidation {
             return CNFormFieldValidator.requiredInterpretedCheck(value, name);
         }
 
@@ -820,7 +819,7 @@ public class PblUploader extends Notifier implements java.io.Serializable {
          * @param name of field
          */
         public FormValidation doUnRequiredInterpretedCheck(
-                @QueryParameter String value, @QueryParameter String name) {
+                @QueryParameter String value, @QueryParameter String name) throws FormValidation {
             return CNFormFieldValidator.unrequiredInterpretedCheck(value, name);
         }
     }

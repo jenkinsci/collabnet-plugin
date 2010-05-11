@@ -106,35 +106,5 @@ public class TeamForgeShare extends JobProperty<Job<?, ?>> {
         public String getPassword() {
             return this.password==null ? null : this.password.toString();
         }
-        
-        /**
-         * Form validation for the CollabNet URL.
-         *
-         * @param value url
-         */
-        public FormValidation doCollabNetUrlCheck(@QueryParameter String value) {
-            return CNFormFieldValidator.soapUrlCheck(value);
-        }
-
-        /**
-         * Form validation for username.
-         *
-         * @param value
-         * @param name of field
-         */
-        public FormValidation doRequiredCheck(
-                @QueryParameter String value, @QueryParameter String name) {
-            return CNFormFieldValidator.requiredCheck(value, name);
-        }
-        
-        /**
-         * Check that a password is present and allows login.
-         *
-         * @param req StaplerRequest which contains parameters from the config.jelly.
-         */
-        public FormValidation doPasswordCheck(StaplerRequest req) {
-            return CNFormFieldValidator.loginCheck(req);
-        }
-        
     }
 }

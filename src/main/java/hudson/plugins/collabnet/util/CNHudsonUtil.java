@@ -10,6 +10,7 @@ import hudson.model.Hudson;
 import hudson.plugins.collabnet.auth.CollabNetSecurityRealm;
 import hudson.plugins.collabnet.share.TeamForgeShare;
 import hudson.security.SecurityRealm;
+import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 
 import java.rmi.RemoteException;

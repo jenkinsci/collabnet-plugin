@@ -22,7 +22,11 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 
+import hudson.plugins.collabnet.share.TeamForgeShare;
+import hudson.plugins.collabnet.util.CNHudsonUtil;
+import hudson.plugins.collabnet.util.CommonUtil;
 import org.apache.log4j.Logger;
+import org.kohsuke.stapler.QueryParameter;
 
 /***
  * This class represents the connection to the CollabNet webservice.
@@ -83,6 +87,13 @@ public class CollabNetApp {
     public CollabNetApp(String url) {
         this.url = url;
         this.icns = this.getICollabNetSoap();
+    }
+
+    /**
+     * Returns the user name that this connection is set up with.
+     */
+    public String getUsername() {
+        return this.username;
     }
 
     /**
@@ -196,11 +207,11 @@ public class CollabNetApp {
         this.checkValidSessionId();
         ProjectSoapList pslist = this.icns.getProjectList(sessionId);
         ProjectSoapRow[] rows = pslist.getDataRows();
-        for (int i = 0; i < rows.length; i++){
-        	logger.debug(rows[i].getId() + " "+ rows[i].getTitle());
-        	if (rows[i].getTitle().equals(projectName)){
-        		return rows[i].getId();
-        	}
+        for (ProjectSoapRow row : rows) {
+            logger.debug(row.getId() + " " + row.getTitle());
+            if (row.getTitle().equals(projectName)) {
+                return row.getId();
+            }
         }
         return null;
     }
@@ -470,5 +481,24 @@ public class CollabNetApp {
         public CollabNetAppException(String msg) {
             super(msg);
         }
+    }
+
+    /**
+     * A databinding method from Stapler.
+     */
+    public static CollabNetApp fromStapler(@QueryParameter boolean overrideAuth, @QueryParameter String url,
+                                           @QueryParameter String username, @QueryParameter String password) {
+        TeamForgeShare.TeamForgeShareDescriptor descriptor =
+            TeamForgeShare.getTeamForgeShareDescriptor();
+        if (descriptor != null && descriptor.useGlobal() && !overrideAuth) {
+            url = descriptor.getCollabNetUrl();
+            username = descriptor.getUsername();
+            password = descriptor.getPassword();
+        }
+
+        if (CommonUtil.unset(url) || CommonUtil.unset(username) || CommonUtil.unset(password)) {
+            return null;
+        }
+        return CNHudsonUtil.getCollabNetApp(url, username, password);
     }
 }

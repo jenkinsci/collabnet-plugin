@@ -116,7 +116,7 @@ public class CommonUtil {
      * @param value string to test.
      * @return true if a String value is null or empty.
      */
-    protected static boolean unset(String value) {
+    public static boolean unset(String value) {
         if (value == null || value.equals("")) {
             return true;
         } else {

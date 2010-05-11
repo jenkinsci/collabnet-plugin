@@ -41,6 +41,13 @@
     </dependency>
     <dependency>
       <groupId>org.jvnet.hudson.main</groupId>
+      <artifactId>maven-plugin</artifactId>
+      <version>1.356-SNAPSHOT</version>
+      <scope>compile</scope>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>org.jvnet.hudson.main</groupId>
       <artifactId>hudson-test-harness</artifactId>
       <version>1.356-SNAPSHOT</version>
       <scope>test</scope>

@@ -1,67 +1,23 @@
 <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" 
  xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form" 
  xmlns:c="/hudson/plugins/collabnet/tags">
-
-  <script src="${rootURL}/plugin/collabnet/scripts/cnauth_override.js" type="text/javascript" />
-
-  <j:set var="unique_id" value="${descriptor.getUniqueId()}" />
-
-  <j:set var="rootHelpURL" value="${descriptor.getHelpUrl()}" />
-
-
   <j:choose>
     <j:when test="${descriptor.canInheritAuth()}">
-      <f:nested>
-        <table style="width:100%">
-          <j:set var="cndoc_override" value="false" />
-          <j:choose>
-            <j:when test="${instance != null}">
-              <j:set var="cndu_override" 
-                value="${instance.overrideAuth()}" />
-            </j:when>
-          </j:choose>
-          <c:cnOptionalBlock id="_${unique_id}.cndu.override_auth"
-           name="_${unique_id}.cndu.override_auth"
-           title="Override the Global CollabNet Configuration"
-           checked="${cndu_override}" 
-           onclick="document.getElementById('${unique_id}.cndu.password').onchange();_${unique_id}_cndu_project_update();"
-             >
-           <c:cnAuth prefix="${unique_id}.cndu"
-            checkUrlRoot="${rootURL}/publisher/CNDocumentUploader" 
-            helpUrlRoot="${rootHelpURL}" url="${instance.getCollabNetUrl()}" 
-            username="${instance.username}" password="${instance.password}" 
-            onchange="document.getElementById('_${unique_id}_cndu_project').onchange();"
-           />
-          </c:cnOptionalBlock>
-        </table>
-      </f:nested>
+      <f:optionalBlock title="Override the Global CollabNet Configuration" field="overrideAuth">
+        <c:property field="connectionFactory" />
+      </f:optionalBlock>
     </j:when>
     <j:otherwise>
-      <c:cnAuth prefix="${unique_id}.cndu"
-        checkUrlRoot="${rootURL}/publisher/CNDocumentUploader" 
-        helpUrlRoot="${rootHelpURL}" url="${instance.getCollabNetUrl()}" 
-        username="${instance.username}" password="${instance.password}" 
-        onchange="document.getElementById('_${unique_id}_cndu_project').onchange();" />
+      <c:property field="connectionFactory" />
     </j:otherwise>
   </j:choose>
 
-  <f:entry title="Project" help="${rootHelpURL}/help-project.html">
-    <c:updatableComboBox name="cndu.project" value="${instance.project}" 
-     id="_${unique_id}_cndu_project" clazz="setting-input validated"
-     items="${instance.getProjects()}"
-     checkUrl="'${rootURL}/publisher/CNDocumentUploader/projectCheck?' +
-       'project=' + escape(this.value) + '&amp;' + get_auth_param_str('${unique_id}.cndu')"
-     updateUrl="'${rootURL}/publisher/CNDocumentUploader/getProjects?' +
-       get_auth_param_str('${unique_id}.cndu')" />
+  <f:entry title="Project" field="project">
+    <f:combobox />
   </f:entry>
 
-  <f:entry title="Upload Folder Path" help="${rootHelpURL}/help-uploadPath.html">
-    <f:textbox name="cndu.upload_path" value="${instance.getUploadPath()}"
-     id="${unique_id}.cndu.upload_path"
-     checkUrl="'${rootURL}/publisher/CNDocumentUploader/pathCheck?path=' + 
-       escape(this.value) + '&amp;project=' + 
-       escape(document.getElementById('_${unique_id}_cndu_project').value) +
-       '&amp;' + get_auth_param_str('${unique_id}.cndu')" />
+  <f:entry title="Upload Folder Path" field="uploadPath">
+    <f:textbox />
   </f:entry>
 
   <f:entry title="Description" field="description">

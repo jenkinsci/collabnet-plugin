@@ -9,7 +9,6 @@ import hudson.Launcher;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
 import hudson.model.BuildListener;
-import hudson.model.Descriptor;
 import hudson.model.Hudson;
 import hudson.model.Result;
 import hudson.model.TaskListener;
@@ -831,7 +830,7 @@ public class CNTracker extends Notifier {
          */
         @Override
         public String getHelpFile() {
-            return getHelpUrl() + "help-main.html";
+            return getHelpUrl() + "help.html";
         }
 
         /**
@@ -899,30 +898,12 @@ public class CNTracker extends Notifier {
         }
         
         /**
-         * Form validation for the CollabNet URL.
-         *
-         * @param value url
-         */
-        public FormValidation doCollabNetUrlCheck(@QueryParameter String value) {
-            return CNFormFieldValidator.soapUrlCheck(value);
-        }
-        
-        /**
-         * Check that a password is present and allows login.
-         *
-         * @param req StaplerRequest which contains parameters from the config.jelly.
-         */
-        public FormValidation doPasswordCheck(StaplerRequest req) {
-            return CNFormFieldValidator.loginCheck(req);
-        }
-        
-        /**
          * Form validation for the project field.
          *
          * @param req StaplerRequest which contains parameters from the config.jelly.
          */
-        public FormValidation doProjectCheck(StaplerRequest req) {
-            return CNFormFieldValidator.projectCheck(req);
+        public FormValidation doCheckProject(CollabNetApp app, @QueryParameter String value) {
+            return CNFormFieldValidator.projectCheck(app,value);
         }
         
         /**
@@ -944,24 +925,13 @@ public class CNTracker extends Notifier {
         }
         
         /**
-         * Form validation for username.
-         *
-         * @param value
-         * @param name of field
-         */
-        public FormValidation doRequiredCheck(
-                @QueryParameter String value, @QueryParameter String name) {
-            return CNFormFieldValidator.requiredCheck(value, name);
-        }
-        
-        /**
          * Form validation for the comment and description.
          *
          * @param value
          * @param name of field
          */
         public FormValidation doRequiredInterpretedCheck(
-                @QueryParameter String value, @QueryParameter String name) {
+                @QueryParameter String value, @QueryParameter String name) throws FormValidation {
             return CNFormFieldValidator.requiredInterpretedCheck(value, name);
         }
         

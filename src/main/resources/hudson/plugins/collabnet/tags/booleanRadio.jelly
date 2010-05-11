@@ -40,7 +40,7 @@ THE SOFTWARE.
   <f:prepareDatabinding />
 
   <f:radio name="_.${attrs.field}" value="true" checked="${instance[field]}" />
-  <label class="attach-previous">${attrs.true}</label>
+  <label class="attach-previous">${attrs['true']}</label>
   <f:radio name="_.${attrs.field}" value="false" checked="${!instance[field]}" />
-  <label class="attach-previous">${attrs.false}</label>
+  <label class="attach-previous">${attrs['false']}</label>
 </j:jelly>

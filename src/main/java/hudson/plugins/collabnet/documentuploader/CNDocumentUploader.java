@@ -5,54 +5,37 @@ import com.collabnet.ce.soap50.webservices.docman.DocumentSoapDO;
 import com.collabnet.ce.webservices.CollabNetApp;
 import com.collabnet.ce.webservices.DocumentApp;
 import com.collabnet.ce.webservices.FileStorageApp;
-
 import hudson.Extension;
-import hudson.Launcher;
 import hudson.FilePath;
 import hudson.FilePath.FileCallable;
-import hudson.model.AbstractBuild;
-import hudson.model.AbstractProject;
-import hudson.model.BuildListener;
-import hudson.model.FreeStyleProject;
-import hudson.model.Result;
-import hudson.model.Action;
-import hudson.model.TaskListener;
-import hudson.remoting.VirtualChannel;
-import hudson.tasks.BuildStepDescriptor;
-import hudson.tasks.BuildStepMonitor;
-import hudson.tasks.Notifier;
-import hudson.tasks.Publisher;
-import hudson.util.FormValidation;
-
-import hudson.plugins.collabnet.share.TeamForgeShare;
+import hudson.Launcher;
+import hudson.model.*;
+import hudson.plugins.collabnet.AbstractTeamForgeNotifier;
+import hudson.plugins.collabnet.ConnectionFactory;
 import hudson.plugins.collabnet.util.CNFormFieldValidator;
 import hudson.plugins.collabnet.util.CNHudsonUtil;
 import hudson.plugins.collabnet.util.ComboBoxUpdater;
 import hudson.plugins.collabnet.util.CommonUtil;
-
-import java.io.IOException;
-import java.io.File;
-import java.rmi.RemoteException;
-import java.util.Collection;
-import java.util.logging.Logger;
+import hudson.remoting.VirtualChannel;
+import hudson.tasks.BuildStepMonitor;
+import hudson.util.ComboBoxModel;
+import hudson.util.FormValidation;
+import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.QueryParameter;
 
 import javax.activation.MimetypesFileTypeMap;
 import javax.servlet.ServletException;
-
-import hudson.util.Secret;
-import net.sf.json.JSONArray;
-import net.sf.json.JSONObject;
-
-import org.kohsuke.stapler.DataBoundConstructor;
-import org.kohsuke.stapler.QueryParameter;
-import org.kohsuke.stapler.StaplerRequest;
-import org.kohsuke.stapler.StaplerResponse;
+import java.io.File;
+import java.io.IOException;
+import java.rmi.RemoteException;
+import java.util.Collection;
+import java.util.logging.Logger;
 
 /**
  * Hudson plugin to upload the Hudson build log 
  * to the CollabNet Documents.
  */
-public class CNDocumentUploader extends Notifier {
+public class CNDocumentUploader extends AbstractTeamForgeNotifier {
     private static Logger logger = Logger.getLogger("CNDocumentUploader");
     private static final String IMAGE_URL = "/plugin/collabnet/images/48x48/";
 	
@@ -64,47 +47,31 @@ public class CNDocumentUploader extends Notifier {
     private transient CollabNetApp cna = null;
 
     // Variables from the form
-    private boolean override_auth = true;
-    private String url;
-    private String username;
-    private Secret password;
-    private String project;
     private String uploadPath;
     private String description;
     private FilePattern[] file_patterns;
     private boolean includeBuildLog;    
 
-    private transient static TeamForgeShare.TeamForgeShareDescriptor 
-        shareDescriptor = null;
-
     /**
      * Creates a new CNDocumentUploader object.
      *
-     * @param url for the CollabNet server, i.e. http://forge.collab.net
-     * @param username used to log into the CollabNet server.
-     * @param password for the logging-in user.
      * @param project where the build log will be uploaded.
      * @param uploadPath on the CollabNet server, where the build log should
      *                   be uploaded.
      * @param description
      * @param filePatterns
      * @param includeBuildLog
-     * @param override_auth
      */
     @DataBoundConstructor
-    public CNDocumentUploader(String url, String username, String password, 
+    public CNDocumentUploader(ConnectionFactory connectionFactory,
                               String project, String uploadPath, 
                               String description, FilePattern[] filePatterns,
-                              boolean includeBuildLog, boolean override_auth) {
-        this.url = CNHudsonUtil.sanitizeCollabNetUrl(url);
-        this.username = username;
-        this.password = Secret.fromString(password);
-        this.project = project;
+                              boolean includeBuildLog) {
+        super(connectionFactory,project);
         this.uploadPath = uploadPath;
         this.description = description;
         this.file_patterns = filePatterns;
         this.includeBuildLog = includeBuildLog;
-        this.override_auth = override_auth;
     }
 
     /**
@@ -159,53 +126,6 @@ public class CNDocumentUploader extends Notifier {
     }
 
     /**
-     * @return whether or not auth is overriden
-     */
-    public boolean overrideAuth() {
-        return this.override_auth;
-    }
-
-    /**
-     * @return the url for the CollabNet server.
-     */
-    public String getCollabNetUrl() {
-        if (this.overrideAuth()) {
-            return this.url;
-        } else {
-            return getTeamForgeShareDescriptor().getCollabNetUrl();
-        }
-    }
-
-    /**
-     * @return the username used for logging in.
-     */
-    public String getUsername() {
-        if (this.overrideAuth()) {
-            return this.username;            
-        } else {
-            return getTeamForgeShareDescriptor().getUsername();
-        }
-    }
-
-    /**
-     * @return the password used for logging in.
-     */
-    public String getPassword() {
-        if (this.overrideAuth()) {
-            return this.password==null ? null : this.password.toString();
-        } else {
-            return getTeamForgeShareDescriptor().getPassword();
-        }
-    }
-
-    /**
-     * @return the project where the build log is uploaded.
-     */
-    public String getProject() {
-        return this.project;
-    }
-
-    /**
      * @return the path where the build log is uploaded.
      */
     public String getUploadPath() {
@@ -235,30 +155,6 @@ public class CNDocumentUploader extends Notifier {
      */
     public boolean getIncludeBuildLog() {
         return this.includeBuildLog;
-    }
-
-    /**
-     * @return the TeamForge share descriptor.
-     */
-    public static TeamForgeShare.TeamForgeShareDescriptor 
-        getTeamForgeShareDescriptor() {
-        if (shareDescriptor == null) {
-            shareDescriptor = TeamForgeShare.getTeamForgeShareDescriptor();
-        }
-        return shareDescriptor;
-    }    
-
-    /**
-     * @return the list of all possible projects, given the login data.
-     */
-    public String[] getProjects() {
-        CollabNetApp cna = CNHudsonUtil.getCollabNetApp(this.getCollabNetUrl(),
-                                                        this.getUsername(), 
-                                                        this.getPassword());
-        Collection<String> projects = ComboBoxUpdater.ProjectsUpdater
-            .getProjectList(cna);
-        CNHudsonUtil.logoff(cna);
-        return projects.toArray(new String[0]);
     }
 
     @Override
@@ -394,9 +290,8 @@ public class CNDocumentUploader extends Notifier {
                     this.logConsole("Failed to upload " + uploadFilePath.getName() + ".");
                     continue;
                 }
-                String docId = null;
                 try {
-                    docId = this.updateOrCreateDoc(folderId, fileId, 
+                    String docId = this.updateOrCreateDoc(folderId, fileId,
                                                    uploadFilePath.getName(),
                                                    CNDocumentUploader.
                                                    getMimeType(uploadFilePath),
@@ -672,38 +567,7 @@ public class CNDocumentUploader extends Notifier {
      * The CNDocumentUploader Descriptor class.
      */
     @Extension
-    public static final class DescriptorImpl extends BuildStepDescriptor<Publisher> {
-
-        /* use to make sure fields are generated with unique names on html */
-        private static int smUniqueIdCounter = 0;
-
-        public DescriptorImpl() {
-            super(CNDocumentUploader.class);
-        }
-
-        /**
-         * @return a unique integer, used to uniquely identify an instance of this plugin on a page.
-         */
-        public synchronized int getUniqueId() {
-            int returnVal = smUniqueIdCounter;
-            if (returnVal == (Integer.MAX_VALUE - 1)) {
-                smUniqueIdCounter = 0;
-            } else {
-                smUniqueIdCounter++;
-            }
-            return returnVal;
-        }
-
-
-        @Override
-        /**
-         * Implementation of the abstract isApplicable method from
-         * BuildStepDescriptor.
-         */
-         public boolean isApplicable(Class<? extends AbstractProject> jobType) {
-            return true;
-        }
-
+    public static final class DescriptorImpl extends AbstractTeamForgeNotifier.DescriptorImpl {
         /**
          * @return string to display for configuration screen.
          */
@@ -713,147 +577,10 @@ public class CNDocumentUploader extends Notifier {
         }
 
         /**
-         * @return the root for the document uploader's resources.
-         */
-        public static String getHelpUrl() {
-            return "/plugin/collabnet/documentuploader";
-        }
-
-        /**
-         * @return a relative url to the main help file.
-         */
-        @Override
-        public String getHelpFile() {
-            return getHelpUrl() +"/help-main.html";
-        }
-
-        /**
-         * @return true if there is auth data that can be inherited.
-         */
-        public boolean canInheritAuth() {
-            return getTeamForgeShareDescriptor().useGlobal();
-        }    
-
-        /**
-         * Creates a new instance of {@link CNDocumentUploader} from a 
-         * submitted form.
-         *
-         * @param req config page parameters.
-         * @return new CNDocumentUploader object, instantiated from the 
-         *         configuration form vars.
-         * @throws FormException
-         */
-        @Override
-        public CNDocumentUploader newInstance(StaplerRequest req, 
-                                              JSONObject formData) 
-            throws FormException {
-            boolean override_auth = false;
-            String username = null;
-            String password = null;
-            String collabneturl = null;
-            if (formData.has("override_auth")) {
-                override_auth = true;
-                Object authObject = formData.get("override_auth");
-                if (authObject instanceof JSONObject) {
-                    username = (String)((JSONObject) authObject)
-                        .get("username");
-                    password = (String)((JSONObject) authObject)
-                        .get("password");
-                    collabneturl = (String)((JSONObject) authObject)
-                        .get("collabneturl");
-                } else if (authObject.equals(Boolean.TRUE)) {
-                    username = (String) formData.get("username");
-                    password = (String) formData.get("password");
-                    collabneturl = (String) formData.get("collabneturl");
-                } else {
-                    override_auth = false;
-                }
-            } else if (!this.canInheritAuth()) {
-                override_auth = true;
-                username = (String)formData.get("username");
-                password = (String)formData.get("password");
-                collabneturl = (String)formData.get("collabneturl");
-            }
-            Object fileData = formData.get("files");
-            JSONObject[] jpats;
-            if (fileData instanceof JSONArray) {
-                JSONArray patData = (JSONArray) fileData;
-                jpats = (JSONObject []) JSONArray.toArray(patData, 
-                                                          JSONObject.class);
-            } else if (fileData instanceof JSONObject) {
-                jpats = new JSONObject[1];
-                jpats[0] = (JSONObject) fileData;
-            } else {
-                jpats = new JSONObject[0];
-            }
-            String[] patterns = new String[jpats.length];
-            for (int i = 0; i < jpats.length; i++) {
-                patterns[i] = (String) jpats[i].get("file");
-            }
-            String path = (String)formData.get("upload_path");
-            path = path.replaceAll("/+", "/");
-            path = CommonUtil.stripSlashes(path);
-            return new CNDocumentUploader(collabneturl,
-                                          username,
-                                          password,
-                                          (String)formData.get("project"),
-                                          path,
-                                          (String)formData.get("description"),
-                                          patterns,
-                                          CommonUtil.getBoolean("buildlog", 
-                                                                formData),
-                                          override_auth);
-        }
-
-        /**
-         * Form validation for the CollabNet URL.
-         *
-         * @param value url
-         */
-        public FormValidation doCollabNetUrlCheck(@QueryParameter String value) {
-            return CNFormFieldValidator.soapUrlCheck(value);
-        }
-
-        /**
-         * Form validation for username.
-         *
-         * @param value to check
-         * @param name of field
-         */
-        public FormValidation doRequiredCheck(@QueryParameter String value,
-                @QueryParameter String name) {
-            return CNFormFieldValidator.requiredCheck(value, name);
-        }
-        
-        /**
-         * Check that a password is present and allows login.
-         */
-        public FormValidation doPasswordCheck(StaplerRequest req) {
-            return CNFormFieldValidator.loginCheck(req);
-        }
-        
-        /**
-         * Form validation for the project field.
-         *
-         * @param req contains parameters from 
-         *            the config.jelly.
-         * @throws IOException
-         * @throws ServletException
-         */
-        public FormValidation doProjectCheck(StaplerRequest req) {
-            return CNFormFieldValidator.projectCheck(req);
-        }
-
-        /**
          * Form validation for upload path.
-         *
-         * @param req StaplerRequest which contains parameters from 
-         *            the config.jelly.
-         * @throws IOException
-         * @throws ServletException
          */
-        public FormValidation doPathCheck(StaplerRequest req) throws IOException {
-            return CNFormFieldValidator.documentPathCheck(req);
+        public FormValidation doCheckUploadPath(CollabNetApp app, @QueryParameter String project, @QueryParameter String value) throws IOException {
+            return CNFormFieldValidator.documentPathCheck(app,project,value);
         }
 
         /**
@@ -862,23 +589,8 @@ public class CNDocumentUploader extends Notifier {
          * @throws IOException
          * @throws ServletException
          */
-        public FormValidation doCheckFilePatterns(
-                @QueryParameter String value) {
+        public FormValidation doCheckFilePatterns(@QueryParameter String value) throws FormValidation {
             return CNFormFieldValidator.unrequiredInterpretedCheck(value, "file patterns");
-        }
-
-        /**
-         * Updates the list of projects in the combo box.  Expects the
-         * StaplerRequest to contain url, username, and password.
-         *
-         * @param req contains parameters from 
-         *            the config.jelly.
-         * @param rsp http response data.
-         * @throws IOException
-         */
-        public void doGetProjects(StaplerRequest req, StaplerResponse rsp) 
-            throws IOException {
-            new ComboBoxUpdater.ProjectsUpdater(req, rsp).update();
         }
     }
 }

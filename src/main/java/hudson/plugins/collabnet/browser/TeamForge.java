@@ -266,7 +266,7 @@ public class TeamForge extends SubversionRepositoryBrowser {
          */
         @Override
         public String getHelpFile() {
-            return getHelpUrl() + "help-main.html";
+            return getHelpUrl() + "help.html";
         }
 
         /**
@@ -277,42 +277,13 @@ public class TeamForge extends SubversionRepositoryBrowser {
         }
 
         /**
-         * Form validation for the CollabNet URL.
-         *
-         * @param value the value
-         */
-        public FormValidation doCollabNetUrlCheck(@QueryParameter String value) {
-            return CNFormFieldValidator.soapUrlCheck(value);
-        }
-
-        /**
-         * Form validation for username.
-         *
-         * @param value
-         * @param name
-         */
-        public FormValidation doRequiredCheck(@QueryParameter String value, 
-                                              @QueryParameter String name) {
-            return CNFormFieldValidator.requiredCheck(value, name);
-        }
-        
-        /**
-         * Check that a password is present and allows login.
-         *
-         * @param req contains parameters from the config.jelly.
-         */
-        public FormValidation doPasswordCheck(StaplerRequest req) {
-            return CNFormFieldValidator.loginCheck(req);
-        }
-        
-        /**
          * Form validation for the project field.
          *
          * @param req contains parameters from 
          *            the config.jelly.
          */
-        public FormValidation doProjectCheck(StaplerRequest req) {
-            return CNFormFieldValidator.projectCheck(req);
+        public FormValidation doCheckProject(CollabNetApp app, @QueryParameter String value) {
+            return CNFormFieldValidator.projectCheck(app,value);
         }
 
         /**

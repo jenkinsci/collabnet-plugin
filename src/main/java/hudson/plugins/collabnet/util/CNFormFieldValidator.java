@@ -2,33 +2,23 @@ package hudson.plugins.collabnet.util;
 
 import com.collabnet.ce.webservices.CollabNetApp;
 import com.collabnet.ce.webservices.DocumentApp;
-
 import com.collabnet.cubit.api.CubitConnector;
-
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.logging.Logger;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.regex.PatternSyntaxException;
-
 import hudson.plugins.collabnet.auth.CNConnection;
 import hudson.util.FormValidation;
-
+import org.apache.axis.utils.StringUtils;
 import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.contrib.ssl.EasySSLProtocolSocketFactory;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.protocol.Protocol;
 import org.apache.commons.httpclient.protocol.ProtocolSocketFactory;
-import org.apache.axis.utils.StringUtils;
-
 import org.kohsuke.stapler.StaplerRequest;
+
+import java.io.IOException;
+import java.util.*;
+import java.util.logging.Logger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
 
 public abstract class CNFormFieldValidator {
     private static Logger log = Logger.getLogger("CNFormFieldValidator");
@@ -39,13 +29,13 @@ public abstract class CNFormFieldValidator {
 
     /**
      * Utility function to check that a str contains only valid
-     * enviromental variables to interpret.
+     * environmental variables to interpret.
      *
      * @param str the string to test.
      * @return error message, if any variables are missing, null if all
      *         are found.
      */
-    public static String checkInterpretedString(String str) {
+    public static void checkInterpretedString(String str) throws FormValidation {
         Pattern envPat = Pattern.compile("\\$\\{(\\w*)\\}");
         Matcher matcher = envPat.matcher(str);
         Set<String> envVars = new HashSet<String>(9);
@@ -70,7 +60,8 @@ public abstract class CNFormFieldValidator {
                 }
             }
         }
-        return message;
+        if (message!=null)
+            throw FormValidation.error(message);
     }
 
     /**
@@ -81,11 +72,7 @@ public abstract class CNFormFieldValidator {
         try {
             GetMethod get = new GetMethod(url);
             int status = client.executeMethod(get);
-            if (status == 200) {
-                return true;
-            } else {
-                return false;
-            }
+            return status == 200;
         } catch (IOException e) {
             return false;
         } catch (IllegalArgumentException iae) {
@@ -116,7 +103,7 @@ public abstract class CNFormFieldValidator {
      * StaplerRequest with value.  If it's a required value, expects a 
      * value name.
      */
-    public static FormValidation interpretedCheck(String str, String name, boolean isRequired) {
+    public static FormValidation interpretedCheck(String str, String name, boolean isRequired) throws FormValidation {
         if (CommonUtil.unset(str)) {
             if (!isRequired) {
                 return FormValidation.ok();
@@ -128,10 +115,7 @@ public abstract class CNFormFieldValidator {
                 return FormValidation.error("The " + name + " is required.");
             }
         }
-        String errmsg;
-        if ((errmsg = checkInterpretedString(str)) != null) {
-            return FormValidation.error(errmsg);
-        }
+        checkInterpretedString(str);
 
         return FormValidation.ok();
     }
@@ -139,14 +123,14 @@ public abstract class CNFormFieldValidator {
     /**
      * Class for checking an interpreted string which is unrequired.
      */
-    public static FormValidation unrequiredInterpretedCheck(String str, String name) {
+    public static FormValidation unrequiredInterpretedCheck(String str, String name) throws FormValidation {
         return interpretedCheck(str, name, false);
     }
 
     /**
      * Class for checking an interpreted string which is required.
      */
-    public static FormValidation requiredInterpretedCheck(String str, String name) {
+    public static FormValidation requiredInterpretedCheck(String str, String name) throws FormValidation {
         return interpretedCheck(str, name, true);
     }
 
@@ -202,41 +186,36 @@ public abstract class CNFormFieldValidator {
      * Class for checking that a login to CollabNet is valid.  Expects
      * a StaplerRequest with url, username, and password set.
      */
-    public static FormValidation loginCheck(StaplerRequest request) {
-        String password = request.getParameter("password");
+    public static FormValidation loginCheck(CollabNetApp app, String password) {
         if (CommonUtil.unset(password)) {
             return FormValidation.error("The password is required.");
         }
-        CollabNetApp cna = CNHudsonUtil.getCollabNetApp(request);
-        if (cna == null) {
+        if (app == null) {
             return FormValidation.warning("Login fails with this CollabNet " +
                     "URL/username/password combination.");
         } else {
-            CNHudsonUtil.logoff(cna);
+            CNHudsonUtil.logoff(app);
         }
         return FormValidation.ok();
     }
     
     /**
-     * Class for checking that a project name is valid.  Expects a 
-     * StaplerRequest with url, username, password, and project set.
+     * Checks if a project name is valid, by using the given connection.
      */
-    public static FormValidation projectCheck(StaplerRequest request) {
-        String username = CNHudsonUtil.getUsername(request);
-        String project = request.getParameter("project");
-
+    public static FormValidation projectCheck(CollabNetApp app, String project) {
         if (CommonUtil.unset(project)) {
             return FormValidation.error("The project is required.");
         }
-        CollabNetApp cna = CNHudsonUtil.getCollabNetApp(request);
-        if (cna != null) {
-            if (CNHudsonUtil.getProjectId(cna, project) == null) {
-                CNHudsonUtil.logoff(cna);
-                return FormValidation.warning("This project cannot be found, or user " +
-                        username + " does not have permission " +
-                        "to access it.");
+        if (app != null) {
+            try {
+                if (CNHudsonUtil.getProjectId(app, project) == null) {
+                    return FormValidation.warning(String.format(
+                            "Project '%s' cannot be found, or user %s does not have permission to access it.",
+                            project, app.getUsername()));
+                }
+            } finally {
+                CNHudsonUtil.logoff(app);
             }
-            CNHudsonUtil.logoff(cna);
         }
         return FormValidation.ok();
     }
@@ -246,32 +225,25 @@ public abstract class CNFormFieldValidator {
      * any missing folders.  Expects a StaplerRequest with url, username,
      * password, project, and path.
      */
-    public static FormValidation documentPathCheck(StaplerRequest request) throws IOException {
-        String project = request.getParameter("project");
-        String path = request.getParameter("path");
+    public static FormValidation documentPathCheck(CollabNetApp app, String project, String path) throws IOException {
         path = path.replaceAll("/+", "/");
         path = CommonUtil.stripSlashes(path);
         if (CommonUtil.unset(path)) {
             return FormValidation.error("The path is required.");
         }
-        String errmsg = null;
-        if ((errmsg = checkInterpretedString(path)) != null) {
-            return FormValidation.error(errmsg);
-        }
-        CollabNetApp cna = CNHudsonUtil.getCollabNetApp(request);
-        String projectId = CNHudsonUtil.getProjectId(cna, project);
+        checkInterpretedString(path);
+
+        String projectId = CNHudsonUtil.getProjectId(app, project);
         if (projectId != null) {
-            DocumentApp da = new DocumentApp(cna);
+            DocumentApp da = new DocumentApp(app);
             String missing = da.verifyPath(projectId, path);
             if (missing != null) {
-                CNHudsonUtil.logoff(cna);
-                return FormValidation.warning("Folder '" + missing + "' could not be " +
-                        "found in path '" + path + "'.  It (and " +
-                        "any subfolders) will " +
-                        "be created dynamically.");
+                CNHudsonUtil.logoff(app);
+                return FormValidation.warning(String.format(
+                        "Folder '%s' could not be found in path '%s'.  It (and any subfolders) will be created dynamically.", missing, path));
             }
         }
-        CNHudsonUtil.logoff(cna);
+        CNHudsonUtil.logoff(app);
         return FormValidation.ok();
     }
 
@@ -532,10 +504,7 @@ public abstract class CNFormFieldValidator {
             }
         }
         String[] groups = CommonUtil.splitCommaStr(groupStr);
-        if (conn.isMemberOfAny(Arrays.asList(groups))) {
-            return false;
-        }
-        return true;
+        return !conn.isMemberOfAny(Arrays.asList(groups));
     }
 
 
@@ -582,7 +551,7 @@ public abstract class CNFormFieldValidator {
             }
         }
         if (!CommonUtil.unset(hostURL) && !CommonUtil.unset(user)) {
-            boolean success = false;
+            boolean success;
             try {
                 success = signedStatus(hostURL, user, key);
             } catch (IllegalArgumentException iae) {
@@ -618,11 +587,7 @@ public abstract class CNFormFieldValidator {
             return false;
         }
         Pattern pat = Pattern.compile(".*OK.*", Pattern.DOTALL);
-        if (pat.matcher(status).matches()) {
-            return true;
-        } else {
-            return false;
-        }
+        return pat.matcher(status).matches();
     }
 
     /**

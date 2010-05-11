@@ -1,5 +1,7 @@
 // get the proper authentication-related strings
 function get_auth_param_str(prefix) {
+    return "";
+    // to be deleted
     var str = "";
     var override = true;
     var override_elems = document.getElementsByName(prefix + ".override_auth");

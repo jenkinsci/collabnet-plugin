@@ -15,20 +15,20 @@
           <j:set var="cnfr_override" value="false" />
           <j:choose>
             <j:when test="${instance != null}">
-              <j:set var="cnfr_override" 
+              <j:set var="cnfr_override"
                 value="${instance.overrideAuth()}" />
             </j:when>
           </j:choose>
-          <c:cnOptionalBlock id="${cnfr_id}.cnfr.override_auth" 
-           name="${cnfr_id}.cnfr.override_auth" 
+          <c:cnOptionalBlock id="${cnfr_id}.cnfr.override_auth"
+           name="${cnfr_id}.cnfr.override_auth"
            title="Override the Global CollabNet Configuration"
-           checked="${cnfr_override}" 
+           checked="${cnfr_override}"
            onclick="document.getElementById('${cnfr_id}.cnfr.password').onchange()"
              >
-           <c:cnAuth prefix="${cnfr_id}.cnfr" 
-            checkUrlRoot="${rootURL}/publisher/CNFileRelease" 
-            helpUrlRoot="${rootHelpURL}" url="${instance.getCollabNetUrl()}" 
-            username="${instance.username}" password="${instance.password}" 
+           <c:cnAuth prefix="${cnfr_id}.cnfr"
+            checkUrlRoot="${rootURL}/publisher/CNFileRelease"
+            helpUrlRoot="${rootHelpURL}" url="${instance.getCollabNetUrl()}"
+            username="${instance.username}" password="${instance.password}"
             onchange="document.getElementById('_${cnfr_id}_cnfr_project').onchange();"
            />
           </c:cnOptionalBlock>
@@ -36,38 +36,38 @@
       </f:nested>
     </j:when>
     <j:otherwise>
-      <c:cnAuth prefix="${cnfr_id}.cnfr" 
-       checkUrlRoot="${rootURL}/publisher/CNFileRelease" 
-       helpUrlRoot="${rootHelpURL}" url="${instance.getCollabNetUrl()}" 
-       username="${instance.username}" password="${instance.password}" 
+      <c:cnAuth prefix="${cnfr_id}.cnfr"
+       checkUrlRoot="${rootURL}/publisher/CNFileRelease"
+       helpUrlRoot="${rootHelpURL}" url="${instance.getCollabNetUrl()}"
+       username="${instance.username}" password="${instance.password}"
        onchange="document.getElementById('_${cnfr_id}_cnfr_project').onchange();" />
     </j:otherwise>
   </j:choose>
 
   <f:entry title="Project" help="${rootHelpURL}/help-project.html">
-    <c:updatableComboBox name="cnfr.project" id="_${cnfr_id}_cnfr_project" 
-     clazz="setting-input validated" value="${instance.project}" 
-     items="${instance.getProjects()}" 
-     checkUrl="'${rootURL}/publisher/CNFileRelease/projectCheck?project=' + 
-       escape(document.getElementById('_${cnfr_id}_cnfr_project').value) + 
-       '&amp;' + get_auth_param_str('${cnfr_id}.cnfr')" 
+    <c:updatableComboBox name="cnfr.project" id="_${cnfr_id}_cnfr_project"
+     clazz="setting-input validated" value="${instance.project}"
+     items="${instance.getProjects()}"
+     checkUrl="'${rootURL}/publisher/CNFileRelease/projectCheck?project=' +
+       escape(document.getElementById('_${cnfr_id}_cnfr_project').value) +
+       '&amp;' + get_auth_param_str('${cnfr_id}.cnfr')"
      updateUrl="'${rootURL}/publisher/CNFileRelease/getProjects?' +
-       get_auth_param_str('${cnfr_id}.cnfr')" 
+       get_auth_param_str('${cnfr_id}.cnfr')"
      onchange="
        document.getElementById('_${cnfr_id}_cnfr_package').onchange();"/>
   </f:entry>
 
-  <f:entry title="Package" help="${rootHelpURL}/help-package.html">    
-    <c:updatableComboBox name="cnfr.package" id="_${cnfr_id}_cnfr_package" 
-     clazz="setting-input validated" value="${instance.package}" 
-     items="${instance.getPackages()}" 
-     checkUrl="'${rootURL}/publisher/CNFileRelease/packageCheck?package=' + 
-       escape(this.value) +'&amp;project=' + 
-       escape(document.getElementById('_${cnfr_id}_cnfr_project').value) + 
-       '&amp;' + get_auth_param_str('${cnfr_id}.cnfr')" 
-     updateUrl="'${rootURL}/publisher/CNFileRelease/getPackages?' + 
+  <f:entry title="Package" help="${rootHelpURL}/help-package.html">
+    <c:updatableComboBox name="cnfr.package" id="_${cnfr_id}_cnfr_package"
+     clazz="setting-input validated" value="${instance.package}"
+     items="${instance.getPackages()}"
+     checkUrl="'${rootURL}/publisher/CNFileRelease/packageCheck?package=' +
+       escape(this.value) +'&amp;project=' +
+       escape(document.getElementById('_${cnfr_id}_cnfr_project').value) +
+       '&amp;' + get_auth_param_str('${cnfr_id}.cnfr')"
+     updateUrl="'${rootURL}/publisher/CNFileRelease/getPackages?' +
        get_auth_param_str('${cnfr_id}.cnfr') +
-       '&amp;project=' + 
+       '&amp;project=' +
        escape(document.getElementById('_${cnfr_id}_cnfr_project').value)"
      onchange="
        document.getElementById('_${cnfr_id}_cnfr_release').onchange();"

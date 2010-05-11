@@ -73,7 +73,7 @@ public class CNFileRelease extends Notifier {
     private boolean overwrite;
     private String[] file_patterns;
 
-    private transient static TeamForgeShare.TeamForgeShareDescriptor 
+    private transient static TeamForgeShare.TeamForgeShareDescriptor
         shareDescriptor = null;
 
     /**
@@ -92,7 +92,7 @@ public class CNFileRelease extends Notifier {
      *                     ant-style patterns will be uploaded to the 
      *                     CollabNet server.
      */
-    public CNFileRelease(String url, String username, String password, 
+    public CNFileRelease(String url, String username, String password,
                          String project, String rpackage, String release, 
                          boolean overwrite, String[] filePatterns, 
                          boolean override_auth) {
@@ -174,7 +174,7 @@ public class CNFileRelease extends Notifier {
      */
     public String getPassword() {
         if (this.overrideAuth()) {
-            return this.password==null ? null : this.password.toString();
+            return Secret.toString(this.password);
         } else {
             return getTeamForgeShareDescriptor().getPassword();
         }
@@ -697,7 +697,7 @@ public class CNFileRelease extends Notifier {
          */
         @Override
         public String getHelpFile() {
-            return getHelpUrl() + "help-main.html";
+            return getHelpUrl() + "help.html";
         }
 
         /**
@@ -789,45 +789,12 @@ public class CNFileRelease extends Notifier {
         }
 
         /**
-         * Form validation for the CollabNet URL.
-         *
-         * @param value url
-         * @return the form validation
-         */
-        public FormValidation doCollabNetUrlCheck(@QueryParameter String value) {
-            return CNFormFieldValidator.soapUrlCheck(value);
-        }
-        
-        /**
-         * Check that a password is present and allows login.
-         *
-         * @param req contains parameters from the config.jelly.
-         * @return the form validation
-         */
-        public FormValidation doPasswordCheck(StaplerRequest req) {
-            return CNFormFieldValidator.loginCheck(req);
-        }
-        
-        /**
          * Form validation for the project field.
          *
-         * @param req contains parameters from the config.jelly.
          * @return the form validation
          */
-        public FormValidation doProjectCheck(StaplerRequest req) {
-            return CNFormFieldValidator.projectCheck(req);
-        }
-
-        /**
-         * Form validation for username.
-         *
-         * @param value
-         * @param name of field
-         * @return the form validation
-         */
-        public FormValidation doRequiredCheck(
-                @QueryParameter String value, @QueryParameter String name) {
-            return CNFormFieldValidator.requiredCheck(value, name);
+        public FormValidation doCheckProject(CollabNetApp app, @QueryParameter String value) {
+            return CNFormFieldValidator.projectCheck(app,value);
         }
 
         /**
@@ -858,7 +825,7 @@ public class CNFileRelease extends Notifier {
          * @return the form validation
          */
         public FormValidation doUnRequiredInterpretedCheck(
-                @QueryParameter String value, @QueryParameter String name) {
+                @QueryParameter String value, @QueryParameter String name) throws FormValidation {
             return CNFormFieldValidator.unrequiredInterpretedCheck(value, name);
         }
         

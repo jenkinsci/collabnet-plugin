@@ -1,0 +1,23 @@
+<!--
+      <%@attribute name="prefix" required="true" %>  
+      <%@attribute name="checkUrlRoot" required="true" %>  
+      <%@attribute name="helpUrlRoot" required="true" %>  
+      <%@attribute name="url" required="true" %>  
+      <%@attribute name="username" required="true" %>  
+      <%@attribute name="password" required="true" %>
+      <%@attribute name="onchange" required="false" %>  
+-->
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form" xmlns:c="/com/collabnet/cubit/hudson/tags">
+
+ <f:entry title="CollabNet TeamForge URL" field="url" description="For example, https://forge.collab.net">
+    <f:textbox />
+  </f:entry>
+
+  <f:entry title="Username" field="username">
+    <f:textbox />
+  </f:entry>
+
+  <f:entry title="Password" field="password">
+    <f:password />
+  </f:entry>
+</j:jelly>
