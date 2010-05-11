@@ -43,6 +43,7 @@ import hudson.util.Secret;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 
+import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.StaplerResponse;
@@ -70,7 +71,7 @@ public class CNDocumentUploader extends Notifier {
     private String project;
     private String uploadPath;
     private String description;
-    private String[] file_patterns;
+    private FilePattern[] file_patterns;
     private boolean includeBuildLog;    
 
     private transient static TeamForgeShare.TeamForgeShareDescriptor 
@@ -90,9 +91,10 @@ public class CNDocumentUploader extends Notifier {
      * @param includeBuildLog
      * @param override_auth
      */
+    @DataBoundConstructor
     public CNDocumentUploader(String url, String username, String password, 
                               String project, String uploadPath, 
-                              String description, String[] filePatterns,
+                              String description, FilePattern[] filePatterns,
                               boolean includeBuildLog, boolean override_auth) {
         this.url = CNHudsonUtil.sanitizeCollabNetUrl(url);
         this.username = username;
@@ -220,18 +222,18 @@ public class CNDocumentUploader extends Notifier {
     /**
      * @return the ant-style file patterns.
      */
-    public String[] getFilePatterns() {
+    public FilePattern[] getFilePatterns() {
         if (this.file_patterns != null) {
             return this.file_patterns;
         } else {
-            return new String[0];
+            return new FilePattern[0];
         }
     }
 
     /**
      * @return true if the build log should be uploaded.
      */
-    public boolean includeBuildLog() {
+    public boolean getIncludeBuildLog() {
         return this.includeBuildLog;
     }
 
@@ -316,7 +318,7 @@ public class CNDocumentUploader extends Notifier {
             this.logoff();
             return false;
         }
-        int numUploaded = this.uploadFiles(folderId, build);
+        int numUploaded = this.uploadFiles(folderId, build, listener);
         build.addAction(this.createAction(numUploaded, folderId));
         try {
             this.cna.logoff();
@@ -364,7 +366,7 @@ public class CNDocumentUploader extends Notifier {
      * @param build the current Hudson build.
      * @return the number of files successfully uploaded.
      */
-    public int uploadFiles(String folderId, AbstractBuild<?, ?> build)
+    public int uploadFiles(String folderId, AbstractBuild<?, ?> build, BuildListener listener)
             throws IOException, InterruptedException {
         int numUploaded = 0;
         String path = this.getInterpreted(build, this.getUploadPath());
@@ -372,10 +374,10 @@ public class CNDocumentUploader extends Notifier {
                  "', folder '" + path + "' on host '" + 
                  this.getCollabNetUrl() + "' as user '" + this.getUsername() 
                  + "'.");
-        for (String uninterp_fp : this.getFilePatterns()) {
-            String file_pattern = "";
+        for (FilePattern uninterp_fp : this.getFilePatterns()) {
+            String file_pattern;
             try {
-                file_pattern = getInterpreted(build, uninterp_fp); 
+                file_pattern = uninterp_fp.interpret(build,listener);
             } catch (IllegalArgumentException e) {
                 this.logConsole("File pattern " + uninterp_fp + " contained a bad env var.  Skipping.");
                 continue;
@@ -408,14 +410,13 @@ public class CNDocumentUploader extends Notifier {
                 }
             }
         }
-        if (this.includeBuildLog()) {
+        if (this.getIncludeBuildLog()) {
             String fileId = this.uploadBuildLog(build);
             if (fileId == null) {
                 this.logConsole("Failed to upload " + build.getLogFile().getName() + ".");
             } else {
-                String docId = null;
                 try {
-                    docId = this.updateOrCreateDoc(folderId, fileId, 
+                    String docId = this.updateOrCreateDoc(folderId, fileId,
                                                    build.getLogFile().getName(),
                                                    CNDocumentUploader.
                                                    getMimeType(build.
@@ -861,9 +862,9 @@ public class CNDocumentUploader extends Notifier {
          * @throws IOException
          * @throws ServletException
          */
-        public FormValidation doUnRequiredInterpretedCheck(
-                @QueryParameter String value, @QueryParameter String name) {
-            return CNFormFieldValidator.unrequiredInterpretedCheck(value, name);
+        public FormValidation doCheckFilePatterns(
+                @QueryParameter String value) {
+            return CNFormFieldValidator.unrequiredInterpretedCheck(value, "file patterns");
         }
 
         /**

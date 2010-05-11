@@ -64,38 +64,23 @@
        '&amp;' + get_auth_param_str('${unique_id}.cndu')" />
   </f:entry>
 
-  <f:entry title="Description" help="${rootHelpURL}/help-description.html">
-    <f:textbox name="cndu.description" value="${instance.description}" 
-     id="${unique_id}.cndu.description"/>
+  <f:entry title="Description" field="description">
+    <f:textbox />
   </f:entry>
 
-  <f:entry title="File Patterns to Upload" 
-   help="${rootHelpURL}/help-filepattern.html">
-    <f:repeatable name="${unique_id}.cndu.files" var="file" 
-     items="${instance.getFilePatterns()}" minimum="1" noAddButton="true">
-      <f:textbox name="${unique_id}.cndu.file" value="${file}"
-       checkUrl="'${rootURL}/publisher/CNDocumentUploader/' + 
-         'unRequiredInterpretedCheck?value='+escape(this.value)" />
-      <div align="right">
-        <input type="button" value="Add File Pattern" 
-         class="repeatable-add show-if-last" />
-        <input type="button" value="Delete File Pattern" 
-         class="repeatable-delete show-if-not-only" /> 
-      </div>
-    </f:repeatable>
-  </f:entry>    
+  <f:entry title="File Patterns to Upload" field="filePatterns">
+      <f:repeatable field="filePatterns" minimum="1" noAddButton="true">
+        <f:textbox field="value" />
+        <div align="right">
+          <input type="button" value="Add File Pattern"
+           class="repeatable-add show-if-last" />
+          <input type="button" value="Delete File Pattern"
+           class="repeatable-delete show-if-not-only" />
+        </div>
+      </f:repeatable>
+  </f:entry>
 
-  <f:entry title="Upload build log?" 
-   help="${rootHelpURL}/help-buildlog.html">
-    <span>
-      <f:radio name="${unique_id}.cndu.buildlog" id="${unique_id}.yes" title="Yes"
-       value="true" checked="${instance.includeBuildLog()==true}">
-      </f:radio>
-      <label for="yes">Yes</label> 
-      <f:radio name="${unique_id}.cndu.buildlog" id="${unique_id}.no" title="No"
-       value="false" checked="${instance.includeBuildLog()!=true}">
-      </f:radio>
-      <label for="no">No</label>
-    </span>
+  <f:entry title="Upload build log?" field="includeBuildLog">
+    <c:booleanRadio true="Yes" false="No" />
   </f:entry>
 </j:jelly>
