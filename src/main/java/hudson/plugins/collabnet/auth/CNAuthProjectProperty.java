@@ -8,11 +8,10 @@ import hudson.model.JobProperty;
 import hudson.model.JobPropertyDescriptor;
 import hudson.plugins.collabnet.util.CommonUtil;
 import hudson.security.Permission;
+import hudson.util.ComboBoxModel;
 import hudson.util.FormValidation;
-import net.sf.json.JSONObject;
+import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
-import org.kohsuke.stapler.StaplerRequest;
-import org.kohsuke.stapler.StaplerResponse;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -40,20 +39,28 @@ public class CNAuthProjectProperty extends JobProperty<Job<?, ?>> {
 
     /**
      * Constructor
-     * @param projectName name of project to tie the auth to
+     * @param project name of project to tie the auth to
      * @param createRoles true to create special hudson roles
-     * @param grantDefaults true to grant default roles to project members
-     * @param isNotLoadedFromDisk true for newly instantiated jobs
+     * @param grantDefaultRoles true to grant default roles to project members
      */
-    public CNAuthProjectProperty(String projectName, Boolean createRoles,
-                                 Boolean grantDefaults, boolean isNotLoadedFromDisk) {
-        this.project = projectName;
+    @DataBoundConstructor
+    public CNAuthProjectProperty(String project, boolean createRoles, String storedProjectId,
+                                 boolean grantDefaultRoles) {
+        this.project = project;
         this.createRoles = createRoles;
-        this.grantDefaultRoles = grantDefaults;
+        this.grantDefaultRoles = grantDefaultRoles;
         if (this.createRoles || this.grantDefaultRoles) {
             this.loadRoles();
         }
-        mIsNotLoadedFromDisk = isNotLoadedFromDisk;
+        mIsNotLoadedFromDisk = true;
+
+        // if the user who configured the job didn't have the authority to change the project binding,
+        // revert it back to what it was before.
+        loadProjectIdIfNecessary();
+        if (!CommonUtil.isEmpty(getProject()) && CommonUtil.isEmpty(getProjectId())) {
+            // means we can't find the specified project name - prevent overriding
+            setProjectId(storedProjectId);
+        }
     }
 
     /**
@@ -119,14 +126,14 @@ public class CNAuthProjectProperty extends JobProperty<Job<?, ?>> {
      * @return true if creating the roles on the CollabNet server should be
      *         attempted.
      */
-    public boolean createRoles() {
+    public boolean getCreateRoles() {
         return this.createRoles;
     }
 
     /**
      * @return true if the default roles should be added.
      */
-    public boolean grantDefaultRoles() {
+    public boolean getGrantDefaultRoles() {
         return this.grantDefaultRoles;
     }
 
@@ -166,7 +173,7 @@ public class CNAuthProjectProperty extends JobProperty<Job<?, ?>> {
                 log.warning("Cannot loadRoles, incorrect authentication type.");
                 return;
             }
-            if (this.createRoles()) {
+            if (this.getCreateRoles()) {
                 List<String> roleNames = new ArrayList<String>();
                 List<String> descriptions = new ArrayList<String>();
                 for (CollabNetRole role: CNProjectACL.CollabNetRoles.getAllRoles()) {
@@ -176,7 +183,7 @@ public class CNAuthProjectProperty extends JobProperty<Job<?, ?>> {
                 conn.addRoles(projectIdStr, roleNames, descriptions);
             }
             
-            if (this.grantDefaultRoles()) {
+            if (this.getGrantDefaultRoles()) {
                 // load up some default roles
                 // this should be an option later
                 conn.grantRoles(projectIdStr, this.getDefaultUserRoles(), conn.getUsers(projectIdStr));
@@ -190,40 +197,6 @@ public class CNAuthProjectProperty extends JobProperty<Job<?, ?>> {
      */
     @Extension
     public static class DescriptorImpl extends JobPropertyDescriptor {
-
-        public DescriptorImpl() {
-            super(CNAuthProjectProperty.class);
-        }
-
-        /**
-         * @param req config page parameters.
-         * @return new CNAuthProjectProperty object, instantiated from the 
-         *         configuration form vars.
-         * @throws FormException
-         */
-        @Override
-        public JobProperty<?> newInstance(StaplerRequest req,
-                                          JSONObject formData) 
-            throws FormException {
-            Boolean createRoles = Boolean.FALSE;
-            Boolean grantDefaults = Boolean.FALSE;
-            if (formData.get("createRoles") != null) {
-                createRoles = Boolean.TRUE;
-            }
-            if (formData.get("grantDefaults") != null) {
-                grantDefaults = Boolean.TRUE;
-            }
-            String projectName = (String)formData.get("project");
-            String storedProjectId = (String)formData.get("storedProjectId");
-            CNAuthProjectProperty prop = new CNAuthProjectProperty(projectName, createRoles, grantDefaults, true);
-            prop.loadProjectIdIfNecessary();
-            if (!CommonUtil.isEmpty(prop.getProject()) && CommonUtil.isEmpty(prop.getProjectId())) {
-                // means we can't find the specified project name - prevent overriding
-                prop.setProjectId(storedProjectId);
-            }
-            return prop;
-        }
-
         /**
          * @return string to display.
          */
@@ -237,7 +210,7 @@ public class CNAuthProjectProperty extends JobProperty<Job<?, ?>> {
          * @return true when the CNAuthorizationStrategy is in effect.
          */
         @Override
-	public boolean isApplicable(Class<? extends Job> jobType) {
+        public boolean isApplicable(Class<? extends Job> jobType) {
             // only applicable when using CNAuthorizationStrategy
             return Hudson.getInstance().getAuthorizationStrategy() 
                 instanceof CNAuthorizationStrategy;
@@ -245,10 +218,9 @@ public class CNAuthProjectProperty extends JobProperty<Job<?, ?>> {
 
         /**
          * Form validation for the project field.
-         *
-         * @param project
          */
-        public FormValidation doProjectCheck(@QueryParameter String project) {
+        public FormValidation doCheckProject(@QueryParameter String value) {
+            String project = value;
             if (CommonUtil.isEmpty(project)) {
                 return FormValidation.warning("If left empty, all users will be able to configure and access this " +
                     "build");
@@ -271,12 +243,13 @@ public class CNAuthProjectProperty extends JobProperty<Job<?, ?>> {
                           "to this project.  This setting change will not be saved.");
                 }
             }
+            FormValidation ok = FormValidation.ok("Currently selected project: " + projectId + ":" + project);
             if (superUser) {
                 // all other errors should not be valid for a
                 // superuser, since superusers are Hudson Admins
                 // (so all-powerful in the Hudson realm) and also
                 // all-powerful in the CollabNet server.
-                return FormValidation.ok();
+                return ok;
             }
             if (!conn.isProjectAdmin(projectId)) {
                 return FormValidation.warning("The current user is not a project admin in " +
@@ -286,7 +259,7 @@ public class CNAuthProjectProperty extends JobProperty<Job<?, ?>> {
             if (hudsonAdmin) {
                 // no more errors apply to the Hudson Admin, since
                 // admins will never be locked out of this page.
-                return FormValidation.ok();
+                return ok;
             }
             // check that the user will have configure permissions
             // on this page
@@ -306,31 +279,7 @@ public class CNAuthProjectProperty extends JobProperty<Job<?, ?>> {
                      "is given this role.");
             }
 
-            return FormValidation.ok();
-        }
-
-        /**
-         * Get the project id for the given project
-         * @param request the request
-         * @param response the response
-         * @throw IOException if we fail to write response
-         */
-        public void doGetProjectId(StaplerRequest request, StaplerResponse response) throws IOException {
-            CNConnection conn = CNConnection.getInstance();
-            String project = request.getParameter("project");
-
-            String projectId;
-            if (conn == null) {
-                projectId = "";
-            } else {
-                projectId = conn.getProjectId(project);
-            }
-
-            response.setContentType("text/plain;charset=UTF-8");
-            JSONObject jsonObj = new JSONObject();
-            jsonObj.put("projectName", project);
-            jsonObj.put("projectId", projectId);
-            response.getWriter().print(jsonObj.toString());
+            return ok;
         }
 
         /**
@@ -338,14 +287,12 @@ public class CNAuthProjectProperty extends JobProperty<Job<?, ?>> {
          *
          * @return an array of project names.
          */
-        public String[] getProjects() {
-            Collection<String> projects = Collections.emptyList();
+        public ComboBoxModel doFillProjectItems() {
             CNConnection conn = CNConnection.getInstance();
             if (conn == null) {
-                return new String[0];
+                return new ComboBoxModel();
             }
-            projects = conn.getProjects();
-            return projects.toArray(new String[0]);
+            return new ComboBoxModel(conn.getProjects());
         }
 
         /**

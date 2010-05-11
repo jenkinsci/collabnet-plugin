@@ -6,63 +6,28 @@
     <fieldset style="margin-bottom:1em">
       <legend>Authorization from CollabNet TeamForge</legend>
       <table width="100%">
+        <f:block>
+          This Hudson instance has been configured to use the CollabNet
+          TeamForge site <a href="${descriptor.getCollabNetUrl()}">
+            ${descriptor.getCollabNetUrl()}
+          </a>
+          for authentication.
+        </f:block>
 
-        <tr>
-          <td colspan="3">
-            This Hudson instance has been configured to use the CollabNet 
-            TeamForge site <a href="${descriptor.getCollabNetUrl()}">
-              ${descriptor.getCollabNetUrl()}
-            </a> 
-            for authentication.
-          </td>
-        </tr>
-
-        <f:entry title="CollabNet TeamForge Project" 
-         help="/plugin/collabnet/auth/help-assocProject.html">
-          <c:updatableComboBox name="capp.project" 
-           value="${instance.getProject()}"
-           id="capp_project" clazz='setting-input validated'
-           items="${descriptor.getProjects()}"
-           checkUrl="'${rootURL}/jobProperty/CNAuthProjectProperty/' + 
-             'projectCheck?project='+escape(this.value)"
-           onchange="updateProjectId('${rootURL}/jobProperty/CNAuthProjectProperty/' +
-             'getProjectId?project='+escape(this.value), 'capp_projectid_selected')" />
+        <f:entry title="CollabNet TeamForge Project" field="project">
+          <f:combobox />
         </f:entry>
 
         <f:description>
-          <script type="text/javascript">
-            function updateProjectId(url, targetId) {
-              new Ajax.Request(url, {
-                 method : "get",
-                 onComplete : function(x) {
-                    var json = x.responseText.evalJSON(false);
-                    var targetEl = document.getElementById(targetId);
-                    if (json.projectId) {
-                      targetEl.innerHTML=json.projectId + ':' + json.projectName;
-                    } else {
-                      targetEl.innerHTML='';
-                    }
-                 }
-              });
-            }
-          </script>
           Currently stored project: <j:if test="${instance.project != null}">${instance.projectId}:${instance.project}</j:if>
+          <input type="hidden" name="_.storedProjectId" value="${instance.projectId}"/>
         </f:description>
 
-        <f:description>
-          Currently selected project: <span id="capp_projectid_selected"><j:if test="${instance.project != null}">${instance.projectId}:${instance.project}</j:if></span>
-          <input type="hidden" name="capp.storedProjectId" value="${instance.projectId}"/>
-        </f:description>
+        <f:optionalBlock field="createRoles"
+         title="Create Hudson roles in CollabNet TeamForge for this project." />
 
-        <f:optionalBlock name="capp.createRoles" 
-         title="Create Hudson roles in CollabNet TeamForge for this project." 
-         checked="${instance.createRoles()}" 
-         help="/plugin/collabnet/auth/help-createRoles.html" />
-
-        <f:optionalBlock name="capp.grantDefaults" 
-         title="Grant default permissions to members of the project." 
-         checked="${instance.grantDefaultRoles()}" 
-         help="/plugin/collabnet/auth/help-grantRoles.html" />       
+        <f:optionalBlock field="grantDefaultRoles"
+         title="Grant default permissions to members of the project." />
 
       </table>
     </fieldset>
