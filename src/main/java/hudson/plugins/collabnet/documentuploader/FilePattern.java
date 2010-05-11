@@ -9,12 +9,14 @@ import hudson.Extension;
 import hudson.model.*;
 import hudson.plugins.collabnet.util.CNFormFieldValidator;
 import hudson.plugins.collabnet.util.CommonUtil;
+import hudson.plugins.promoted_builds.Promotion;
 import hudson.util.FormValidation;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 
 import javax.servlet.ServletException;
 import java.io.IOException;
+import java.util.Map;
 
 /**
  * File pattern to upload
@@ -30,7 +32,18 @@ public class FilePattern extends AbstractDescribableImpl<FilePattern> {
     }
 
     public String interpret(AbstractBuild<?,?> build, TaskListener listener) throws IOException, InterruptedException {
-        return CommonUtil.getInterpreted(build.getEnvironment(listener), value);
+        Map<String, String> envVars;
+        if (Hudson.getInstance().getPlugin("promoted-builds") != null
+            && build.getClass().equals(Promotion.class)) {
+            // if this is a promoted build, get the env vars from
+            // the original build
+            Promotion promotion = Promotion.class.cast(build);
+            envVars = promotion.getTarget().getEnvironment(listener);
+        } else {
+            envVars = build.getEnvironment(listener);
+        }
+        //XXX should this use envVars instead of build.getEnv.... ?
+        return CommonUtil.getInterpreted(envVars, value);
     }
 
     @Override

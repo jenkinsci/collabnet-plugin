@@ -1,15 +1,14 @@
 package hudson.plugins.collabnet.pblupload;
 
+import com.collabnet.cubit.api.CubitConnector;
 import hudson.Extension;
 import hudson.FilePath;
-import hudson.Launcher;
 import hudson.FilePath.FileCallable;
-import hudson.model.AbstractBuild;
-import hudson.model.AbstractProject;
-import hudson.model.BuildListener;
-import hudson.model.Hudson;
-import hudson.model.Result;
-import hudson.model.TaskListener;
+import hudson.Launcher;
+import hudson.model.*;
+import hudson.plugins.collabnet.documentuploader.FilePattern;
+import hudson.plugins.collabnet.util.CNFormFieldValidator;
+import hudson.plugins.collabnet.util.CommonUtil;
 import hudson.plugins.promoted_builds.Promotion;
 import hudson.remoting.VirtualChannel;
 import hudson.tasks.BuildStepDescriptor;
@@ -17,25 +16,15 @@ import hudson.tasks.BuildStepMonitor;
 import hudson.tasks.Notifier;
 import hudson.tasks.Publisher;
 import hudson.util.FormValidation;
-
-import hudson.plugins.collabnet.util.CommonUtil;
-import hudson.plugins.collabnet.util.CNFormFieldValidator;
+import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.QueryParameter;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import net.sf.json.JSONArray;
-import net.sf.json.JSONObject;
-
-import org.kohsuke.stapler.QueryParameter;
-import org.kohsuke.stapler.StaplerRequest;
-
-import com.collabnet.cubit.api.CubitConnector;
 
 /**
  * The PblUploader is used to upload files to the Project Build Library (Pbl) 
@@ -52,8 +41,8 @@ public class PblUploader extends Notifier implements java.io.Serializable {
     private String user;
     private String key;
     private String project;
-    private String pubOrPriv = "priv";
-    private String[] file_patterns;
+    private String pubOrPriv = "priv"; // "pub" or "priv" for compatibility reasons
+    private FilePattern[] file_patterns;
     private String removePrefixRegex;
     private String path;
     private boolean preserveLocal = false;
@@ -83,8 +72,9 @@ public class PblUploader extends Notifier implements java.io.Serializable {
      * @param comment about the upload.
      * @param description of the files.
      */
+    @DataBoundConstructor
     public PblUploader(String hostUrl, String user, String key, String project,
-                       String pubOrPriv, String[] file_patterns, String path, 
+                       boolean pubOrPriv, FilePattern[] file_patterns, String path,
                        boolean preserveLocal, boolean force, String comment, 
                        String description, String removePrefixRegex) {
         this.hostUrl = hostUrl;
@@ -93,7 +83,7 @@ public class PblUploader extends Notifier implements java.io.Serializable {
         // being lower case
         this.key = key.trim().toLowerCase();
         this.project = project;
-        this.pubOrPriv = pubOrPriv;
+        this.pubOrPriv = pubOrPriv?"pub":"priv";
         this.file_patterns = file_patterns;
         this.path = path;
         this.preserveLocal = preserveLocal;
@@ -156,23 +146,19 @@ public class PblUploader extends Notifier implements java.io.Serializable {
      * @return "pub" if the files should be uploaded as public,
      *         "priv" if the files should be uploaded as private.
      */
-    public String getPubOrPriv() {
-        if (this.pubOrPriv != null) {
-            return this.pubOrPriv;
-        } else {
-            return "";
-        }
+    public boolean getPubOrPriv() {
+        return "pub".equals(pubOrPriv);
     }
 
     /**
      * @return the ant-style file patterns to match against the local
      *         workspace.
      */
-    public String[] getFilePatterns() {
+    public FilePattern[] getFilePatterns() {
         if (this.file_patterns != null) {
             return this.file_patterns;
         } else {
-            return new String[0];
+            return new FilePattern[0];
         }
     }
 
@@ -315,13 +301,13 @@ public class PblUploader extends Notifier implements java.io.Serializable {
      * @return List of file patterns, after being interpreted with empty strings
      * removed. 
      */
-    private List<String> getProcessedFilePatterns(AbstractBuild<?, ?> build)
+    private List<String> getProcessedFilePatterns(AbstractBuild<?,?> build)
             throws IOException, InterruptedException {
         List<String> output = new ArrayList<String>();
-        for (String uninterp_fp : this.getFilePatterns()) {
+        for (FilePattern uninterp_fp : this.getFilePatterns()) {
             String file_pattern;
             try {
-                file_pattern = getInterpreted(build, uninterp_fp);
+                file_pattern = uninterp_fp.interpret(build, listener);
                 if (!file_pattern.equals("")){
                     output.add(file_pattern);
                 }
@@ -420,7 +406,7 @@ public class PblUploader extends Notifier implements java.io.Serializable {
     private String getRemoteURL(AbstractBuild<?, ?> build)
             throws IOException, InterruptedException {
         return addTrailSlash(getHostUrl())+"pbl/" + addTrailSlash(this.getProject()) 
-            + this.getPubOrPriv() + "/"
+            + pubOrPriv + "/"
             + this.getInterpreted(build, this.getPath());           
     }
 
@@ -567,7 +553,7 @@ public class PblUploader extends Notifier implements java.io.Serializable {
         args.put("md5sum", md5sum);
         args.put("path", path);
         args.put("proj", this.getProject());
-        args.put("type", this.getPubOrPriv());
+        args.put("type", pubOrPriv);
         args.put("userid", this.getUser());
         if (this.getForce()){
             /* The value is irrelevant, the presence of the parameter is 
@@ -627,7 +613,7 @@ public class PblUploader extends Notifier implements java.io.Serializable {
 			private static final long serialVersionUID = 1L;
                         @Override
 			public CubitConnector.ResponseCodeAndBody invoke(File file, VirtualChannel channel) 
-            throws FileNotFoundException, IOException
+            throws IOException
             {
 		        final CubitConnector cubitConnector = new CubitConnector(getHostUrl(),
 		                                                                 getUser(),
@@ -656,27 +642,7 @@ public class PblUploader extends Notifier implements java.io.Serializable {
      * 
      */
     @Extension
-    public static final class DescriptorImpl 
-        extends BuildStepDescriptor<Publisher> {
-
-        private static int unique = 0;
-
-        public DescriptorImpl() {
-            super(PblUploader.class);
-        }
-
-        /**
-         * @return a unique integer, used to identify an instance
-         *         of the PBLUploader plugin on a page.
-         */
-        public synchronized int getUniqueId() {
-            int return_value = unique;
-            unique++;
-            if (unique >= Integer.MAX_VALUE) {
-                unique = 0;
-            }
-            return return_value;
-        }
+    public static final class DescriptorImpl extends BuildStepDescriptor<Publisher> {
 
         /**
          * @return human-readable name used in the configuration screen.
@@ -684,21 +650,6 @@ public class PblUploader extends Notifier implements java.io.Serializable {
         @Override
         public String getDisplayName() {
             return "Lab Management Project Build Library (PBL) Uploader";
-        }
-
-        /**
-         * @return the path to the help files.
-         */
-        public String getHelpUrl() {
-            return "/plugin/collabnet/pblupload/";
-        }
-
-        /**
-         * @return url for the generic help-file for this plug-in.
-         */
-        @Override
-        public String getHelpFile() {
-            return getHelpUrl() + "help-projectConfig.html";
         }
 
         /**
@@ -714,92 +665,31 @@ public class PblUploader extends Notifier implements java.io.Serializable {
         } 
 
         /**
-         * Creates a new instance of {@link PblUploader} from 
-         * a submitted form.
-         *
-         * @param req config page parameters.
-         * @param formData data specific to this section, in json form.
-         * @return new PblUploader instance.
-         * @throws FormException
-         */
-        @Override
-        public PblUploader newInstance(StaplerRequest req, 
-                                       JSONObject formData) 
-        throws FormException {
-            Object fileData = formData.get("files");
-            JSONObject[] jpats;
-            if (fileData instanceof JSONArray) {
-                JSONArray patData = (JSONArray) fileData;
-                jpats = (JSONObject []) JSONArray.toArray(patData, 
-                                                          JSONObject.class);
-            } else if (fileData instanceof JSONObject) {
-                jpats = new JSONObject[1];
-                jpats[0] = (JSONObject) fileData;
-            } else {
-                jpats = new JSONObject[0];
-            }
-            String[] patterns = new String[jpats.length];
-            for (int i = 0; i < jpats.length; i++) {
-                patterns[i] = (String) jpats[i].get("file");
-            }
-            
-            return new PblUploader((String)formData.get("host_url"), 
-                                   (String)formData.get("user"), 
-                                   (String)formData.get("key"),
-                                   (String)formData.get("project"),
-                                   (String)formData.get("pub_or_priv"),
-                                   patterns,
-                                   (String)formData.get("path"),
-                                   formData.get("preserve") != null,
-                                   CommonUtil.getBoolean("force", formData),
-                                   (String)formData.get("comment"),
-                                   (String)formData.get("description"),
-                                   formData.get("preserve") != null?
-                                       (String)((JSONObject)formData.
-                                           get("preserve")).
-                                           get("remove_prefix_regex"):
-                                       ""
-                                   );
-        }
-        
-        /**
          * Form validation for the host_url
          *
          * @param value url
          */
-        public FormValidation doHostUrlCheck(@QueryParameter String value) {
+        public FormValidation doCheckHostUrl(@QueryParameter String value) {
             return CNFormFieldValidator.hostUrlCheck(value);
         }
 
-        /**
-         * Form validation for the user and project
-         *
-         * @param value
-         * @param name of field
-         */
-        public FormValidation doRequiredCheck(
-                @QueryParameter String value, @QueryParameter String name) {
-            return CNFormFieldValidator.requiredCheck(value, name);
+        public FormValidation doCheckUser(@QueryParameter String value) {
+            return CNFormFieldValidator.requiredCheck(value, "user name");
+        }
+
+        public FormValidation doCheckProject(@QueryParameter String value) {
+            return CNFormFieldValidator.requiredCheck(value, "project");
         }
 
         /**
          * Form validation for the API key.
-         *
-         * @param req StaplerRequest which contains parameters from the config.jelly.
          */
-        public FormValidation doKeyCheck(StaplerRequest req) {
-            return CNFormFieldValidator.cubitKeyCheck(req);
+        public FormValidation doCheckKey(@QueryParameter String hostUrl, @QueryParameter String user, @QueryParameter String key) {
+            return CNFormFieldValidator.cubitKeyCheck(hostUrl,user,key);
         }
 
-        /**
-         * Form validation for the path.
-         *
-         * @param value
-         * @param name of field
-         */
-        public FormValidation doRequiredInterpretedCheck(
-                @QueryParameter String value, @QueryParameter String name) throws FormValidation {
-            return CNFormFieldValidator.requiredInterpretedCheck(value, name);
+        public FormValidation doCheckPath(@QueryParameter String value) throws FormValidation {
+            return CNFormFieldValidator.requiredInterpretedCheck(value, "path");
         }
 
         
@@ -808,19 +698,16 @@ public class PblUploader extends Notifier implements java.io.Serializable {
          *
          * @param value
          */
-        public FormValidation doRegexPrefixCheck(@QueryParameter String value) {
+        public FormValidation doCheckRemovePrefixRegex(@QueryParameter String value) {
             return CNFormFieldValidator.regexCheck(value);
         }
-        
-        /**
-         * Form validation for the comment and description.
-         *
-         * @param value
-         * @param name of field
-         */
-        public FormValidation doUnRequiredInterpretedCheck(
-                @QueryParameter String value, @QueryParameter String name) throws FormValidation {
-            return CNFormFieldValidator.unrequiredInterpretedCheck(value, name);
+
+        public FormValidation doCheckDescription(@QueryParameter String value) throws FormValidation {
+            return CNFormFieldValidator.unrequiredInterpretedCheck(value, "description");
+        }
+
+        public FormValidation doCheckComment(@QueryParameter String value) throws FormValidation {
+            return CNFormFieldValidator.unrequiredInterpretedCheck(value, "description");
         }
     }
 }

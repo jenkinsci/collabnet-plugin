@@ -13,134 +13,61 @@
 
   <j:set var="pbl_id" value="${descriptor.getUniqueId()}" />
 
-  <f:entry title="Lab Management Manager URL" 
-     description="For example, https://mgr.cubit.example.com" 
-     help="${rootHelpURL}/help-hostUrl.html">
-    <f:textbox var="hostUrl" name="pblupload.host_url" 
-       value="${instance.hostUrl}" 
-       checkUrl="'${rootURL}/publisher/PblUploader/hostUrlCheck?' +
-         'name=username&amp;value='+escape(this.value)" 
-       id="${pbl_id}.pblupload.hostURL" 
-       onchange="document.getElementById('${pbl_id}.pblupload.key').onchange();"/>
+  <f:entry title="Lab Management Manager URL" field="hostUrl"
+     description="For example, https://mgr.cubit.example.com">
+    <f:textbox />
   </f:entry>
 
-  <f:entry title="Username" help="${rootHelpURL}/help-username.html">
-    <f:textbox name="pblupload.user" value="${instance.user}" 
-      id="${pbl_id}.pblupload.user" 
-      checkUrl="'${rootURL}/publisher/PblUploader/requiredCheck?' + 
-        'name=username&amp;value=' + escape(this.value)" 
-      onchange="document.getElementById('${pbl_id}.pblupload.key').onchange();" />
+  <f:entry title="Username" field="user">
+    <f:textbox />
   </f:entry>
 
-  <f:entry title="User API Key" 
-    description="For example, 25747d20-e240-1161-8613-b10d4a9f2d3e" 
-    help="${rootHelpURL}/help-key.html">
-    <input type="password" name="pblupload.key" value="${instance.key}" 
-      id="${pbl_id}.pblupload.key" class='setting-input validated' 
-      checkUrl="'${rootURL}/publisher/PblUploader/keyCheck?value=' + 
-        escape(this.value) + '&amp;hostURL=' + 
-        escape(document.getElementById('${pbl_id}.pblupload.hostURL').value) 
-        + '&amp;user=' + 
-        escape(document.getElementById('${pbl_id}.pblupload.user').value)"/>
+  <f:entry title="User API Key" field="key"
+    description="For example, 25747d20-e240-1161-8613-b10d4a9f2d3e">
+    <f:password />
   </f:entry>
 
-  <f:entry title="Project Name" help="${rootHelpURL}/help-project.html">
-    <f:textbox name="${pbl_id}.pblupload.project" value="${instance.project}" 
-      checkUrl="'${rootURL}/publisher/PblUploader/requiredCheck?' +
-        'name=project&amp;value='+escape(this.value)"/>
+  <f:entry title="Project Name" field="project">
+    <f:textbox />
   </f:entry>
 
-  <f:entry title="Public or Private?" 
-    help="${rootHelpURL}/help-pubOrPriv.html">
-    <span>
-      <f:radio name="${pbl_id}.pblupload.pub_or_priv" id="pub" title="pub" 
-        value="pub" checked="${instance.getPubOrPriv()=='pub'}">
-      </f:radio>
-      <label for="pub">Public</label>
-      <f:radio name="${pbl_id}.pblupload.pub_or_priv" id="priv" title="priv" 
-        value="priv" checked="${instance.getPubOrPriv()!='pub'}">
-      </f:radio>
-      <label for="priv">Private</label>
-    </span>
+  <f:entry title="Public or Private?" field="pubOrPriv">
+    <f:booleanRadio true="Public" false="Private" />
   </f:entry>
 
-  <f:entry title="File Patterns to Upload" 
-    help="${rootHelpURL}/help-filepattern.html">
-    <j:choose>
-      <j:when test="${instance != null}">
-        <f:repeatable name="pblupload.files" var="file" 
-          items="${instance.getFilePatterns()}" minimum="1" noAddButton="true">
-          <f:textbox name="${pbl_id}.pblupload.file" value="${file}" 
-           checkUrl="'${rootURL}/publisher/PblUploader/' +
-             'unRequiredInterpretedCheck?value='+escape(this.value)" />
-          <div align="right">
-            <input type="button" value="Add File Pattern" 
-              class="repeatable-add show-if-last" />
-            <input type="button" value="Delete File Pattern" 
-              class="repeatable-delete show-if-not-only"/> 
-          </div>
-        </f:repeatable>
-      </j:when>
-      <j:otherwise>
-        <f:repeatable name="pblupload.files" var="file" 
-          items="${['']}" minimum="1" noAddButton="true">
-          <f:textbox name="${pbl_id}.pblupload.file" value="${file}" 
-           checkUrl="'${rootURL}/publisher/PblUploader/' +
-             'unRequiredInterpretedCheck?value='+escape(this.value)" />
-          <div align="right">
-            <input type="button" value="Add File Pattern" 
-              class="repeatable-add show-if-last" />
-            <input type="button" value="Delete File Pattern" 
-              class="repeatable-delete show-if-not-only"/> 
-          </div>
-        </f:repeatable>
-      </j:otherwise>
-    </j:choose>
+  <f:entry title="File Patterns to Upload" field="filePatterns">
+    <f:repeatable field="filePatterns" minimum="1" noAddButton="true">
+      <f:textbox field="value" />
+      <div align="right">
+        <input type="button" value="Add File Pattern"
+               class="repeatable-add show-if-last"/>
+        <input type="button" value="Delete File Pattern"
+               class="repeatable-delete show-if-not-only"/>
+      </div>
+    </f:repeatable>
   </f:entry>
 
-  <f:entry title="Path to Uploaded file" help="${rootHelpURL}/help-path.html">
-    <f:textbox name="${pbl_id}.pblupload.path" value="${instance.path}" 
-     checkUrl="'${rootURL}/publisher/PblUploader/requiredInterpretedCheck?' +
-       'name=path&amp;value=' + escape(this.value)" />
+  <f:entry title="Path to Uploaded file" field="path">
+    <f:textbox />
     <table>
-      <f:optionalBlock name="${pbl_id}.pblupload.preserve" 
-       checked="${instance.preserveLocal}" 
-       title="Preserve Local Directory Structure">
-        <f:entry title="Remove Prefix" 
-         help="${rootHelpURL}/help-path-ignore.html">
-          <f:textbox name="pblupload.remove_prefix_regex" 
-           value="${instance.removePrefixRegex}" 
-           checkUrl="'${rootURL}/publisher/PblUploader/regexPrefixCheck?' +
-             'value='+escape(this.value)" />    
+      <f:optionalBlock field="preserveLocal" title="Preserve Local Directory Structure">
+        <f:entry title="Remove Prefix" field="removePrefixRegex">
+          <f:textbox />
         </f:entry>
       </f:optionalBlock>
     </table>
   </f:entry>
 
-  <f:entry title="Overwrite existing files?" 
-   help="${rootHelpURL}/help-force.html">
-    <span>
-      <f:radio name="${pbl_id}.pblupload.force" id="true" title="True" 
-       value="true" checked="${instance.getForce()==true}">
-      </f:radio>
-      <label for="true">Yes</label>
-      <f:radio name="${pbl_id}.pblupload.force" id="false" title="False" 
-       value="false" checked="${instance.getForce()!=true}">
-      </f:radio>
-      <label for="false">No</label>
-    </span>
+  <f:entry title="Overwrite existing files?" field="force">
+    <f:booleanRadio />
   </f:entry>
 
-  <f:entry title="Description" help="${rootHelpURL}/help-description.html">
-    <f:textbox name="${pbl_id}.pblupload.description" value="${instance.description}" 
-      checkUrl="'${rootURL}/publisher/PblUploader/' +
-        'unRequiredInterpretedCheck?value='+escape(this.value)" />
+  <f:entry title="Description" field="description">
+    <f:textbox />
   </f:entry>
 
-  <f:entry title="Comment (optional)" help="${rootHelpURL}/help-comment.html">
-    <f:textbox name="${pbl_id}.pblupload.comment" value="${instance.comment}" 
-      checkUrl="'${rootURL}/publisher/PblUploader/' +
-        'unRequiredInterpretedCheck?value='+escape(this.value)" />
+  <f:entry title="Comment (optional)" field="comment">
+    <f:textbox />
   </f:entry>
 
 </j:jelly>

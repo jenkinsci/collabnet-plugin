@@ -522,10 +522,7 @@ public abstract class CNFormFieldValidator {
      * login.  Expects a StaplerRequest with value (key), hostURL, and user
      * set.
      */
-    public static FormValidation cubitKeyCheck(StaplerRequest request) {
-        String key = request.getParameter("value");
-        String hostURL = request.getParameter("hostURL");
-        String user = request.getParameter("user");
+    public static FormValidation cubitKeyCheck(String hostUrl, String user, String key) {
         if (CommonUtil.unset(key)) {
             return FormValidation.error("The user API key is required.");
         }
@@ -542,10 +539,10 @@ public abstract class CNFormFieldValidator {
                 return FormValidation.error("The key's format is invalid.");
             }
         }
-        if (!CommonUtil.unset(hostURL) && !CommonUtil.unset(user)) {
+        if (!CommonUtil.unset(hostUrl) && !CommonUtil.unset(user)) {
             boolean success;
             try {
-                success = signedStatus(hostURL, user, key);
+                success = signedStatus(hostUrl, user, key);
             } catch (IllegalArgumentException iae) {
                 // failure
                 success = false;

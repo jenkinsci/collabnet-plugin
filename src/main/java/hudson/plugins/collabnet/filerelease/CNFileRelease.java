@@ -16,8 +16,6 @@ import hudson.plugins.collabnet.documentuploader.FilePattern;
 import hudson.plugins.collabnet.util.CNFormFieldValidator;
 import hudson.plugins.collabnet.util.CNHudsonUtil;
 import hudson.plugins.collabnet.util.ComboBoxUpdater;
-import hudson.plugins.collabnet.util.CommonUtil;
-import hudson.plugins.promoted_builds.Promotion;
 import hudson.remoting.VirtualChannel;
 import hudson.tasks.BuildStepMonitor;
 import hudson.util.ComboBoxModel;
@@ -251,9 +249,7 @@ public class CNFileRelease extends AbstractTeamForgeNotifier {
         for (FilePattern uninterp_fp : this.getFilePatterns()) {
             String file_pattern;
             try {
-                // TODO: this handling and FilePattern.interpret are inconsistent.
-                // probably it should be adjusted.
-                file_pattern = getInterpreted(build, uninterp_fp.value);
+                file_pattern = uninterp_fp.interpret(build, listener);
             } catch (IllegalArgumentException e) {
                 this.logConsole("File pattern " + uninterp_fp + " contained a bad "
                          + "env var.  Skipping.");
@@ -490,35 +486,6 @@ public class CNFileRelease extends AbstractTeamForgeNotifier {
         }
         return CNHudsonUtil.getReleaseId(this.cna, packageId, 
                                          this.getRelease());
-    }
-
-    /**
-     * Translates a string that may contain  build vars like ${BUILD_VAR} to
-     * a string with those vars interpreted.
-     * 
-     * @param build the Hudson build.
-     * @param str the string to be interpreted.
-     * @return the interpreted string.
-     * @throws IllegalArgumentException if the env var is not found.
-     */
-    private String getInterpreted(AbstractBuild<?, ?> build, String str)
-            throws IOException, InterruptedException {
-        Map<String, String> envVars;
-        if (Hudson.getInstance().getPlugin("promoted-builds") != null
-            && build.getClass().equals(Promotion.class)) {
-            // if this is a promoted build, get the env vars from
-            // the original build
-            Promotion promotion = Promotion.class.cast(build);
-            envVars = promotion.getTarget().getEnvironment(TaskListener.NULL);
-        } else {
-            envVars = build.getEnvironment(TaskListener.NULL);
-        }
-        try {
-            return CommonUtil.getInterpreted(envVars, str);
-        } catch (IllegalArgumentException iae) {
-            this.logConsole(iae.getMessage());
-            throw iae;
-        }
     }
 
     /**
