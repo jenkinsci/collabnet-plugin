@@ -1,7 +1,6 @@
 package hudson.plugins.collabnet.auth;
 
 import hudson.Extension;
-import hudson.Util;
 import hudson.model.AbstractProject;
 import hudson.model.AbstractItem;
 import hudson.model.Computer;
@@ -197,31 +196,12 @@ public class CNAuthorizationStrategy extends AuthorizationStrategy {
         // we require for authorization to work correctly
         public static String GOOD_VERSION = "5.2.0.0";
 
-        public DescriptorImpl() {
-            super(CNAuthorizationStrategy.class);
-        }
-
         /**
          * @return string to display for configuration screen.
          */
         @Override
         public String getDisplayName() {
             return "CollabNet Authorization";
-        }
-
-        /**
-         * @return the path to the help files.
-         */
-        public static String getHelpUrl() {
-            return "/plugin/collabnet/auth/";
-        }
-
-        /**
-         * @return the path to the help file.
-         */
-        @Override
-        public String getHelpFile() {
-            return getHelpUrl() + "help-authStrategy.html";
         }
 
         /**
@@ -310,7 +290,7 @@ public class CNAuthorizationStrategy extends AuthorizationStrategy {
          * Check that the timeout number is greater than or equal to 0
          * @param value the timeout to be checked
          */
-        public FormValidation doTimeoutCheck(@QueryParameter String value) {
+        public FormValidation doCheckAuthCacheTimeoutMin(@QueryParameter String value) {
             return CNFormFieldValidator.numberCheck(value, true, true, false);
         }
     }

@@ -38,10 +38,8 @@
 
   </script>
 
-  <f:entry title="Authorization Timeout (min)" help="${rootHelpURL}/help-authCacheTimeout.html">
-    <f:textbox name="cnas.authCacheTimeoutMin"
-      value="${h.defaulted(instance.getAuthCacheTimeoutMin(), '5')}"
-      checkUrl="'${checkURL}/timeoutCheck?value=' + escape(this.value)" />
+  <f:entry title="Authorization Timeout (min)" field="authCacheTimeoutMin">
+    <f:textbox default="5" />
   </f:entry>
 
   <f:entry title="Hudson Admin Users" field="adminUsersStr">
