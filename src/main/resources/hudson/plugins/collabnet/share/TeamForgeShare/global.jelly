@@ -3,6 +3,6 @@
  xmlns:c="/hudson/plugins/collabnet/tags">
 
   <f:section title="Global CollabNet Configuration">
-    <c:optionalProperty field="connectionFactory" title="Allow Global CollabNet Configuration"/>
+    <f:optionalProperty field="connectionFactory" title="Allow Global CollabNet Configuration"/>
   </f:section>
 </j:jelly>
