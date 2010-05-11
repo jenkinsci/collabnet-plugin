@@ -40,7 +40,7 @@ public class CNAuthorizationStrategy extends AuthorizationStrategy {
     private Collection<String> adminUsers;
     private Collection<String> adminGroups;
     private int mAuthCacheTimeoutMin;
-    private ACL rootACL;
+    private volatile ACL rootACL;
 
     private static Logger log = Logger.getLogger("CNAuthorizationStrategy");
 
@@ -117,7 +117,7 @@ public class CNAuthorizationStrategy extends AuthorizationStrategy {
      * @return number of ms
      */
     public long getAuthCacheTimeoutMs() {
-        return (long) (getAuthCacheTimeoutMin() * (60 * 1000));
+        return getAuthCacheTimeoutMin() * (60L * 1000);
     }
 
     /**
@@ -264,9 +264,8 @@ public class CNAuthorizationStrategy extends AuthorizationStrategy {
          * Check whether the "incorrect version" msg should be displayed, 
          * and returns what the currently configured version is, in a json.
          */
-        public void doVersionCheck(StaplerRequest req, StaplerResponse rsp) 
+        public void doVersionCheck(StaplerRequest req, StaplerResponse rsp, @QueryParameter String url)
             throws IOException {
-            String url = req.getParameter("url");
             rsp.setContentType("text/plain;charset=UTF-8");
             JSONObject versionJSON = new JSONObject();
             String error_display_style = "none";
