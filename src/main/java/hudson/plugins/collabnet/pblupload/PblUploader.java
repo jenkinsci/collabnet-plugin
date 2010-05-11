@@ -63,7 +63,7 @@ public class PblUploader extends Notifier implements java.io.Serializable {
      * @param project to upload files to
      * @param pubOrPriv whether these files should be in the pub (public)
      *                  or priv (private) directory.
-     * @param file_patterns matching local files that should be uploaded.
+     * @param filePatterns matching local files that should be uploaded.
      * @param path one the Cubit host where the files will be uploaded.
      * @param preserveLocal if true, local directory structure will be copied
      *                      to the server.
@@ -74,7 +74,7 @@ public class PblUploader extends Notifier implements java.io.Serializable {
      */
     @DataBoundConstructor
     public PblUploader(String hostUrl, String user, String key, String project,
-                       boolean pubOrPriv, FilePattern[] file_patterns, String path,
+                       boolean pubOrPriv, FilePattern[] filePatterns, String path,
                        boolean preserveLocal, boolean force, String comment, 
                        String description, String removePrefixRegex) {
         this.hostUrl = hostUrl;
@@ -84,7 +84,7 @@ public class PblUploader extends Notifier implements java.io.Serializable {
         this.key = key.trim().toLowerCase();
         this.project = project;
         this.pubOrPriv = pubOrPriv?"pub":"priv";
-        this.file_patterns = file_patterns;
+        this.file_patterns = filePatterns;
         this.path = path;
         this.preserveLocal = preserveLocal;
         this.force = force;

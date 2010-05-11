@@ -50,7 +50,7 @@
   <f:entry title="Path to Uploaded file" field="path">
     <f:textbox />
     <table>
-      <f:optionalBlock field="preserveLocal" title="Preserve Local Directory Structure">
+      <f:optionalBlock field="preserveLocal" title="Preserve Local Directory Structure" inline="true">
         <f:entry title="Remove Prefix" field="removePrefixRegex">
           <f:textbox />
         </f:entry>
