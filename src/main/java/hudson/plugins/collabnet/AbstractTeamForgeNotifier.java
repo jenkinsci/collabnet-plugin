@@ -92,6 +92,13 @@ public abstract class AbstractTeamForgeNotifier extends Notifier {
     }
 
     /**
+     * Connects to the TeamForge.
+     */
+    public CollabNetApp connect() {
+        return CNHudsonUtil.getCollabNetApp(getCollabNetUrl(),getUsername(),getPassword());
+    }
+
+    /**
      * @return the project where the build log is uploaded.
      */
     public String getProject() {

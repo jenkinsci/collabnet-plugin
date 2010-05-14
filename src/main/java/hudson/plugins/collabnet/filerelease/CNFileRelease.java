@@ -27,7 +27,6 @@ import javax.activation.MimetypesFileTypeMap;
 import java.io.File;
 import java.io.IOException;
 import java.rmi.RemoteException;
-import java.util.Map;
 
 
 /**
@@ -157,9 +156,7 @@ public class CNFileRelease extends AbstractTeamForgeNotifier {
     public boolean perform(AbstractBuild<?, ?> build, Launcher launcher, 
                            BuildListener listener) throws IOException, InterruptedException {
         this.setupLogging(listener);
-        this.cna = CNHudsonUtil.getCollabNetApp(this.getCollabNetUrl(), 
-                                                this.getUsername(), 
-                                                this.getPassword());
+        this.cna = connect();
         if (this.cna == null) {
             this.logConsole("Critical Error: login to " + this.getCollabNetUrl() +
                      " failed.  Setting build status to UNSTABLE (or worse).");

@@ -41,14 +41,13 @@ public class FileStorageApp extends AbstractSoapApp {
      * Upload a file to the server.
      *
      * @param file to upload.
-     * @return the fileId associatd with the uploaded file.
+     * @return the fileId associated with the uploaded file.
      * @throws RemoteException if something fails
      */
     public String uploadFile(File file) throws RemoteException {
-        String fileId = null;
         FileDataSource fds = new FileDataSource(file);
         DataHandler dh = new DataHandler(fds);
-        fileId = this.ifsa.uploadFile(this.getSessionId(), dh);
+        String fileId = this.ifsa.uploadFile(this.getSessionId(), dh);
         return fileId;
     }
 }

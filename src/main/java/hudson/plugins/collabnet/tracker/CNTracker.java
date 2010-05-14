@@ -195,9 +195,7 @@ public class CNTracker extends AbstractTeamForgeNotifier {
                            BuildListener listener) 
         throws InterruptedException, IOException {
         this.setupLogging(listener);
-        this.cna = CNHudsonUtil.getCollabNetApp(this.getCollabNetUrl(),
-                                                this.getUsername(),
-                                                this.getPassword());
+        this.cna = connect();
         if (this.cna == null) {
             this.log("Critical Error: login to " + this.getCollabNetUrl() +
                      " failed.  Setting build status to UNSTABLE (or worse).");
