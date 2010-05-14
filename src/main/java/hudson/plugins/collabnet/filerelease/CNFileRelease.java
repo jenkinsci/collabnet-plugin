@@ -504,8 +504,8 @@ public class CNFileRelease extends AbstractTeamForgeNotifier {
          *
          * @return the form validation
          */
-        public FormValidation doCheckPkg(CollabNetApp cna, @QueryParameter String project, @QueryParameter("package") String rpackage) {
-            return CNFormFieldValidator.packageCheck(cna,project,rpackage);
+        public FormValidation doCheckPkg(CollabNetApp cna, @QueryParameter String project, @QueryParameter String pkg) {
+            return CNFormFieldValidator.packageCheck(cna,project,pkg);
         }
 
         /**
@@ -514,8 +514,8 @@ public class CNFileRelease extends AbstractTeamForgeNotifier {
          * @return the form validation
          */
         public FormValidation doCheckRelease(CollabNetApp cna, @QueryParameter String project,
-                                @QueryParameter("package") String rpackage, @QueryParameter String release) {
-            return CNFormFieldValidator.releaseCheck(cna,project,rpackage,release,true);
+                                @QueryParameter String pkg, @QueryParameter String release) {
+            return CNFormFieldValidator.releaseCheck(cna,project,pkg,release,true);
         }
 
         /**
