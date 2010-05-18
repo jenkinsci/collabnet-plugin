@@ -42,5 +42,5 @@ public class CNChangeLogAnnotator extends ChangeLogAnnotator {
         return getTeamForgeShareDescriptor().getCollabNetUrl();
     }
 
-    private static final Pattern OBJECT_IDS = Pattern.compile("\\b(artf|doc|page|topc|wiki)[0-9]{4,8}\\b");
+    private static final Pattern OBJECT_IDS = Pattern.compile("\\b(cmmt|doc|frs|news|post|report|task|forum|pkg|rel|docr|docf|topc|tracker|user|proj|reps|taskgrp|wiki|page|srch|plan|artf)[0-9]{4,}(#\\d+)?\\b");
 }

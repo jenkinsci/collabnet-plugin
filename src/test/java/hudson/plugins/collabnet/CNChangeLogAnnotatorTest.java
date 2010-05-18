@@ -1,6 +1,5 @@
 package hudson.plugins.collabnet;
 
-import com.gargoylesoftware.htmlunit.html.HtmlPage;
 import hudson.model.FreeStyleBuild;
 import hudson.model.FreeStyleProject;
 import hudson.scm.ChangeLogSet.Entry;
