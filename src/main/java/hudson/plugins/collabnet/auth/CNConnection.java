@@ -16,6 +16,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.logging.Logger;
 
+import hudson.util.VersionNumber;
 import org.acegisecurity.Authentication;
 import org.acegisecurity.GrantedAuthority;
 
@@ -76,24 +77,22 @@ public class CNConnection {
      * @param url for CollabNet server
      * @return the CollabNet version for the given url.
      */
-    public static CNVersion getVersion(String url) {
-        String version = null;
-        CNVersion cnversion = null;
+    public static VersionNumber getVersion(String url) {
+        String version;
         try {
             version = CollabNetApp.getApiVersion(url);
         } catch (RemoteException re) {
             log.info("getVersion: failed with RemoteException: " + 
                      re.getMessage());
-            return cnversion;
+            return null;
         }
         try {
-            cnversion = new CNVersion(version);
+            return new VersionNumber(version);
         } catch (IllegalArgumentException iae) {
             log.severe("getVersion: unexpected error when attempting to " +
                        "parse CollabNet version: " + iae.getMessage());
-            return cnversion;
+            return null;
         }
-        return cnversion;
     }
 
     /**

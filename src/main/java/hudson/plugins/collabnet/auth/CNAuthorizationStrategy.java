@@ -19,6 +19,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.logging.Logger;
 
+import hudson.util.VersionNumber;
 import net.sf.json.JSONObject;
 
 import org.kohsuke.stapler.DataBoundConstructor;
@@ -219,7 +220,7 @@ public class CNAuthorizationStrategy extends AuthorizationStrategy {
          * @param url for the CollabNet server.
          * @return the CollabNet version number.
          */
-        public static CNVersion getVersion(String url) {
+        public static VersionNumber getVersion(String url) {
             if (url == null) {
                 return null;
             }
@@ -231,12 +232,12 @@ public class CNAuthorizationStrategy extends AuthorizationStrategy {
          *         that using this AuthorizationStrategy is effective.
          */
         public static boolean isGoodCNVersion(String url) {
-            CNVersion version = getVersion(url);
+            VersionNumber version = getVersion(url);
             if (version == null) {
                 // we can't check, so we'll assume it's ok.
                 return true;
             }
-            CNVersion desiredVersion = new CNVersion(GOOD_VERSION);
+            VersionNumber desiredVersion = new VersionNumber(GOOD_VERSION);
             return version.compareTo(desiredVersion) >= 0;
         }
 
@@ -253,9 +254,9 @@ public class CNAuthorizationStrategy extends AuthorizationStrategy {
                 error_display_style = "inline";
             }
             versionJSON.element("error_display_style", error_display_style);
-            CNVersion version = getVersion(url);
+            VersionNumber version = getVersion(url);
             if (version != null) {
-                versionJSON.element("version", getVersion(url).toString());
+                versionJSON.element("version", version.toString());
             } else {
                 versionJSON.element("version", "unknown");
             }
