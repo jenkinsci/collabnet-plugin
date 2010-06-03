@@ -322,6 +322,8 @@ public abstract class CNFormFieldValidator {
         String project = request.getParameter("project");
         String repoName = request.getParameter("repo");
         CollabNetApp cna = CNHudsonUtil.getCollabNetApp(request);
+        if (cna==null)  return FormValidation.ok();
+
         try {
             CTFProject p = cna.getProjectByTitle(project);
             if (CommonUtil.unset(repoName)) {

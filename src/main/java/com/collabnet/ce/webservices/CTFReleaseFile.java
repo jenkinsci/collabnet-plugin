@@ -58,6 +58,6 @@ public class CTFReleaseFile extends CTFItem {
     }
 
     public void delete() throws RemoteException {
-        app.ifrs.deleteFrsFile(app.getSessionId(),getId());
+        app.getFrsAppSoap().deleteFrsFile(app.getSessionId(),getId());
     }
 }

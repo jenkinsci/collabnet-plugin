@@ -29,7 +29,7 @@ public class CTFRelease extends CTFFolder {
     }
 
     public void delete() throws RemoteException {
-        app.ifrs.deleteRelease(app.getSessionId(),getId());
+        app.getFrsAppSoap().deleteRelease(app.getSessionId(),getId());
     }
 
     public CTFReleaseFile getFileByTitle(String title) throws RemoteException {
@@ -41,7 +41,7 @@ public class CTFRelease extends CTFFolder {
 
     public List<CTFReleaseFile> getFiles() throws RemoteException {
         List<CTFReleaseFile> r = new ArrayList<CTFReleaseFile>();
-        for (FrsFileSoapRow row : app.ifrs.getFrsFileList(app.getSessionId(),getId()).getDataRows()) {
+        for (FrsFileSoapRow row : app.getFrsAppSoap().getFrsFileList(app.getSessionId(),getId()).getDataRows()) {
             r.add(new CTFReleaseFile(this,row));
         }
         return r;
@@ -49,7 +49,7 @@ public class CTFRelease extends CTFFolder {
 
     public CTFReleaseFile addFile(String fileName, String mimeType, CTFFile file)
         throws RemoteException {
-        return new CTFReleaseFile(this,app.ifrs.createFrsFile(app.getSessionId(), getId(), fileName, mimeType, file.getId()));
+        return new CTFReleaseFile(this,app.getFrsAppSoap().createFrsFile(app.getSessionId(), getId(), fileName, mimeType, file.getId()));
     }
 
 }

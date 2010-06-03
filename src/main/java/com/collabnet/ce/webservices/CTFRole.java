@@ -43,7 +43,7 @@ public class CTFRole extends CTFObject implements ObjectWithTitle {
     public CTFList<CTFUser> getMembers() throws RemoteException {
         CTFList<CTFUser> r = new CTFList<CTFUser>();
         for (UserSoapRow row : app.getRbacAppSoap().getRoleMemberList(app.getSessionId(),getId()).getDataRows()) {
-            r.add(new CTFUser(row));
+            r.add(new CTFUser(app,row));
         }
         return r;
     }

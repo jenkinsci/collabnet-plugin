@@ -24,11 +24,11 @@ public class CTFPackage extends CTFFolder {
      * Deletes this package.
      */
     public void delete() throws RemoteException {
-        app.ifrs.deletePackage(app.getSessionId(),getId());
+        app.getFrsAppSoap().deletePackage(app.getSessionId(),getId());
     }
 
     public CTFRelease createRelease(String title, String description, String status, String maturity) throws RemoteException {
-        return new CTFRelease(this,app.ifrs.createRelease(app.getSessionId(),getId(),title,description,status,maturity));
+        return new CTFRelease(this,app.getFrsAppSoap().createRelease(app.getSessionId(),getId(),title,description,status,maturity));
     }
 
     /**
@@ -43,7 +43,7 @@ public class CTFPackage extends CTFFolder {
 
     public List<CTFRelease> getReleases() throws RemoteException {
         List<CTFRelease> r = new ArrayList<CTFRelease>();
-        for (ReleaseSoapRow row : app.ifrs.getReleaseList(app.getSessionId(), getId()).getDataRows()) {
+        for (ReleaseSoapRow row : app.getFrsAppSoap().getReleaseList(app.getSessionId(), getId()).getDataRows()) {
             r.add(new CTFRelease(this,row));
         }
         return r;
