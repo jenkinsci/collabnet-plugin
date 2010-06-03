@@ -1,5 +1,7 @@
 package hudson.plugins.collabnet.auth;
 
+import com.collabnet.ce.webservices.CTFList;
+import com.collabnet.ce.webservices.CTFRole;
 import hudson.model.AbstractProject;
 import hudson.model.Hudson;
 import hudson.model.Item;
@@ -72,10 +74,10 @@ public class CNProjectACL extends ACL {
          * @param userRoleSet names of roles to match
          * @return a collection of hudson roles with names that exist in user role set
          */
-        public static Collection<CollabNetRole> getMatchingRoles(Set<String> userRoleSet) {
+        public static Collection<CollabNetRole> getMatchingRoles(CTFList<CTFRole> userRoleSet) {
             Collection<CollabNetRole> matchRoles = new ArrayList<CollabNetRole>();
             for (CollabNetRole role : getAllRoles()) {
-                if (userRoleSet.contains(role.getName())) {
+                if (userRoleSet.getTitles().contains(role.getName())) {
                     matchRoles.add(role);
                 }
             }

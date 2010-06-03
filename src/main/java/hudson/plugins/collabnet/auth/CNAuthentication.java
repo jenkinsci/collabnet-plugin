@@ -1,5 +1,6 @@
 package hudson.plugins.collabnet.auth;
 
+import com.collabnet.ce.webservices.CTFProject;
 import com.collabnet.ce.webservices.CollabNetApp;
 import hudson.security.Permission;
 import org.acegisecurity.Authentication;

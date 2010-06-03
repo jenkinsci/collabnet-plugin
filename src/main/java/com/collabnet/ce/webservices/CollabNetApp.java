@@ -16,6 +16,7 @@ import com.collabnet.ce.soap50.webservices.cemain.UserSoapRow;
 import com.collabnet.ce.soap50.webservices.docman.IDocumentAppSoap;
 import com.collabnet.ce.soap50.webservices.filestorage.IFileStorageAppSoap;
 import com.collabnet.ce.soap50.webservices.frs.IFrsAppSoap;
+import com.collabnet.ce.soap50.webservices.rbac.IRbacAppSoap;
 import com.collabnet.ce.soap50.webservices.scm.IScmAppSoap;
 import com.collabnet.ce.soap50.webservices.tracker.ITrackerAppSoap;
 import hudson.plugins.collabnet.share.TeamForgeShare;
@@ -47,12 +48,13 @@ public class CollabNetApp {
     private String sessionId;
     private String username;
     private String url;
-    protected ICollabNetSoap icns;
-    protected IFrsAppSoap ifrs;
-    protected IFileStorageAppSoap ifsa;
+    protected final ICollabNetSoap icns;
+    private volatile IFrsAppSoap ifrs;
+    private volatile IFileStorageAppSoap ifsa;
     private volatile ITrackerAppSoap itas;
     private volatile IDocumentAppSoap idas;
     private volatile IScmAppSoap isas;
+    private volatile IRbacAppSoap iras;
 
     /**
      * Creates a new session to the server at the given url.
@@ -99,11 +101,6 @@ public class CollabNetApp {
     public CollabNetApp(String url) {
         this.url = url;
         this.icns = this.getICollabNetSoap();
-        this.ifrs = (IFrsAppSoap) ClientSoapStubFactory.
-                    getSoapStub(IFrsAppSoap.class, this.getServerUrl() + SOAP_SERVICE + "FrsApp?wsdl");
-        this.ifsa = (IFileStorageAppSoap) ClientSoapStubFactory.
-                    getSoapStub(IFileStorageAppSoap.class, this.getServerUrl() + SOAP_SERVICE + "FileStorageApp?wsdl");
-
     }
 
     private <T> T createProxy(Class<T> type, String wsdlLoc) {
@@ -127,6 +124,24 @@ public class CollabNetApp {
         if (isas==null)
             isas = createProxy(IScmAppSoap.class, "ScmApp");
         return isas;
+    }
+
+    protected IRbacAppSoap getRbacAppSoap() {
+        if (iras==null)
+            iras = createProxy(IRbacAppSoap.class, "RbacApp");
+        return iras;
+    }
+
+    protected IFrsAppSoap getFrsAppSoap() {
+        if (ifrs==null)
+            ifrs = createProxy(IFrsAppSoap.class, "FrsApp");
+        return ifrs;
+    }
+
+    protected IFileStorageAppSoap getFileStorageAppSoap() {
+        if (ifsa==null)
+            ifsa = createProxy(IFileStorageAppSoap.class, "FileStorageApp");
+        return ifsa;
     }
 
     /**
@@ -204,7 +219,7 @@ public class CollabNetApp {
     }
 
     public CTFFile upload(DataHandler src) throws RemoteException {
-        return new CTFFile(this,this.ifsa.uploadFile(getSessionId(),src));
+        return new CTFFile(this,this.getFileStorageAppSoap().uploadFile(getSessionId(),src));
     }
 
     /**

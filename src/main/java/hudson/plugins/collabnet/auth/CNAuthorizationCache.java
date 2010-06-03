@@ -1,14 +1,19 @@
 package hudson.plugins.collabnet.auth;
 
+import com.collabnet.ce.webservices.CTFList;
+import com.collabnet.ce.webservices.CTFRole;
 import hudson.model.Hudson;
 import hudson.security.AuthorizationStrategy;
 import hudson.security.Permission;
 
+import java.rmi.RemoteException;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Authorization cache.
@@ -40,8 +45,6 @@ public class CNAuthorizationCache {
 
     /**
      * Get a user's permission available for a given project.
-     * @param username the username
-     * @param projectId the project id
      * @return set containing all of the user's permissions
      */
     public synchronized Set<Permission> getUserProjectPermSet(String username, String projectId) {
@@ -51,15 +54,22 @@ public class CNAuthorizationCache {
         String cacheKey = projectId + ":" + username;
         Set<Permission> userPermSet = mPermSetMap.get(cacheKey);
         if (userPermSet == null) {
-            CNConnection conn = CNConnection.getInstance();
-            Set<String> roleNameSet = new HashSet<String>(conn.getUserRoles(projectId, username));
-            Collection<CollabNetRole> userRoles = CNProjectACL.CollabNetRoles.getMatchingRoles(roleNameSet);
             userPermSet = new HashSet<Permission>();
-            for (CollabNetRole role : userRoles) {
-                userPermSet.addAll(role.getPermissions());
+            try {
+                CNConnection conn = CNConnection.getInstance();
+                CTFList<CTFRole> roleNameSet = conn.getCollabNetApp().getProjectById(projectId).getUserRoles(username);
+                Collection<CollabNetRole> userRoles = CNProjectACL.CollabNetRoles.getMatchingRoles(roleNameSet);
+                for (CollabNetRole role : userRoles) {
+                    userPermSet.addAll(role.getPermissions());
+                }
+            } catch (RemoteException e) {
+                LOGGER.log(Level.WARNING, "Failed to retrieve permissions for the user "+username+" on "+projectId);
+                // fall back to zero permission
             }
             mPermSetMap.put(cacheKey, userPermSet);
         }
         return userPermSet;
     }
+
+    private static final Logger LOGGER = Logger.getLogger(CNAuthorizationCache.class.getName());
 }

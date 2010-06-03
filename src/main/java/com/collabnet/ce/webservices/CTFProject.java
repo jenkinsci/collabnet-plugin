@@ -6,6 +6,8 @@ import com.collabnet.ce.soap50.webservices.cemain.ProjectSoapRow;
 import com.collabnet.ce.soap50.webservices.docman.DocumentFolderSoapList;
 import com.collabnet.ce.soap50.webservices.docman.DocumentFolderSoapRow;
 import com.collabnet.ce.soap50.webservices.frs.PackageSoapRow;
+import com.collabnet.ce.soap50.webservices.rbac.RoleSoapList;
+import com.collabnet.ce.soap50.webservices.rbac.RoleSoapRow;
 import com.collabnet.ce.soap50.webservices.scm.RepositorySoapRow;
 import com.collabnet.ce.soap50.webservices.tracker.TrackerSoapRow;
 
@@ -44,7 +46,7 @@ public class CTFProject extends CTFObject implements ObjectWithTitle {
      *      Whether the package should be published
      */
     public CTFPackage createPackage(String title, String description, boolean isPublished) throws RemoteException {
-        return new CTFPackage(this, app.ifrs.createPackage(app.getSessionId(), getId(), title, description, isPublished));
+        return new CTFPackage(this, app.getFrsAppSoap().createPackage(app.getSessionId(), getId(), title, description, isPublished));
     }
 
     /**
@@ -56,7 +58,7 @@ public class CTFProject extends CTFObject implements ObjectWithTitle {
 
     public List<CTFPackage> getPackages() throws RemoteException {
         List<CTFPackage> r = new ArrayList<CTFPackage>();
-        for (PackageSoapRow row : app.ifrs.getPackageList(app.getSessionId(), getId()).getDataRows()) {
+        for (PackageSoapRow row : app.getFrsAppSoap().getPackageList(app.getSessionId(), getId()).getDataRows()) {
             r.add(new CTFPackage(this,row));
         }
         return r;
@@ -115,6 +117,36 @@ public class CTFProject extends CTFObject implements ObjectWithTitle {
                 return true;
         }
         return false;
+    }
+
+    /**
+     * Roles in this project.
+     */
+    public CTFList<CTFRole> getRoles() throws RemoteException {
+        return toRoleList(app.getRbacAppSoap().getRoleList(app.getSessionId(), getId()));
+    }
+
+    public CTFRole createRole(String title, String description) throws RemoteException {
+        return new CTFRole(this,app.getRbacAppSoap().createRole(app.getSessionId(),getId(),title,description));
+    }
+
+    public CTFList<CTFRole> getUserRoles(CTFUser u) throws RemoteException {
+        return getUserRoles(u.getUserName());
+    }
+
+    /**
+     * Gets all the roles that the given user has in this project.
+     */
+    public CTFList<CTFRole> getUserRoles(String username) throws RemoteException {
+        return toRoleList(app.getRbacAppSoap().getUserRoleList(app.getSessionId(),getId(),username));
+    }
+
+    private CTFList<CTFRole> toRoleList(RoleSoapList roles) {
+        CTFList<CTFRole> r = new CTFList<CTFRole>();
+        for (RoleSoapRow row : roles.getDataRows()) {
+            r.add(new CTFRole(this,row));
+        }
+        return r;
     }
 
     public CTFDocumentFolder getRootFolder() throws RemoteException {

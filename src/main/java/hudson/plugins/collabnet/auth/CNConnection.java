@@ -1,27 +1,24 @@
 package hudson.plugins.collabnet.auth;
 
+import com.collabnet.ce.webservices.CTFList;
+import com.collabnet.ce.webservices.CTFProject;
+import com.collabnet.ce.webservices.CTFRole;
+import com.collabnet.ce.webservices.CTFUser;
+import com.collabnet.ce.webservices.CollabNetApp;
 import hudson.model.Hudson;
-
 import hudson.plugins.collabnet.util.CNHudsonUtil;
 import hudson.plugins.collabnet.util.ComboBoxUpdater;
-
-import java.rmi.RemoteException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.logging.Logger;
-
 import hudson.util.VersionNumber;
 import org.acegisecurity.Authentication;
 import org.acegisecurity.GrantedAuthority;
 
-import com.collabnet.ce.webservices.CollabNetApp;
-import com.collabnet.ce.webservices.RbacApp;
+import java.rmi.RemoteException;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.logging.Logger;
 
 /**
  * CNConnection encapsulates the CN webservice methods.
@@ -32,9 +29,6 @@ public class CNConnection {
 
     private static Logger log = Logger.getLogger("CNConnection");
 
-    /**
-     * @param authentication
-     */
     private CNConnection(CNAuthentication a) {
         this.auth = a;
     }
@@ -195,24 +189,6 @@ public class CNConnection {
 
     /**
      * @param projectId
-     * @param username
-     * @return a Collection of roles the user has in this project.
-     */
-    public Collection<String> getUserRoles(String projectId, String username) {
-        Collection<String> roles = new ArrayList<String>();
-        RbacApp ra = new RbacApp(this.getCollabNetApp());
-        try {
-            roles = ra.getUserRoles(projectId, username);
-        } catch (RemoteException re) {
-            log.severe("getUserRoles: failed with Remote Exception while " +
-                       "getting roles for user " + username + ": " + 
-                       re.getMessage());
-        }
-        return roles;
-    }
-
-    /**
-     * @param projectId
      * @return a Collection of all users that are members of the project.
      */
     public Collection<String> getUsers(String projectId) {
@@ -263,15 +239,17 @@ public class CNConnection {
      * @param descriptions of the roles.
      */
     public boolean addRoles(String projectId, List<String> roleNames, 
-                            List<String> descriptions) {
+                            List<String> descriptions) throws RemoteException {
         boolean added = false;
-        RbacApp ra = new RbacApp(this.getCollabNetApp());
-        try {
-            added = ra.addRoles(projectId, roleNames.toArray(new String[0]), 
-                                descriptions.toArray(new String[0]));
-        } catch (RemoteException re) {
-            log.severe("addRoles: failed with RemoteException: " + 
-                       re.getMessage());
+        CTFProject p = this.getCollabNetApp().getProjectById(projectId);
+        CTFList<CTFRole> roles = p.getRoles();
+        for (int i = 0; i < roleNames.size(); i++) {
+            String name = roleNames.get(i);
+            String description = descriptions.get(i);
+            if (roles.byTitle(name)==null) {
+                added = true;
+                p.createRole(name,description);
+            }
         }
         return added;
     }
@@ -279,42 +257,30 @@ public class CNConnection {
     /**
      * Grant the specified roles to the users in the given project.
      *
-     * @param projectId
      * @param roles
      * @param usernames
      */
-    public void grantRoles(String projectId, Collection<String> roles, 
-                           Collection<String> usernames) {
-        if (usernames.size() > 0) {
-            RbacApp ra = new RbacApp(this.getCollabNetApp());
-            Map<String, String> roleNameToIdMap;
-            try {
-                roleNameToIdMap = ra.getRoles(projectId);
-            } catch (RemoteException e) {
-                roleNameToIdMap = new HashMap<String, String>();
-            }
+    public void grantRoles(CTFProject p, Collection<String> roles,
+                           Collection<String> usernames) throws RemoteException {
+        if (usernames.size()==0)
+            return;
 
-            for (String roleName : roles) {
-                String roleId = roleNameToIdMap.get(roleName);
-                // figure out which users already belongs to the role
-                Set<String> alreadyMemberSet = new HashSet<String>();
-                Collection<String> roleMembers;
-                try {
-                    roleMembers = ra.getRoleMembers(roleId);
-                } catch (RemoteException e) {
-                    roleMembers = new ArrayList<String>();
-                }
-                alreadyMemberSet.addAll(roleMembers);
+        CTFList<CTFRole> existingRoles = p.getRoles();
 
-                // now iterate through username collection and grant role only to users without role
-                for (String username: usernames) {
-                    if (!alreadyMemberSet.contains(username)) {
-                        try {
-                            ra.grantRole(roleId, username);
-                        } catch (RemoteException re) {
-                            log.severe("grantRoles: failed with RemoteException: " +
-                                re.getMessage());
-                        }
+        for (String roleName : roles) {
+            CTFRole role = existingRoles.byTitle(roleName);
+            // figure out which users already belongs to the role
+            CTFList<CTFUser> roleMembers = role.getMembers();
+            Set<String> alreadyMemberSet = new HashSet<String>(roleMembers.getTitles());
+
+            // now iterate through username collection and grant role only to users without role
+            for (String username: usernames) {
+                if (!alreadyMemberSet.contains(username)) {
+                    try {
+                        role.grant(username);
+                    } catch (RemoteException re) {
+                        log.severe("grantRoles: failed with RemoteException: " +
+                            re.getMessage());
                     }
                 }
             }
