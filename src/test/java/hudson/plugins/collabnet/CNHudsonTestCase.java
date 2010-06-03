@@ -16,6 +16,26 @@ import java.util.concurrent.Callable;
  * @author Kohsuke Kawaguchi
  */
 public abstract class CNHudsonTestCase extends HudsonTestCase {
+    protected final String CN_URL = System.getProperty("teamforge_url");
+    // this user needs access to the project and access to the projects
+    // document creation/view
+    protected final String TEST_USER = System.getProperty("admin_user");
+    protected final String TEST_PW = System.getProperty("password");
+    protected final String CN_PROJECT_NAME = System.getProperty("teamforge_project");
+
+    /**
+     * Some of the test requires a working TeamForge instance to send a request to.
+     * We call such tests "online tests." Other tests that can be run anywhere are called
+     * offline tests.
+     *
+     * <p>
+     * This method returns true if the current test environment is online. Online tests
+     * should use this flag to decide if the test should be skipped or not.
+     */
+    protected boolean isOnline() {
+        return CN_URL!=null;
+    }
+
     /**
      * Setting a global value would enable job configuration to choose the override or delegate to the default.
      */

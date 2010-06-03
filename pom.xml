@@ -198,14 +198,6 @@
               <name>doc_path</name>
               <value>stuff/to/upload/${BUILD_ID}</value>
             </property>
-            <property>
-              <name>doc_desc</name>
-              <value>uploaded from hudson build #${BUILD_NUMBER}</value>
-            </property>
-            <property>
-              <name>doc_file_pattern</name>
-              <value>*</value>
-            </property>
             <!-- end properties for doc uploader -->
             <!-- properties for file release -->
             <property>

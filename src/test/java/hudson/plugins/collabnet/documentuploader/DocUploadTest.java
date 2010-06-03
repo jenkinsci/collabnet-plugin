@@ -2,68 +2,49 @@ package hudson.plugins.collabnet.documentuploader;
 
 import com.collabnet.ce.webservices.CollabNetApp;
 import com.collabnet.ce.webservices.DocumentApp;
-
-import com.gargoylesoftware.htmlunit.Page;
-import com.gargoylesoftware.htmlunit.html.HtmlCheckBoxInput;
-import com.gargoylesoftware.htmlunit.html.HtmlElement;
-import com.gargoylesoftware.htmlunit.html.HtmlForm;
-import com.gargoylesoftware.htmlunit.html.HtmlInput;
-import com.gargoylesoftware.htmlunit.html.HtmlPage;
-import com.gargoylesoftware.htmlunit.html.HtmlTextInput;
-
+import hudson.Launcher;
 import hudson.model.AbstractBuild;
-import hudson.model.AbstractProject;
+import hudson.model.BuildListener;
+import hudson.model.FreeStyleProject;
 import hudson.model.TaskListener;
-
-import hudson.plugins.collabnet.util.HudsonConstants;
-import hudson.plugins.collabnet.util.Util;
-
+import hudson.plugins.collabnet.CNHudsonTestCase;
+import hudson.plugins.collabnet.ConnectionFactory;
 import hudson.plugins.collabnet.util.CommonUtil;
+import org.jvnet.hudson.test.TestBuilder;
 
-import org.jvnet.hudson.test.HudsonTestCase;
+import java.io.IOException;
 
-public class DocUploadTest extends HudsonTestCase {
-    private static final String DOC_UPLOADER_LABEL = "CollabNet Document " +
-        "Uploader";
-
-    private static final String CN_URL = System.getProperty("teamforge_url");
-    // this user needs access to the project and access to the projects
-    // document creation/view
-    private static final String TEST_USER = System.getProperty("admin_user");
-    private static final String TEST_PW = System.getProperty("password");
-    private static final String CN_PROJECT_NAME = 
-        System.getProperty("teamforge_project");
+public class DocUploadTest extends CNHudsonTestCase {
     private static final String TEST_PATH = System.getProperty("doc_path");
-    private static final String TEST_DESC = System.getProperty("doc_desc");
-    private static final String TEST_FILE_PATTERN = 
-        System.getProperty("doc_file_pattern");
-    private static final String UPLOAD_BUILD_LOG = "true";
-
-    private AbstractProject job = null;
-
-    @Override
-    protected void setUp() throws Exception {
-        super.setUp();
-        this.job = this.createFreeStyleProject();
-        HtmlPage configurePage = setupProjectForDocUpload();
-        this.submitForm(configurePage, HudsonConstants.CONFIGURE_FORM_NAME);
-    }
 
     /**
      * Setup the doc upload, run a build, check that the build log
      * is really on the CN server.
      */
     public void testDocUpload() throws Exception {
-        this.setupProjectForDocUpload();
-        // This will do a build and block until the build is done
-        AbstractBuild build = (AbstractBuild) this.job.scheduleBuild2(0).get();
-        this.verifyDocUploaded(build);
+        if(!isOnline()) return; // skip if offline
+
+        FreeStyleProject job = this.createFreeStyleProject();
+        // create './abc'
+        job.getBuildersList().add(new TestBuilder() {
+            public boolean perform(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener) throws InterruptedException, IOException {
+                build.getWorkspace().child("abc").touch(0);
+                return true;
+            }
+        });
+        job.getPublishersList().add(new CNDocumentUploader(
+                new ConnectionFactory(CN_URL,TEST_USER,TEST_PW),
+                CN_PROJECT_NAME, TEST_PATH, "uploaded from hudson build #${BUILD_NUMBER}",
+                new FilePattern[] {new FilePattern("./abc")}, true
+        ));
+
+        this.verifyDocUploaded(buildAndAssertSuccess(job));
     }
 
     /**
      * Attempt to find the uploaded doc on the CN server. 
      */
-    public void verifyDocUploaded(AbstractBuild build) throws Exception {
+    private void verifyDocUploaded(AbstractBuild build) throws Exception {
         CollabNetApp cna = new CollabNetApp(CN_URL, TEST_USER, TEST_PW);
         String projectId = cna.getProjectId(CN_PROJECT_NAME);
         assert(projectId != null);
@@ -76,38 +57,4 @@ public class DocUploadTest extends HudsonTestCase {
         assert(docId != null);
     }
 
-    public HtmlPage setupProjectForDocUpload() throws Exception {
-        WebClient wc = new WebClient();
-        HtmlPage configurePage = (HtmlPage) wc.goTo(this.job.getShortUrl() 
-                                                    + "configure");
-        HtmlCheckBoxInput docCheck = (HtmlCheckBoxInput)Util
-            .getFirstHtmlElementByName(configurePage, 
-                                       "hudson-plugins-collabnet-" +
-                                       "documentuploader-CNDocumentUploader");
-        docCheck.click();
-        configurePage = (HtmlPage) Util.setText(configurePage, URL_ID, CN_URL);
-        configurePage = (HtmlPage) Util.setText(configurePage, USER_ID, 
-                                                TEST_USER);
-        configurePage = (HtmlPage) Util.setPassword(configurePage, 
-                                                    PASSWORD_ID, TEST_PW);
-        configurePage = (HtmlPage) Util.setText(configurePage, PROJECT_ID, 
-                                                CN_PROJECT_NAME);
-        configurePage = (HtmlPage) Util.setText(configurePage, PATH_ID, 
-                                                TEST_PATH);
-        configurePage = (HtmlPage) Util.setText(configurePage, DESC_ID, 
-                                                TEST_DESC);
-        configurePage = (HtmlPage) Util.setTextByName(configurePage, 
-                                                      FILE_NAME, 
-                                                      TEST_FILE_PATTERN);
-        Util.clickRadio(configurePage, BUILDLOG_NAME, UPLOAD_BUILD_LOG);
-        return configurePage;
-    }
-
-    /**
-     * Handles submitting a form on a given page.
-     */
-    public Page submitForm(HtmlPage page, String formName) throws Exception {
-        HtmlForm form = page.getFormByName(formName);
-        return this.submit(form);
-    }
 }
