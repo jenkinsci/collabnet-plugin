@@ -367,28 +367,30 @@ public abstract class CNFormFieldValidator {
      * Expects a StaplerRequest with login info (url, username, password), 
      * project, and assign (which is the username).
      */
-    public static FormValidation assignCheck(StaplerRequest request) {
+    public static FormValidation assignCheck(StaplerRequest request) throws RemoteException {
         String assign = StringUtils.strip(request.getParameter("assign"));
         if (CommonUtil.unset(assign)) {
             return FormValidation.ok();
         }
         String project = request.getParameter("project");
+
         CollabNetApp cna = CNHudsonUtil.getCollabNetApp(request);
         if (cna == null) {
             return FormValidation.ok();
         }
-        String projectId = CNHudsonUtil.getProjectId(cna, project);
-        if (projectId == null) {
-            CNHudsonUtil.logoff(cna);
+        try {
+            CTFProject p = cna.getProjectById(project);
+            if (p == null) {
+                return FormValidation.ok();
+            }
+            if (!p.hasMember(assign)) {
+                return FormValidation.warning("This user is not a member of the " +
+                        "project.");
+            }
             return FormValidation.ok();
-        }
-        if (!CNHudsonUtil.isUserMember(cna, assign, projectId)) {
+        } finally {
             CNHudsonUtil.logoff(cna);
-            return FormValidation.warning("This user is not a member of the " +
-                    "project.");
         }
-        CNHudsonUtil.logoff(cna);
-        return FormValidation.ok();
     }
 
     

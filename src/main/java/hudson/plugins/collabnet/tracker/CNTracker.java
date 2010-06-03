@@ -1,14 +1,21 @@
 package hudson.plugins.collabnet.tracker;
 
 import com.collabnet.ce.soap50.webservices.tracker.ArtifactSoapDO;
+import com.collabnet.ce.webservices.CTFArtifact;
+import com.collabnet.ce.webservices.CTFProject;
 import com.collabnet.ce.webservices.CTFRelease;
+import com.collabnet.ce.webservices.CTFTracker;
 import com.collabnet.ce.webservices.CollabNetApp;
 import com.collabnet.ce.webservices.FileStorageApp;
 import com.collabnet.ce.webservices.TrackerApp;
 import hudson.Extension;
 import hudson.Launcher;
 import hudson.Util;
-import hudson.model.*;
+import hudson.model.AbstractBuild;
+import hudson.model.BuildListener;
+import hudson.model.Hudson;
+import hudson.model.Result;
+import hudson.model.TaskListener;
 import hudson.plugins.collabnet.AbstractTeamForgeNotifier;
 import hudson.plugins.collabnet.ConnectionFactory;
 import hudson.plugins.collabnet.util.CNFormFieldValidator;
@@ -24,6 +31,9 @@ import org.kohsuke.stapler.StaplerRequest;
 
 import java.io.IOException;
 import java.rmi.RemoteException;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
 import java.util.logging.Logger;
 
 public class CNTracker extends AbstractTeamForgeNotifier {
@@ -204,9 +214,9 @@ public class CNTracker extends AbstractTeamForgeNotifier {
             build.setResult(previousBuildStatus.combine(Result.UNSTABLE));
             return false;
         }
-        String projectId = this.getProjectId(getProject());
-        if (projectId == null) {
-            this.log("Critical Error: projectId cannot be found for " + 
+        CTFProject p = cna.getProjectByTitle(getProject());
+        if (p == null) {
+            this.log("Critical Error: projectId cannot be found for " +
                      this.getProject() + ".  This could mean that the project " +
                      "does not exist OR that the user logging in does not " +
                      "have access to that project.  " +
@@ -216,8 +226,8 @@ public class CNTracker extends AbstractTeamForgeNotifier {
             this.logoff();
             return false;
         }
-        String trackerId = this.getTrackerId(projectId, this.tracker);
-        if (trackerId == null) {
+        CTFTracker t = p.getTrackerByTitle(this.tracker);
+        if (t == null) {
             this.log("Critical Error: trackerId cannot be found for " + 
                      this.tracker + ".  This could mean the tracker does " +
                      "not exist OR that the user logging in does not have " +
@@ -228,7 +238,7 @@ public class CNTracker extends AbstractTeamForgeNotifier {
             this.logoff();
             return false;
         }
-        ArtifactSoapDO issue = this.findTrackerArtifact(trackerId, build);
+        CTFArtifact issue = this.findTrackerArtifact(t, build);
         Result buildStatus = build.getResult();
         // no issue and failure found
         if (issue == null &&
@@ -237,8 +247,7 @@ public class CNTracker extends AbstractTeamForgeNotifier {
             String description = "The build has failed.  Latest " +
                 "build status: " + build.getResult() + ".  For more info, " +
                 "see " + this.getBuildUrl(build);
-            this.createNewTrackerArtifact(projectId, trackerId, 
-                                          "Open", description, build);
+            this.createNewTrackerArtifact(t,"Open", description, build);
             // no issue and success may open a new issue if we're updating
             // no matter what
         } else if (issue == null &&
@@ -247,8 +256,7 @@ public class CNTracker extends AbstractTeamForgeNotifier {
             if (this.getAlwaysUpdate()) {
                 String description = "The build has succeeded.  For " +
                     "more info, see " + this.getBuildUrl(build);
-                this.createNewTrackerArtifact(projectId, trackerId, 
-                                              "Closed", description, build);
+                this.createNewTrackerArtifact(t,"Closed", description, build);
             }
         // update existing fail -> fail
         } else if (issue.getStatusClass().equals("Open") &&
@@ -307,71 +315,37 @@ public class CNTracker extends AbstractTeamForgeNotifier {
     }
 
     /**
-     * Given a project title, find the matching projectId.
-     * If none is found, return null.
-     *
-     * @param projectName 
-     * @return project id corresponding to the name, or null if none is found.
-     */
-    public String getProjectId(String projectName) {
-        if (this.cna == null) {
-            this.log("Cannot getProjectId, not logged in!");
-            return null;
-        }
-        return CNHudsonUtil.getProjectId(this.cna, projectName);
-    }
-
-    /**
-     * Given a tracker title and a projectId, find the matching tracker id.
-     * 
-     * @param projectId
-     * @param trackerName
-     * @return the tracker id for the tracker that matches this name, or null
-     *         if no matching tracker is found.
-     */
-    public String getTrackerId(String projectId, String trackerName) {
-        if (this.cna == null) {
-            this.log("Cannot call getTrackerId, not logged in!");
-            return null;
-        }
-        return CNHudsonUtil.getTrackerId(cna, projectId, trackerName);
-    }
-
-    /**
      * Return a tracker artifact with the matching title.
      *
-     * @param trackerId
      * @param build the current Hudson build.
      * @return the artifact soap data object, if one exists which matches
      *         the title.  Otherwise, null.
      */
-    public ArtifactSoapDO findTrackerArtifact(String trackerId,
+    public CTFArtifact findTrackerArtifact(CTFTracker tracker,
             AbstractBuild<?, ?> build) throws IOException, InterruptedException {
         if (this.cna == null) {
             this.log("Cannot call findTrackerArtifact, not logged in!");
             return null;
         }
         String title = this.getInterpreted(build, this.getTitle());
-        TrackerApp ta = new TrackerApp(this.cna);
-        try {
-            return ta.findLastTrackerArtifact(trackerId, title);
-        } catch (RemoteException re) {
-            this.log("findTrackerArtifact", re);
-            return null;
-        }
+        List<CTFArtifact> r = tracker.getArtifactsByTitle(title);
+        Collections.sort(r, new Comparator<CTFArtifact>() {
+            public int compare(CTFArtifact o1, CTFArtifact o2) {
+                return o2.getLastModifiedDate().compareTo(o1.getLastModifiedDate());
+            }
+        });
+        if (r.size()>0) return r.get(0);
+        return null;
     }
     
     /**
      * Create a new tracker artifact with the given values.
      * 
-     * @param projectId id for project
-     * @param trackerId id for tracker
      * @param status status to set on the new artifact (Open, Closed, etc.).
      * @param description description of the new artifact.
      * @return the newly created ArtifactSoapDO.
      */
-    public ArtifactSoapDO createNewTrackerArtifact(String projectId, 
-                                                   String trackerId, 
+    public CTFArtifact createNewTrackerArtifact(CTFTracker t,
                                                    String status,
                                                    String description,
                                                    AbstractBuild <?, ?> build)
@@ -390,13 +364,11 @@ public class CNTracker extends AbstractTeamForgeNotifier {
             }
         }
         // check assign user validity
-        String assignTo = this.getValidAssignUser(projectId);
+        String assignTo = this.getValidAssignUser(t.getProject());
         String title = this.getInterpreted(build, this.getTitle());
-        CTFRelease releaseId = CNHudsonUtil.getProjectReleaseId(this.cna.getProjectById(projectId),
-                                                            this.getRelease());
-        TrackerApp ta = new TrackerApp(this.cna);
+        CTFRelease releaseId = CNHudsonUtil.getProjectReleaseId(t.getProject(),this.getRelease());
         try {
-            ArtifactSoapDO asd = ta.createNewTrackerArtifact(trackerId, title,
+            CTFArtifact asd = t.createArtifact(title,
                                               description, null, null, status,
                                               null, this.priority, 0, 
                                               assignTo, releaseId.getId(), null,
@@ -414,20 +386,17 @@ public class CNTracker extends AbstractTeamForgeNotifier {
     }
     
     /**
-     * @param projectId
      * @return the assigned user, if that user is a member of the project.
      *         Otherwise, null.
      */
-    private String getValidAssignUser(String projectId) {
-        String valid_user = this.assign_user;
-        if (!CNHudsonUtil.isUserMember(this.cna, this.assign_user, 
-                                              projectId)) {
+    private String getValidAssignUser(CTFProject p) throws RemoteException {
+        if (!p.hasMember(this.assign_user)) {
             this.log("User (" + this.assign_user + ") is not a member of " +
                      "the project (" + this.getProject() + ").  " + "Instead " +
                      "any new issues filed will be assigned to 'None'.");
-            valid_user = null;
+            return null;
         }
-        return valid_user;
+        return this.assign_user;
     }
     
     /**
@@ -436,7 +405,7 @@ public class CNTracker extends AbstractTeamForgeNotifier {
      * @param issue the existing issue.
      * @param build the current Hudson build.
      */
-    public void updateFailingBuild(ArtifactSoapDO issue,
+    public void updateFailingBuild(CTFArtifact issue,
             AbstractBuild<?, ?> build) throws IOException, InterruptedException {
         if (this.cna == null) {
             this.log("Cannot call updateFailingBuild, not logged in!");

@@ -15,6 +15,7 @@ import com.collabnet.ce.soap50.webservices.cemain.UserSoapList;
 import com.collabnet.ce.soap50.webservices.cemain.UserSoapRow;
 import com.collabnet.ce.soap50.webservices.filestorage.IFileStorageAppSoap;
 import com.collabnet.ce.soap50.webservices.frs.IFrsAppSoap;
+import com.collabnet.ce.soap50.webservices.tracker.ITrackerAppSoap;
 import hudson.plugins.collabnet.share.TeamForgeShare;
 import hudson.plugins.collabnet.util.CNHudsonUtil;
 import hudson.plugins.collabnet.util.CommonUtil;
@@ -44,9 +45,10 @@ public class CollabNetApp {
     private String sessionId;
     private String username;
     private String url;
-    private ICollabNetSoap icns;
+    protected ICollabNetSoap icns;
     protected IFrsAppSoap ifrs;
     protected IFileStorageAppSoap ifsa;
+    private volatile ITrackerAppSoap itas;
 
     /**
      * Creates a new session to the server at the given url.
@@ -97,7 +99,20 @@ public class CollabNetApp {
                     getSoapStub(IFrsAppSoap.class, this.getServerUrl() + SOAP_SERVICE + "FrsApp?wsdl");
         this.ifsa = (IFileStorageAppSoap) ClientSoapStubFactory.
                     getSoapStub(IFileStorageAppSoap.class, this.getServerUrl() + SOAP_SERVICE + "FileStorageApp?wsdl");
+
     }
+
+    private <T> T createProxy(Class<T> type, String wsdlLoc) {
+        String soapURL = this.getServerUrl() + SOAP_SERVICE + wsdlLoc + "?wsdl";
+        return type.cast(ClientSoapStubFactory. getSoapStub(type, soapURL));
+    }
+
+    protected ITrackerAppSoap getTrackerSoap() {
+        if (itas==null)
+            itas = createProxy(ITrackerAppSoap.class, "TrackerApp");
+        return itas;
+    }
+
 
     /**
      * Returns the user name that this connection is set up with.
@@ -272,27 +287,6 @@ public class CollabNetApp {
         return false;
     }
     
-    /**
-     * Is the user a member of the project?
-     *
-     * @param username to check.
-     * @param projectId
-     * @return true, if the user is a member of the project, false otherwise.
-     * @throws RemoteException
-     */
-    public boolean isUserMemberOfProject(String username, String projectId) 
-        throws RemoteException {
-        this.checkValidSessionId();
-        ProjectMemberSoapList pmList = this.icns.
-            getProjectMemberList(this.sessionId, projectId);
-        for (ProjectMemberSoapRow row: pmList.getDataRows()) {
-            if (row.getUserName().equals(username)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
     /**
      * Is the user a member of the group?
      *

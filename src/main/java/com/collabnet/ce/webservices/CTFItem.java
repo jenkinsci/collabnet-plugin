@@ -5,7 +5,7 @@ import com.collabnet.ce.soap50.webservices.cemain.ItemSoapDO;
 /**
  * @author Kohsuke Kawaguchi
  */
-public abstract class CTFItem extends CTFObject {
+public abstract class CTFItem extends CTFObject implements ObjectWithTitle {
     private final String path, title, folder;
 
     protected CTFItem(CTFObject parent, ItemSoapDO data) {

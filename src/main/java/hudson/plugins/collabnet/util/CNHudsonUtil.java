@@ -255,24 +255,6 @@ public class CNHudsonUtil {
         }
         return valid;
     }
-    
-    /**
-     * @param cna for accessing the webservice methods.
-     * @param username
-     * @param projectId
-     * @return true if the user is a member of the project.
-     */
-    public static boolean isUserMember(CollabNetApp cna,
-                                       String username,
-                                       String projectId) {
-        boolean member = false;
-        try {
-            member = cna.isUserMemberOfProject(username, projectId);
-        } catch (RemoteException re) {
-            CommonUtil.logRE(log, "userMember", re);
-        }
-        return member;
-    }
 
     /**
      * @param cna for accessing the webservice methods.

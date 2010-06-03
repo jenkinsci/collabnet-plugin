@@ -10,7 +10,7 @@ import java.rmi.RemoteException;
  *
  * @author Kohsuke Kawaguchi
  */
-public abstract class CTFFolder extends CTFObject {
+public abstract class CTFFolder extends CTFObject implements ObjectWithTitle {
     private String id;
     private String projectId;
     private String parentFolderId;
