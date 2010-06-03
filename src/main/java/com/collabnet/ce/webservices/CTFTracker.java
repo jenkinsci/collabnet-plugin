@@ -66,12 +66,12 @@ public class CTFTracker extends CTFFolder {
                                                    SoapFieldValues flexFields,
                                                    String fileName,
                                                    String fileMimeType,
-                                                   String fileId)
+                                                   CTFFile file)
     throws RemoteException {
         return new CTFArtifact(this,app.getTrackerSoap().createArtifact(app.getSessionId(), getId(), title,
                                         description, group, category,  status,
                                         customer, priority, estimatedHours,
                                         assignTo, releaseId, flexFields,
-                                        fileName, fileMimeType, fileId));
+                                        fileName, fileMimeType, file!=null?file.getId():null));
     }
 }

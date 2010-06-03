@@ -1,13 +1,11 @@
 package hudson.plugins.collabnet.tracker;
 
-import com.collabnet.ce.soap50.webservices.tracker.ArtifactSoapDO;
 import com.collabnet.ce.webservices.CTFArtifact;
+import com.collabnet.ce.webservices.CTFFile;
 import com.collabnet.ce.webservices.CTFProject;
 import com.collabnet.ce.webservices.CTFRelease;
 import com.collabnet.ce.webservices.CTFTracker;
 import com.collabnet.ce.webservices.CollabNetApp;
-import com.collabnet.ce.webservices.FileStorageApp;
-import com.collabnet.ce.webservices.TrackerApp;
 import hudson.Extension;
 import hudson.Launcher;
 import hudson.Util;
@@ -35,6 +33,9 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.logging.Logger;
+
+import static hudson.model.Result.SUCCESS;
+import static hudson.model.Result.UNSTABLE;
 
 public class CNTracker extends AbstractTeamForgeNotifier {
     private static int DEFAULT_PRIORITY = Priority.DEFAULT.n;
@@ -210,100 +211,98 @@ public class CNTracker extends AbstractTeamForgeNotifier {
         if (this.cna == null) {
             this.log("Critical Error: login to " + this.getCollabNetUrl() +
                      " failed.  Setting build status to UNSTABLE (or worse).");
-            Result previousBuildStatus = build.getResult();
-            build.setResult(previousBuildStatus.combine(Result.UNSTABLE));
+            build.setResult(UNSTABLE);
             return false;
         }
-        CTFProject p = cna.getProjectByTitle(getProject());
-        if (p == null) {
-            this.log("Critical Error: projectId cannot be found for " +
-                     this.getProject() + ".  This could mean that the project " +
-                     "does not exist OR that the user logging in does not " +
-                     "have access to that project.  " +
-                     "Setting build status to UNSTABLE (or worse).");
-            Result previousBuildStatus = build.getResult();
-            build.setResult(previousBuildStatus.combine(Result.UNSTABLE));
-            this.logoff();
-            return false;
-        }
-        CTFTracker t = p.getTrackerByTitle(this.tracker);
-        if (t == null) {
-            this.log("Critical Error: trackerId cannot be found for " + 
-                     this.tracker + ".  This could mean the tracker does " +
-                     "not exist OR that the user logging in does not have " +
-                     "access to that tracker.  " 
-                     + "Setting build status to UNSTABLE (or worse).");
-            Result previousBuildStatus = build.getResult();
-            build.setResult(previousBuildStatus.combine(Result.UNSTABLE));
-            this.logoff();
-            return false;
-        }
-        CTFArtifact issue = this.findTrackerArtifact(t, build);
-        Result buildStatus = build.getResult();
-        // no issue and failure found
-        if (issue == null &&
-            buildStatus.isWorseThan(Result.SUCCESS)) {
-            this.log("Build is not successful; opening a new issue.");
-            String description = "The build has failed.  Latest " +
-                "build status: " + build.getResult() + ".  For more info, " +
-                "see " + this.getBuildUrl(build);
-            this.createNewTrackerArtifact(t,"Open", description, build);
-            // no issue and success may open a new issue if we're updating
-            // no matter what
-        } else if (issue == null &&
-               buildStatus.isBetterOrEqualTo(Result.SUCCESS)) {
-            this.log("Build is successful!");
-            if (this.getAlwaysUpdate()) {
-                String description = "The build has succeeded.  For " +
-                    "more info, see " + this.getBuildUrl(build);
-                this.createNewTrackerArtifact(t,"Closed", description, build);
+        try {
+            CTFProject p = cna.getProjectByTitle(getProject());
+            if (p == null) {
+                this.log("Critical Error: projectId cannot be found for " +
+                         this.getProject() + ".  This could mean that the project " +
+                         "does not exist OR that the user logging in does not " +
+                         "have access to that project.  " +
+                         "Setting build status to UNSTABLE (or worse).");
+                build.setResult(UNSTABLE);
+                return false;
             }
-        // update existing fail -> fail
-        } else if (issue.getStatusClass().equals("Open") &&
-                   buildStatus.isWorseThan(Result.SUCCESS)) {
-            this.log("Build is continuing to fail; updating issue.");
-            this.updateFailingBuild(issue, build);
-        }
-        // close or update existing  fail -> succeed
-        else if (issue.getStatusClass().equals("Open") &&
-                 buildStatus.isBetterOrEqualTo(Result.SUCCESS)) {
-            if (this.getCloseOnSuccess()) {
-                this.log("Build succeeded; closing issue.");
-                this.closeSucceedingBuild(issue, build);
-            } else {
-                // just update
-                this.log("Build succeeded; updating issue.");
-                this.updateSucceedingBuild(issue, build);        
+            CTFTracker t = p.getTrackerByTitle(this.tracker);
+            if (t == null) {
+                this.log("Critical Error: trackerId cannot be found for " +
+                         this.tracker + ".  This could mean the tracker does " +
+                         "not exist OR that the user logging in does not have " +
+                         "access to that tracker.  "
+                         + "Setting build status to UNSTABLE (or worse).");
+                build.setResult(UNSTABLE);
+                return false;
             }
-        }
-        // create new succeed -> fail
-        else if (issue.getStatusClass().equals("Close") && 
-                 buildStatus.isWorseThan(Result.SUCCESS)) {
-            // create new or reopen?
-            if (this.getAlwaysUpdate()) {
-                this.log("Build is not successful; re-opening issue.");
+            CTFArtifact issue = this.findTrackerArtifact(t, build);
+            Result buildStatus = build.getResult();
+            // no issue and failure found
+            if (issue == null) {
+                if (buildStatus.isWorseThan(SUCCESS)) {
+                    this.log("Build is not successful; opening a new issue.");
+                    String description = "The build has failed.  Latest " +
+                        "build status: " + build.getResult() + ".  For more info, " +
+                        "see " + this.getBuildUrl(build);
+                    this.createNewTrackerArtifact(t,"Open", description, build);
+                    // no issue and success may open a new issue if we're updating
+                    // no matter what
+                } else {
+                    this.log("Build is successful!");
+                    if (this.getAlwaysUpdate()) {
+                        String description = "The build has succeeded.  For " +
+                            "more info, see " + this.getBuildUrl(build);
+                        this.createNewTrackerArtifact(t,"Closed", description, build);
+                    }
+                }
+            }
+            // update existing fail -> fail
+            else if (issue.getStatusClass().equals("Open") &&
+                       buildStatus.isWorseThan(SUCCESS)) {
+                this.log("Build is continuing to fail; updating issue.");
                 this.updateFailingBuild(issue, build);
+            }
+            // close or update existing  fail -> succeed
+            else if (issue.getStatusClass().equals("Open") &&
+                     buildStatus.isBetterOrEqualTo(SUCCESS)) {
+                if (this.getCloseOnSuccess()) {
+                    this.log("Build succeeded; closing issue.");
+                    this.closeSucceedingBuild(issue, build);
+                } else {
+                    // just update
+                    this.log("Build succeeded; updating issue.");
+                    this.updateSucceedingBuild(issue, build);
+                }
+            }
+            // create new succeed -> fail
+            else if (issue.getStatusClass().equals("Close") &&
+                     buildStatus.isWorseThan(SUCCESS)) {
+                // create new or reopen?
+                if (this.getAlwaysUpdate()) {
+                    this.log("Build is not successful; re-opening issue.");
+                    this.updateFailingBuild(issue, build);
+                } else {
+                    this.log("Build is not successful; opening a new issue.");
+                    String description = "The build has failed.  Latest " +
+                        "build status: " + build.getResult() + ".  For more " +
+                        "info, see " + this.getBuildUrl(build);
+                    this.createNewTrackerArtifact(t, "Open", description, build);
+                }
+            } else if (issue.getStatusClass().equals("Close") &&
+                       buildStatus.isBetterOrEqualTo(SUCCESS)) {
+                this.log("Build continues to be successful!");
+                if (this.getAlwaysUpdate()) {
+                    this.updateSucceedingBuild(issue, build);
+                }
             } else {
-                this.log("Build is not successful; opening a new issue.");
-                String description = "The build has failed.  Latest " +
-                    "build status: " + build.getResult() + ".  For more " +
-                    "info, see " + this.getBuildUrl(build);
-                this.createNewTrackerArtifact(projectId, trackerId, 
-                                              "Open", description, build);
+                this.log("Unexpected state:  result is: " + buildStatus +
+                         ".  Issue status " + "class is: " + issue.getStatusClass()
+                         + ".");
             }
-        } else if (issue.getStatusClass().equals("Close") &&
-                   buildStatus.isBetterOrEqualTo(Result.SUCCESS)) {
-            this.log("Build continues to be successful!");
-            if (this.getAlwaysUpdate()) {
-                this.updateSucceedingBuild(issue, build);
-            }
-        } else {
-            this.log("Unexpected state:  result is: " + buildStatus + 
-                     ".  Issue status " + "class is: " + issue.getStatusClass()
-                     + ".");
+            return true;
+        } finally {
+            logoff();
         }
-        this.logoff();
-        return true;
     }
 
     /**
@@ -354,10 +353,10 @@ public class CNTracker extends AbstractTeamForgeNotifier {
             this.log("Cannot call createNewTrackerArtifact, not logged in!");
             return null;
         }
-        String buildLogId = null;
+        CTFFile buildLog = null;
         if (this.getAttachLog()) {
-            buildLogId = this.uploadBuildLog(build);
-            if (buildLogId != null) {
+            buildLog = this.uploadBuildLog(build);
+            if (buildLog != null) {
                 this.log("Successfully uploaded build log.");
             } else {
                 this.log("Failed to upload build log.");
@@ -373,11 +372,11 @@ public class CNTracker extends AbstractTeamForgeNotifier {
                                               null, this.priority, 0, 
                                               assignTo, releaseId.getId(), null,
                                               build.getLogFile().getName(), 
-                                              "text/plain", buildLogId);
+                                              "text/plain", buildLog);
             this.log("Created tracker artifact '" + title + "' in tracker '" 
                      + this.getTracker() + "' in project '" + this.getProject()
                      + "' on behalf of '" + this.getUsername() + "' at " 
-                     + this.getArtifactUrl(asd) + ".");
+                     + asd.getURL() + ".");
             return asd;
         } catch (RemoteException re) {
             this.log("createNewTrackerArtifact", re);
@@ -411,10 +410,10 @@ public class CNTracker extends AbstractTeamForgeNotifier {
             this.log("Cannot call updateFailingBuild, not logged in!");
             return;
         }
-        String buildLogId = null;
+        CTFFile buildLog = null;
         if (this.getAttachLog()) {
-            buildLogId = this.uploadBuildLog(build);
-            if (buildLogId != null) {
+            buildLog = this.uploadBuildLog(build);
+            if (buildLog != null) {
                 this.log("Successfully uploaded build log.");
             } else {
                 this.log("Failed to upload build log.");
@@ -429,15 +428,12 @@ public class CNTracker extends AbstractTeamForgeNotifier {
             "build status: " + build.getResult() + ".  For more info, see " + 
             this.getBuildUrl(build);
         String title = this.getInterpreted(build, this.getTitle());
-        TrackerApp ta = new TrackerApp(this.cna);
         try {
-            ta.setArtifactData(issue, comment, 
-                               build.getLogFile().getName(), 
-                               "text/plain", buildLogId);
+            issue.update(comment, build.getLogFile().getName(), "text/plain", buildLog);
             this.log(update + " tracker artifact '" + title + "' in tracker '" 
                      + this.getTracker() + "' in project '" + this.getProject()
                      + "' on behalf of '" + this.getUsername() + "' at " 
-                     + this.getArtifactUrl(issue) + 
+                     + issue.getURL() +
                      " with failed status.");
         } catch (RemoteException re) {
             this.log("updateFailingBuild", re);
@@ -454,16 +450,16 @@ public class CNTracker extends AbstractTeamForgeNotifier {
      * @param issue the existing issue.
      * @param build the current Hudson build.
      */
-    public void updateSucceedingBuild(ArtifactSoapDO issue,
+    public void updateSucceedingBuild(CTFArtifact issue,
             AbstractBuild<?, ?> build) throws IOException, InterruptedException {
         if (this.cna == null) {
             this.log("Cannot call updateSucceedingBuild, not logged in!");
             return;
         }
-        String buildLogId = null;
+        CTFFile buildLog = null;
         if (this.getAttachLog()) {
-            buildLogId = this.uploadBuildLog(build);
-            if (buildLogId != null) {
+            buildLog = this.uploadBuildLog(build);
+            if (buildLog != null) {
                 this.log("Successfully uploaded build log.");
             } else {
                 this.log("Failed to upload build log.");
@@ -472,14 +468,12 @@ public class CNTracker extends AbstractTeamForgeNotifier {
         String comment = "The build is succeeding.  For more info, " +
             "see " + this.getBuildUrl(build);
         String title = this.getInterpreted(build, this.getTitle());
-        TrackerApp ta = new TrackerApp(this.cna);
         try {
-            ta.setArtifactData(issue, comment, build.getLogFile().getName(), 
-                               "text/plain", buildLogId);
+            issue.update(comment, build.getLogFile().getName(), "text/plain", buildLog);
             this.log("Updated tracker artifact '" + title + "' in tracker '" 
                      + this.getTracker() + "' in project '" + this.getProject()
                      + "' on behalf of '" + this.getUsername() + "' at " 
-                     + this.getArtifactUrl(issue) + 
+                     + issue.getURL() +
                      " with successful status.");
         } catch (RemoteException re) {
             this.log("updateSucceedingBuild", re); 
@@ -495,16 +489,16 @@ public class CNTracker extends AbstractTeamForgeNotifier {
      * @param issue the existing issue.
      * @param build the current Hudson build.
      */
-    public void closeSucceedingBuild(ArtifactSoapDO issue,
+    public void closeSucceedingBuild(CTFArtifact issue,
             AbstractBuild<?, ?> build) throws IOException, InterruptedException {
         if (this.cna == null) {
             this.log("Cannot call updateSucceedingBuild, not logged in!");
             return;
         }
-        String buildLogId = null;
+        CTFFile buildLog = null;
         if (this.getAttachLog()) {
-            buildLogId = this.uploadBuildLog(build);
-            if (buildLogId != null) {
+            buildLog = this.uploadBuildLog(build);
+            if (buildLog != null) {
                 this.log("Successfully uploaded build log.");
             } else {
                 this.log("Failed to upload build log.");
@@ -515,15 +509,12 @@ public class CNTracker extends AbstractTeamForgeNotifier {
         issue.setStatusClass("Close");
         issue.setStatus("Closed");
         String title = this.getInterpreted(build, this.getTitle());
-        TrackerApp ta = new TrackerApp(this.cna);
         try {
-            ta.setArtifactData(issue, comment, 
-                               build.getLogFile().getName(), 
-                               "text/plain", buildLogId);
+            issue.update(comment, build.getLogFile().getName(), "text/plain", buildLog);
             this.log("Closed tracker artifact '" + title + "' in tracker '" 
                      + this.getTracker() + "' in project '" + this.getProject()
                      + "' on behalf of '" + this.getUsername() + "' at " 
-                     + this.getArtifactUrl(issue) + 
+                     + issue.getURL() +
                      " with successful status.");
         } catch (RemoteException re) {
             this.log("closeSucceedingBuild", re);
@@ -549,34 +540,22 @@ public class CNTracker extends AbstractTeamForgeNotifier {
     }    
     
     /**
-     * Get the artifact's url.
-     *
-     * @param art the artifact.
-     * @return an absolute URL to the artifact.
-     */
-    private String getArtifactUrl(ArtifactSoapDO art) {
-        return this.getCollabNetUrl() + "/sf/go/" + art.getId();
-    }
-    
-    /**
      * Upload the build log to the collabnet server.
      *
      * @param build the current Hudson build.
      * @return the id associated with the file upload.
      */
-    private String uploadBuildLog(AbstractBuild <?, ?> build) {
+    private CTFFile uploadBuildLog(AbstractBuild <?, ?> build) {
         if (this.cna == null) {
             this.log("Cannot call updateSucceedingBuild, not logged in!");
             return null;
         }
-        String id = null;
-        FileStorageApp sfsa = new FileStorageApp(this.cna);
         try {
-            id = sfsa.uploadFile(build.getLogFile());
+            return cna.upload(build.getLogFile());
         } catch (RemoteException re) {
             this.log("uploadBuildLog", re);
         }
-        return id;
+        return null;
     }
     
     /**
@@ -615,7 +594,7 @@ public class CNTracker extends AbstractTeamForgeNotifier {
          *
          * @param req StaplerRequest which contains parameters from the config.jelly.
          */
-        public FormValidation doCheckTracker(StaplerRequest req) {
+        public FormValidation doCheckTracker(StaplerRequest req) throws RemoteException {
             return CNFormFieldValidator.trackerCheck(req);
         }
         
@@ -624,7 +603,7 @@ public class CNTracker extends AbstractTeamForgeNotifier {
          *
          * @param req StaplerRequest which contains parameters from the config.jelly.
          */
-        public FormValidation doCheckAssign(StaplerRequest req) {
+        public FormValidation doCheckAssign(StaplerRequest req) throws RemoteException {
             return CNFormFieldValidator.assignCheck(req);
         }
         
@@ -655,8 +634,8 @@ public class CNTracker extends AbstractTeamForgeNotifier {
          * Gets a list of trackers to choose from and write them as a 
          * JSON string into the response data.
          */
-        public ComboBoxModel doFillTrackerItems(CollabNetApp cna, @QueryParameter String project) {
-            return ComboBoxUpdater.getTrackers(cna,project);
+        public ComboBoxModel doFillTrackerItems(CollabNetApp cna, @QueryParameter String project) throws RemoteException {
+            return ComboBoxUpdater.getTrackerList(cna.getProjectByTitle(project));
         }
 
         /**

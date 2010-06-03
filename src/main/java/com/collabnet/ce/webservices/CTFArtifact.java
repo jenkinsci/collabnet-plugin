@@ -1,173 +1,219 @@
 package com.collabnet.ce.webservices;
 
+import com.collabnet.ce.soap50.types.SoapFieldValues;
 import com.collabnet.ce.soap50.webservices.tracker.ArtifactSoapDO;
 import com.collabnet.ce.soap50.webservices.tracker.ArtifactSoapRow;
 
+import java.rmi.RemoteException;
 import java.util.Date;
 
 /**
  * @author Kohsuke Kawaguchi
  */
 public class CTFArtifact extends CTFObject {
-    private int priority;
-    private java.lang.String projectPathString;
-    private java.lang.String projectTitle;
-    private java.lang.String projectId;
-    private java.lang.String folderPathString;
-    private java.lang.String folderTitle;
-    private java.lang.String folderId;
-    private java.lang.String title;
-    private java.lang.String description;
-    private java.lang.String artifactGroup;
-    private java.lang.String status;
-    private java.lang.String statusClass;
-    private java.lang.String category;
-    private java.lang.String customer;
-    private java.lang.String submittedByUsername;
-    private java.lang.String submittedByFullname;
-    private java.util.Date submittedDate;
-    private java.util.Date closeDate;
-    private java.lang.String assignedToUsername;
-    private java.lang.String assignedToFullname;
-    private java.util.Date lastModifiedDate;
-    private int estimatedHours;
-    private int actualHours;
+    private ArtifactSoapDO data;
+    /**
+     * If true, we need to fetch the full {@link ArtfifactSoapDO} before we update.
+     */
+    private boolean needsRefill;
 
-    CTFArtifact(CTFObject parent, ArtifactSoapRow data) {
-        super(parent, data.getId());
-        this.priority = data.getPriority();
-        this.projectPathString = data.getProjectPathString();
-        this.projectTitle = data.getProjectTitle();
-        this.projectId = data.getProjectId();
-        this.folderPathString = data.getFolderPathString();
-        this.folderTitle = data.getFolderTitle();
-        this.folderId = data.getFolderId();
-        this.title = data.getTitle();
-        this.description = data.getDescription();
-        this.artifactGroup = data.getArtifactGroup();
-        this.status = data.getStatus();
-        this.statusClass = data.getStatusClass();
-        this.category = data.getCategory();
-        this.customer = data.getCustomer();
-        this.submittedByUsername = data.getSubmittedByUsername();
-        this.submittedByFullname = data.getSubmittedByFullname();
-        this.submittedDate = data.getSubmittedDate();
-        this.closeDate = data.getCloseDate();
-        this.assignedToUsername = data.getAssignedToUsername();
-        this.assignedToFullname = data.getAssignedToFullname();
-        this.lastModifiedDate = data.getLastModifiedDate();
-        this.estimatedHours = data.getEstimatedHours();
-        this.actualHours = data.getActualHours();
+    CTFArtifact(CTFObject parent, ArtifactSoapRow src) {
+        super(parent, src.getId());
+        needsRefill = true;
+        this.data = new ArtifactSoapDO();
+        data.setActualHours(src.getActualHours());
+        data.setAssignedTo(src.getAssignedToUsername());
+        data.setCategory(src.getCategory());
+        data.setCloseDate(src.getCloseDate());
+        data.setCreatedBy(src.getSubmittedByUsername());
+        data.setCreatedDate(src.getSubmittedDate());
+        data.setCustomer(src.getCustomer());
+        data.setDescription(src.getDescription());
+        data.setEstimatedHours(src.getEstimatedHours());
+        data.setFolderId(src.getFolderId());
+        data.setGroup(src.getArtifactGroup());
+        data.setId(src.getId());
+        data.setLastModifiedDate(src.getLastModifiedDate());
+        data.setPriority(src.getPriority());
     }
 
     CTFArtifact(CTFObject parent, ArtifactSoapDO data) {
         super(parent, data.getId());
-        this.priority = data.getPriority();
-        this.folderId = data.getFolderId();
-        this.title = data.getTitle();
-        this.description = data.getDescription();
-        this.artifactGroup = data.getGroup();
-        this.status = data.getStatus();
-        this.statusClass = data.getStatusClass();
-        this.category = data.getCategory();
-        this.customer = data.getCustomer();
-        this.submittedByUsername = data.getCreatedBy();
-        this.closeDate = data.getCloseDate();
-        this.assignedToUsername = data.getAssignedTo();
-        this.lastModifiedDate = data.getLastModifiedDate();
-        this.estimatedHours = data.getEstimatedHours();
-        this.actualHours = data.getActualHours();
+        this.data = data;
     }
 
-    public int getPriority() {
-        return priority;
+    /**
+     * Obtains all the fields, not just those ones that are made available to us during the search.
+     */
+    public void refill() throws RemoteException {
+        data = app.getTrackerSoap().getArtifactData(app.getSessionId(),getId());
+        needsRefill = false;
     }
 
-    public String getProjectPathString() {
-        return projectPathString;
+    public String getURL() {
+        return app.getServerUrl() + "/sf/go/" + getId();
+
     }
 
-    public String getProjectTitle() {
-        return projectTitle;
+    public void update(String comment) throws RemoteException {
+        update(comment,null,null,null);
     }
 
-    public String getProjectId() {
-        return projectId;
-    }
-
-    public String getFolderPathString() {
-        return folderPathString;
-    }
-
-    public String getFolderTitle() {
-        return folderTitle;
-    }
-
-    public String getFolderId() {
-        return folderId;
-    }
-
-    public String getTitle() {
-        return title;
+    public void update(String comment, String fileName, String fileMimeType, CTFFile file) throws RemoteException {
+        if (needsRefill)
+            throw new IllegalStateException("CTFArtifact needs to be filled before it can be updated");
+        app.getTrackerSoap().setArtifactData(app.getSessionId(), data, comment, fileName, fileMimeType, file!=null?file.getId():null);
     }
 
     public String getDescription() {
-        return description;
+        return data.getDescription();
     }
 
-    public String getArtifactGroup() {
-        return artifactGroup;
-    }
-
-    public String getStatus() {
-        return status;
-    }
-
-    public String getStatusClass() {
-        return statusClass;
+    public void setDescription(String description) {
+        data.setDescription(description);
     }
 
     public String getCategory() {
-        return category;
+        return data.getCategory();
+    }
+
+    public void setCategory(String category) {
+        data.setCategory(category);
+    }
+
+    public String getGroup() {
+        return data.getGroup();
+    }
+
+    public void setGroup(String group) {
+        data.setGroup(group);
+    }
+
+    public String getStatus() {
+        return data.getStatus();
+    }
+
+    public void setStatus(String status) {
+        data.setStatus(status);
+    }
+
+    public String getStatusClass() {
+        return data.getStatusClass();
+    }
+
+    public void setStatusClass(String statusClass) {
+        data.setStatusClass(statusClass);
     }
 
     public String getCustomer() {
-        return customer;
+        return data.getCustomer();
     }
 
-    public String getSubmittedByUsername() {
-        return submittedByUsername;
+    public void setCustomer(String customer) {
+        data.setCustomer(customer);
     }
 
-    public String getSubmittedByFullname() {
-        return submittedByFullname;
+    public int getPriority() {
+        return data.getPriority();
     }
 
-    public Date getSubmittedDate() {
-        return submittedDate;
-    }
-
-    public Date getCloseDate() {
-        return closeDate;
-    }
-
-    public String getAssignedToUsername() {
-        return assignedToUsername;
-    }
-
-    public String getAssignedToFullname() {
-        return assignedToFullname;
-    }
-
-    public Date getLastModifiedDate() {
-        return lastModifiedDate;
+    public void setPriority(int priority) {
+        data.setPriority(priority);
     }
 
     public int getEstimatedHours() {
-        return estimatedHours;
+        return data.getEstimatedHours();
+    }
+
+    public void setEstimatedHours(int estimatedHours) {
+        data.setEstimatedHours(estimatedHours);
     }
 
     public int getActualHours() {
-        return actualHours;
+        return data.getActualHours();
+    }
+
+    public void setActualHours(int actualHours) {
+        data.setActualHours(actualHours);
+    }
+
+    public Date getCloseDate() {
+        return data.getCloseDate();
+    }
+
+    public void setCloseDate(Date closeDate) {
+        data.setCloseDate(closeDate);
+    }
+
+    public String getAssignedTo() {
+        return data.getAssignedTo();
+    }
+
+    public void setAssignedTo(String assignedTo) {
+        data.setAssignedTo(assignedTo);
+    }
+
+    public String getReportedReleaseId() {
+        return data.getReportedReleaseId();
+    }
+
+    public void setReportedReleaseId(String reportedReleaseId) {
+        data.setReportedReleaseId(reportedReleaseId);
+    }
+
+    public String getResolvedReleaseId() {
+        return data.getResolvedReleaseId();
+    }
+
+    public void setResolvedReleaseId(String resolvedReleaseId) {
+        data.setResolvedReleaseId(resolvedReleaseId);
+    }
+
+    public SoapFieldValues getFlexFields() {
+        return data.getFlexFields();
+    }
+
+    public void setFlexFields(SoapFieldValues flexFields) {
+        data.setFlexFields(flexFields);
+    }
+
+    public String getPath() {
+        return data.getPath();
+    }
+
+    public String getTitle() {
+        return data.getTitle();
+    }
+
+    public void setTitle(String title) {
+        data.setTitle(title);
+    }
+
+    public String getFolderId() {
+        return data.getFolderId();
+    }
+
+    public void setFolderId(String folderId) {
+        data.setFolderId(folderId);
+    }
+
+    public int getVersion() {
+        return data.getVersion();
+    }
+
+    public String getCreatedBy() {
+        return data.getCreatedBy();
+    }
+
+    public String getLastModifiedBy() {
+        return data.getLastModifiedBy();
+    }
+
+    public Date getCreatedDate() {
+        return data.getCreatedDate();
+    }
+
+    public Date getLastModifiedDate() {
+        return data.getLastModifiedDate();
     }
 }

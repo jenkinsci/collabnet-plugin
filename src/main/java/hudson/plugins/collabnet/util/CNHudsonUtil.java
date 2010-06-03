@@ -1,13 +1,12 @@
 package hudson.plugins.collabnet.util;
 
 import com.collabnet.ce.soap50.webservices.scm.Repository2SoapDO;
-import com.collabnet.ce.soap50.webservices.tracker.ArtifactSoapDO;
 import com.collabnet.ce.webservices.CTFPackage;
 import com.collabnet.ce.webservices.CTFProject;
 import com.collabnet.ce.webservices.CTFRelease;
+import com.collabnet.ce.webservices.CTFTracker;
 import com.collabnet.ce.webservices.CollabNetApp;
 import com.collabnet.ce.webservices.ScmApp;
-import com.collabnet.ce.webservices.TrackerApp;
 import hudson.plugins.collabnet.share.TeamForgeShare;
 import org.kohsuke.stapler.StaplerRequest;
 
@@ -199,48 +198,14 @@ public class CNHudsonUtil {
      * @return the tracker id for the tracker that matches this name, or null
      *         if no matching tracker is found.
      */
-    public static String getTrackerId(CollabNetApp cna, String projectId, 
-                                      String trackerName) {
-        if (cna == null || projectId == null) {
-            return null;
-        }
-        TrackerApp ta = new TrackerApp(cna);
-        String trackerId = null;
-        try {
-            trackerId = ta.getTrackerId(projectId, trackerName);
-        } catch (RemoteException re) {
-            CommonUtil.logRE(log, "getTrackerId", re);
-            return null;
-        }
-        return trackerId;
+    public static String getTrackerId(CTFProject p, 
+                                      String trackerName) throws RemoteException {
+        if (p==null)    return null;
+        CTFTracker t = p.getTrackerByTitle(trackerName);
+        if (t!=null)    return t.getId();
+        return null;
     }
 
-    /**
-     * Given a project and issue title, find the most recent matching 
-     * issue object, or null if none matches.
-     */
-    public static ArtifactSoapDO getTrackerArtifact(CollabNetApp cna, 
-                                                    String project, 
-                                                    String tracker, 
-                                                    String issueTitle) {
-        ArtifactSoapDO artifact = null;
-        if (cna != null) {
-            String projectId = CNHudsonUtil.getProjectId(cna, project);
-            if (projectId != null) {
-                String trackerId = CNHudsonUtil.getTrackerId(cna, projectId, 
-                                                             tracker);
-                if (trackerId != null) {
-                    TrackerApp ta = new TrackerApp(cna);
-                    try {
-                        artifact = ta.findLastTrackerArtifact(trackerId, 
-                                                              issueTitle);
-                    } catch (RemoteException re) {}
-                }
-            }
-        }
-        return artifact;
-    }
-    
     /**
      * @param cna for accessing the webservice methods.
      * @param username

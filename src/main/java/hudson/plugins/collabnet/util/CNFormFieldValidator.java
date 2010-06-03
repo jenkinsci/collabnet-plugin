@@ -3,6 +3,7 @@ package hudson.plugins.collabnet.util;
 import com.collabnet.ce.webservices.CTFPackage;
 import com.collabnet.ce.webservices.CTFProject;
 import com.collabnet.ce.webservices.CTFRelease;
+import com.collabnet.ce.webservices.CTFTracker;
 import com.collabnet.ce.webservices.CollabNetApp;
 import com.collabnet.ce.webservices.DocumentApp;
 import com.collabnet.cubit.api.CubitConnector;
@@ -342,18 +343,17 @@ public abstract class CNFormFieldValidator {
      * Class to check that a tracker exists.  Expects a StaplerRequest with 
      * a url, username, password, project, and tracker.
      */
-    public static FormValidation trackerCheck(StaplerRequest request) {
+    public static FormValidation trackerCheck(StaplerRequest request) throws RemoteException {
         String tracker = request.getParameter("tracker");
         String project = request.getParameter("project");
         if (CommonUtil.unset(tracker)) {
             return FormValidation.error("The tracker is required.");
         }
         CollabNetApp cna = CNHudsonUtil.getCollabNetApp(request);
-        String projectId = CNHudsonUtil.getProjectId(cna, project);
-        if (projectId != null) {
-            String trackerId = CNHudsonUtil.getTrackerId(cna, projectId,
-                                                         tracker);
-            if (trackerId == null) {
+        CTFProject p = cna.getProjectByTitle(project);
+        if (p!=null) {
+            CTFTracker t = p.getTrackerByTitle(tracker);
+            if (t == null) {
                 CNHudsonUtil.logoff(cna);
                 return FormValidation.warning("Tracker could not be found.");
             }

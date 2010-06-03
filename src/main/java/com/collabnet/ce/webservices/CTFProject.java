@@ -17,7 +17,7 @@ import java.util.List;
  *
  * @author Kohsuke Kawaguchi
  */
-public class CTFProject extends CTFObject {
+public class CTFProject extends CTFObject implements ObjectWithTitle {
     private final String title;
 
     CTFProject(CollabNetApp app, ProjectSoapDO data) {

@@ -1,6 +1,7 @@
 package hudson.plugins.collabnet.tracker;
 
 import com.collabnet.ce.soap50.webservices.tracker.ArtifactSoapDO;
+import com.collabnet.ce.webservices.CTFArtifact;
 import com.collabnet.ce.webservices.CTFRelease;
 import com.collabnet.ce.webservices.CollabNetApp;
 import com.gargoylesoftware.htmlunit.Page;
@@ -21,6 +22,9 @@ import hudson.util.DescribableList;
 import org.jvnet.hudson.test.HudsonTestCase;
 
 import java.rmi.RemoteException;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
 
 public class TrackerTest extends HudsonTestCase {
     private static final String URL_ID = "cntracker.collabneturl";
@@ -115,20 +119,25 @@ public class TrackerTest extends HudsonTestCase {
         this.verifySuccessfulTrackerUpdate(build);
     }
 
-    private ArtifactSoapDO getArtifact(AbstractBuild build) throws Exception {
+    private CTFArtifact getArtifact(AbstractBuild build) throws Exception {
         String title = CommonUtil.getInterpreted(build.getEnvironment(TaskListener.NULL),
                                                  ISSUE_TITLE);
         CollabNetApp cna = CNHudsonUtil.getCollabNetApp(CN_URL, TEST_USER, 
                                                         TEST_PW);
-        ArtifactSoapDO artifact = CNHudsonUtil.
-            getTrackerArtifact(cna, CN_PROJECT_NAME, TRACKER, title);
+        List<CTFArtifact> r = cna.getProjectByTitle(CN_PROJECT_NAME).getTrackerByTitle(TRACKER).getArtifactsByTitle(title);
+        Collections.sort(r, new Comparator<CTFArtifact>() {
+            public int compare(CTFArtifact o1, CTFArtifact o2) {
+                return o2.getLastModifiedDate().compareTo(o1.getLastModifiedDate());
+            }
+        });
+        CTFArtifact artifact = r.get(0);
         cna.logoff();
         return artifact;
     }
 
     public void verifySuccessfulTrackerUpdate(AbstractBuild build) 
         throws Exception {
-        ArtifactSoapDO artifact = this.getArtifact(build);
+        CTFArtifact artifact = this.getArtifact(build);
         if (UPDATE.equals("true")) {
             assert(artifact != null);
             assert(artifact.getStatus().equals("Closed"));
@@ -145,7 +154,7 @@ public class TrackerTest extends HudsonTestCase {
                 cna.getProjectByTitle(CN_PROJECT_NAME), RELEASE);
     }
 
-    public void verifyArtifactValues(ArtifactSoapDO artifact) throws RemoteException {
+    public void verifyArtifactValues(CTFArtifact artifact) throws RemoteException {
         assert(artifact.getPriority() == Integer.parseInt(PRIORITY));
         assert(artifact.getAssignedTo().equals(ASSIGN));
         assert(artifact.getReportedReleaseId().equals(this.getRelease().getId()));
@@ -163,7 +172,7 @@ public class TrackerTest extends HudsonTestCase {
 
     public void verifyBrokenTrackerUpdate(AbstractBuild build) 
         throws Exception {
-        ArtifactSoapDO artifact = this.getArtifact(build);
+        CTFArtifact artifact = this.getArtifact(build);
         assert(artifact != null);
         assert(artifact.getStatus().equals("Open"));
         this.verifyArtifactValues(artifact);

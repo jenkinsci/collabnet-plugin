@@ -6,6 +6,6 @@ package com.collabnet.ce.webservices;
  *
  * @author Kohsuke Kawaguchi
  */
-interface ObjectWithTitle {
+public interface ObjectWithTitle {
     String getTitle();
 }

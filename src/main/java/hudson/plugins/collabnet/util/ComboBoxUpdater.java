@@ -3,12 +3,14 @@ package hudson.plugins.collabnet.util;
 import com.collabnet.ce.webservices.CTFPackage;
 import com.collabnet.ce.webservices.CTFProject;
 import com.collabnet.ce.webservices.CTFRelease;
+import com.collabnet.ce.webservices.CTFTracker;
 import com.collabnet.ce.webservices.CollabNetApp;
+import com.collabnet.ce.webservices.ObjectWithTitle;
 import com.collabnet.ce.webservices.ScmApp;
-import com.collabnet.ce.webservices.TrackerApp;
 import hudson.util.ComboBoxModel;
 
 import java.rmi.RemoteException;
+import java.util.Collection;
 import java.util.logging.Logger;
 
 /**
@@ -26,10 +28,7 @@ public abstract class ComboBoxUpdater {
     public static ComboBoxModel getProjectList(CollabNetApp cna) {
         if (cna != null) {
             try {
-                ComboBoxModel r = new ComboBoxModel();
-                for (CTFProject p : cna.getProjects())
-                    r.add(p.getTitle());
-                return r;
+                return toModel(cna.getProjects());
             } catch (RemoteException re) {
                 CommonUtil.logRE(log, "getProjectList", re);
             }
@@ -46,10 +45,7 @@ public abstract class ComboBoxUpdater {
         CTFProject p = cna.getProjectByTitle(project);
         if (p==null)    return EMPTY_MODEL;
 
-        ComboBoxModel cbm = new ComboBoxModel();
-        for (CTFPackage pkg : p.getPackages())
-            cbm.add(pkg.getTitle());
-        return cbm;
+        return toModel(p.getPackages());
     }
 
     public static ComboBoxModel getReleases(CollabNetApp cna, String project, String rpackage) throws RemoteException {
@@ -71,12 +67,7 @@ public abstract class ComboBoxUpdater {
      */
     public static ComboBoxModel getReleaseList(CTFPackage pkg) throws RemoteException {
         if (pkg == null)  return EMPTY_MODEL;
-
-        ComboBoxModel cbm = new ComboBoxModel();
-        for (CTFRelease r : pkg.getReleases()) {
-            cbm.add(r.getTitle());
-        }
-        return cbm;
+        return toModel(pkg.getReleases());
     }
 
     /**
@@ -118,26 +109,19 @@ public abstract class ComboBoxUpdater {
         return EMPTY_MODEL;
     }
 
-    public static ComboBoxModel getTrackers(CollabNetApp cna, String project) {
-        String projectId = CNHudsonUtil.getProjectId(cna, project);
-        ComboBoxModel list = getTrackerList(cna, projectId);
-        CNHudsonUtil.logoff(cna);
-        return list;
+    private static ComboBoxModel toModel(Collection<? extends ObjectWithTitle> list) {
+        ComboBoxModel r = new ComboBoxModel();
+        for (ObjectWithTitle t : list)
+            r.add(t.getTitle());
+        return r;
     }
 
     /**
      * @return a list of trackers which has been sanitized.
      */
-    public static ComboBoxModel getTrackerList(CollabNetApp cna,
-                                                    String projectId) {
-        if (cna != null && projectId != null) {
-            TrackerApp ta = new TrackerApp(cna);
-            try {
-                return new ComboBoxModel(ta.getTrackers(projectId));
-            } catch (RemoteException re) {
-                CommonUtil.logRE(log, "getTrackerList", re);
-            }
-        }
+    public static ComboBoxModel getTrackerList(CTFProject p) throws RemoteException {
+        if (p!=null)
+            return toModel(p.getTrackers());
         return EMPTY_MODEL;
     }
 
