@@ -17,10 +17,10 @@ import java.util.Properties;
  * 
  * @author Kohsuke Kawaguchi
  */
-public class TestConfiguration extends Properties {
-    public static final TestConfiguration INSTANCE = new TestConfiguration();
+public class Configuration extends Properties {
+    public static final Configuration INSTANCE = new Configuration();
 
-    private TestConfiguration() {
+    private Configuration() {
         try {
             File f = new File(new File(System.getProperty("user.home")), ".teamforge");
             if (f.exists()) {

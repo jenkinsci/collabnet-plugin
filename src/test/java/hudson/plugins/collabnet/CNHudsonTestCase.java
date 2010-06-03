@@ -29,7 +29,7 @@ public abstract class CNHudsonTestCase extends HudsonTestCase {
     protected void setUp() throws Exception {
         super.setUp();
 
-        TestConfiguration.INSTANCE.injectTo(this);
+        Configuration.INSTANCE.injectTo(this);
 
         if (isOnline()) {
             CollabNetApp app = connect();

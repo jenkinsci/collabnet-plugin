@@ -23,7 +23,7 @@ public class CNChangeLogAnnotatorTest extends CNHudsonTestCase {
         Iterator<? extends Entry> itr = b.getChangeSet().iterator();
         Entry e = itr.next();
         System.out.println(e.getMsgAnnotated());
-        assertTrue(e.getMsgAnnotated().contains("sf/go/artf12345"));
+        assertTrue(e.getMsgAnnotated(), e.getMsgAnnotated().contains("sf/go/artf12345"));
 
         e = itr.next();
         System.out.println(e.getMsgAnnotated());

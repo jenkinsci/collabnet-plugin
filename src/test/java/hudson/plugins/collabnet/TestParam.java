@@ -8,7 +8,7 @@ import static java.lang.annotation.ElementType.FIELD;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 /**
- * Indicates a parameter that should be injected from {@link TestConfiguration}.
+ * Indicates a parameter that should be injected from {@link Configuration}.
  * 
  * @author Kohsuke Kawaguchi
  */
