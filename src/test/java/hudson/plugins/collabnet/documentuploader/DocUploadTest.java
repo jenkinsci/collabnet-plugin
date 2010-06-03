@@ -25,14 +25,6 @@ import org.jvnet.hudson.test.HudsonTestCase;
 public class DocUploadTest extends HudsonTestCase {
     private static final String DOC_UPLOADER_LABEL = "CollabNet Document " +
         "Uploader";
-    private static final String URL_ID = "cndu.collabneturl";
-    private static final String USER_ID = "cndu.username";
-    private static final String PASSWORD_ID = "cndu.password";
-    private static final String PROJECT_ID = "cndu_project";
-    private static final String PATH_ID = "cndu.upload_path";
-    private static final String DESC_ID = "cndu.description";
-    private static final String FILE_NAME = "cndu.file";
-    private static final String BUILDLOG_NAME = "cndu.buildlog";
 
     private static final String CN_URL = System.getProperty("teamforge_url");
     // this user needs access to the project and access to the projects
@@ -55,26 +47,6 @@ public class DocUploadTest extends HudsonTestCase {
         this.job = this.createFreeStyleProject();
         HtmlPage configurePage = setupProjectForDocUpload();
         this.submitForm(configurePage, HudsonConstants.CONFIGURE_FORM_NAME);
-    }
-
-    /**
-     * Setup the document upload in the job configure page, then
-     * check to make sure all the settings remain after submitting the
-     * form.
-     */
-    public void testDocUploadSetup() throws Exception {
-        WebClient wc = new WebClient();
-        HtmlPage configurePage = (HtmlPage) wc.goTo(this.job.getShortUrl() 
-                                                    + "configure");
-        Util.checkText(configurePage, URL_ID, CN_URL);
-        Util.checkText(configurePage, USER_ID, TEST_USER);
-        Util.checkPassword(configurePage, PASSWORD_ID, TEST_PW);
-        Util.checkText(configurePage, PROJECT_ID, CN_PROJECT_NAME);
-        Util.checkText(configurePage, PATH_ID, TEST_PATH);
-        Util.checkText(configurePage, DESC_ID, TEST_DESC);
-        Util.checkTextByName(configurePage, FILE_NAME, TEST_FILE_PATTERN);
-        Util.checkRadioSelected(configurePage, BUILDLOG_NAME, 
-                                UPLOAD_BUILD_LOG);
     }
 
     /**
