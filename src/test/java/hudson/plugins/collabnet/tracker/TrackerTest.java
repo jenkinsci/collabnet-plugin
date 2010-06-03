@@ -1,6 +1,7 @@
 package hudson.plugins.collabnet.tracker;
 
 import com.collabnet.ce.soap50.webservices.tracker.ArtifactSoapDO;
+import com.collabnet.ce.webservices.CTFRelease;
 import com.collabnet.ce.webservices.CollabNetApp;
 import com.gargoylesoftware.htmlunit.Page;
 import com.gargoylesoftware.htmlunit.html.HtmlCheckBoxInput;
@@ -18,6 +19,8 @@ import hudson.tasks.Builder;
 import hudson.tasks.Shell;
 import hudson.util.DescribableList;
 import org.jvnet.hudson.test.HudsonTestCase;
+
+import java.rmi.RemoteException;
 
 public class TrackerTest extends HudsonTestCase {
     private static final String URL_ID = "cntracker.collabneturl";
@@ -135,17 +138,17 @@ public class TrackerTest extends HudsonTestCase {
         }
     }
 
-    public String getReleaseId() {
+    public CTFRelease getRelease() throws RemoteException {
         CollabNetApp cna = CNHudsonUtil.getCollabNetApp(CN_URL, TEST_USER, 
                                                         TEST_PW);
-        String projectId = CNHudsonUtil.getProjectId(cna, CN_PROJECT_NAME);
-        return CNHudsonUtil.getProjectReleaseId(cna, projectId, RELEASE);
+        return CNHudsonUtil.getProjectReleaseId(
+                cna.getProjectByTitle(CN_PROJECT_NAME), RELEASE);
     }
 
-    public void verifyArtifactValues(ArtifactSoapDO artifact) {
+    public void verifyArtifactValues(ArtifactSoapDO artifact) throws RemoteException {
         assert(artifact.getPriority() == Integer.parseInt(PRIORITY));
         assert(artifact.getAssignedTo().equals(ASSIGN));
-        assert(artifact.getReportedReleaseId().equals(this.getReleaseId()));
+        assert(artifact.getReportedReleaseId().equals(this.getRelease().getId()));
     }
 
     public void testBrokenBuildWithTracker() throws Exception {

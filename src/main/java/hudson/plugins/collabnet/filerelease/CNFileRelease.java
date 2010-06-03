@@ -1,15 +1,21 @@
 package hudson.plugins.collabnet.filerelease;
 
 
-import com.collabnet.ce.soap50.webservices.frs.FrsFileSoapDO;
+import com.collabnet.ce.webservices.CTFFile;
+import com.collabnet.ce.webservices.CTFPackage;
+import com.collabnet.ce.webservices.CTFProject;
+import com.collabnet.ce.webservices.CTFRelease;
+import com.collabnet.ce.webservices.CTFReleaseFile;
 import com.collabnet.ce.webservices.CollabNetApp;
 import com.collabnet.ce.webservices.FileStorageApp;
-import com.collabnet.ce.webservices.FrsApp;
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.FilePath.FileCallable;
 import hudson.Launcher;
-import hudson.model.*;
+import hudson.model.AbstractBuild;
+import hudson.model.BuildListener;
+import hudson.model.FreeStyleProject;
+import hudson.model.Result;
 import hudson.plugins.collabnet.AbstractTeamForgeNotifier;
 import hudson.plugins.collabnet.ConnectionFactory;
 import hudson.plugins.collabnet.documentuploader.FilePattern;
@@ -165,17 +171,17 @@ public class CNFileRelease extends AbstractTeamForgeNotifier {
             build.addAction(this.createAction(0, null));
             return false;
         }
-        String releaseId = this.getReleaseId();
-        if (releaseId == null) {
+        CTFRelease release = this.getReleaseObject();
+        if (release == null) {
             Result previousBuildStatus = build.getResult();
             build.setResult(previousBuildStatus.combine(Result.UNSTABLE));
             this.logoff();
-            build.addAction(this.createAction(0, releaseId));
+            build.addAction(this.createAction(0, release));
             return false;
         }
         // now that we have the releaseId, we can do the upload.
-        int numUploaded = this.uploadFiles(build, releaseId);
-        build.addAction(this.createAction(numUploaded, releaseId));
+        int numUploaded = this.uploadFiles(build, release);
+        build.addAction(this.createAction(numUploaded, release));
         this.logoff();
         return true;
     }
@@ -186,43 +192,13 @@ public class CNFileRelease extends AbstractTeamForgeNotifier {
      * @param numUploaded
      * @return CnfrResultAction.
      */
-    public CnfrResultAction createAction(int numUploaded, String releaseId) {
+    public CnfrResultAction createAction(int numUploaded, CTFRelease release) {
         String displaymsg = "Download from CollabNet File Release System";
-        return new CnfrResultAction(displaymsg, 
+        return new CnfrResultAction(displaymsg,
                                     IMAGE_URL + "cn-icon.gif", 
-                                    "console", 
-                                    this.getFileReleaseUrl(releaseId), 
+                                    "console",
+                                    release.getUrl(),
                                     numUploaded);
-    }
-
-    /**
-     * @param releaseId the release id
-     * @return a link to the file release or the collabnet url if we don't
-     *         have a releaseId.
-     */
-    private String getFileReleaseUrl(String releaseId) {
-        String path = null;
-        if (releaseId != null) {
-            FrsApp fa = new FrsApp(this.cna);
-            try {
-                path = fa.getReleasePath(releaseId);                
-            } catch (RemoteException re) {
-                this.log("get release path", re);
-            }
-        }
-        if (path != null) {
-            return this.getCollabNetUrl() + "/sf/frs/do/viewRelease/" + path;
-        } else {
-            return this.getCollabNetUrl();
-        }
-    }
-
-    /** 
-     * @param path path to uploaded frs file.
-     * @return url to uploaded frs file.
-     */
-    private String getFileUrl(String path) {
-        return this.getCollabNetUrl() + "/sf/frs/do/downloadFile/" + path;
     }
 
     /**
@@ -230,14 +206,13 @@ public class CNFileRelease extends AbstractTeamForgeNotifier {
      * releaseId.
      *
      * @param build current Hudson build.
-     * @param releaseId where the files will be uploaded.
+     * @param release where the files will be uploaded.
      * @return the number of files successfully uploaded.
      * @throws IOException
      * @throws InterruptedException
      */
-    public int uploadFiles(AbstractBuild<?, ?> build, String releaseId) throws IOException, InterruptedException {
+    public int uploadFiles(AbstractBuild<?, ?> build, CTFRelease release) throws IOException, InterruptedException {
         int numUploaded = 0;
-        final FrsApp fa = new FrsApp(this.cna);
         this.logConsole("Uploading file to project '" + this.getProject() +
                  "', package '" + this.getPkg() + "', release '" +
                  this.getRelease() + "' on host '" + this.getCollabNetUrl() + 
@@ -260,18 +235,17 @@ public class CNFileRelease extends AbstractTeamForgeNotifier {
             FilePath[] filePaths = this.getFilePaths(build, file_pattern);
             for (FilePath uploadFilePath : filePaths) {
                 // check if a file already exists
-                String fileId = null;
+                CTFReleaseFile file = null;
                 try {
-                    fileId = fa.findFrsFile(uploadFilePath.getName(), 
-                                            releaseId);
+                    file = release.getFileByTitle(uploadFilePath.getName());
                 } catch (RemoteException re) {
                     this.log("find file", re);
                 }
-                if (fileId != null) {
+                if (file != null) {
                     if (this.isOverwrite()) {
                         // delete existing file
                         try {
-                            fa.deleteFrsFile(fileId);
+                            file.delete();
                             this.logConsole("Deleted previously uploaded file: " +
                                      uploadFilePath.getName());
                         } catch (RemoteException re) {
@@ -290,11 +264,12 @@ public class CNFileRelease extends AbstractTeamForgeNotifier {
                     // All soap App must be preloaded by current classloader for "invoke" call below to work on slave
                     new FileStorageApp(this.cna);
                     // HACK: end
-                    String path = uploadFilePath.act(
-                        new RemoteFrsFileUploader(getCollabNetUrl(), getUsername(), cna.getSessionId(), releaseId)
-                    );
+                    CTFFile f = new CTFFile(cna,uploadFilePath.act(
+                        new RemoteFrsFileUploader(getCollabNetUrl(), getUsername(), cna.getSessionId())
+                    ));
+                    CTFReleaseFile rf = release.addFile(uploadFilePath.getName(), getMimeType(uploadFilePath), f);
 
-                    this.logConsole("Uploaded file " + uploadFilePath.getName() + " -> " + this.getFileUrl(path));
+                    this.logConsole("Uploaded file " + uploadFilePath.getName() + " -> " + rf.getURL());
                     numUploaded++;
                 } catch (RemoteException re) {
                     this.log("upload file", re);
@@ -320,20 +295,17 @@ public class CNFileRelease extends AbstractTeamForgeNotifier {
         private String mServerUrl;
         private String mUsername;
         private String mSessionId;
-        private String mReleaseId;
 
         /**
          * Constructor. Needs to have old sessionId, since the uploaded file is only available to the same session.
          * @param serverUrl collabnet serverUrl
          * @param username collabnet username
          * @param sessionId collabnet sessionId
-         * @param releaseId the id of the release to create file in
          */
-        public RemoteFrsFileUploader(String serverUrl, String username, String sessionId, String releaseId) {
+        public RemoteFrsFileUploader(String serverUrl, String username, String sessionId) {
             mServerUrl = serverUrl;
             mUsername = username;
             mSessionId = sessionId;
-            mReleaseId = releaseId;
         }
 
         /**
@@ -341,11 +313,7 @@ public class CNFileRelease extends AbstractTeamForgeNotifier {
          */
         public String invoke(File f, VirtualChannel channel) throws IOException {
             CollabNetApp cnApp = CNHudsonUtil.recreateCollabNetApp(mServerUrl, mUsername, mSessionId);
-            FileStorageApp fsApp = new FileStorageApp(cnApp);
-            FrsApp frsApp = new FrsApp(cnApp);
-            String fileId = fsApp.uploadFile(f);
-            FrsFileSoapDO fileDO = frsApp.createFrsFile(mReleaseId, f.getName(), CNFileRelease.getMimeType(f), fileId);
-            return fileDO.getPath();
+            return cnApp.upload(f).getId();
         }
     }
 
@@ -392,8 +360,8 @@ public class CNFileRelease extends AbstractTeamForgeNotifier {
      * @param f The file to return the mimetype for.
      * @return the string representing the mimetype of the file.
      */
-    public static String getMimeType(File f) {
-        return new MimetypesFileTypeMap().getContentType(f);
+    public static String getMimeType(FilePath f) {
+        return new MimetypesFileTypeMap().getContentType(f.getName());
     }
 
     /**
@@ -415,8 +383,8 @@ public class CNFileRelease extends AbstractTeamForgeNotifier {
      *
      * @return the id for the release.
      */
-    public String getReleaseId() {
-        String projectId = this.getProjectId();
+    public CTFRelease getReleaseObject() throws RemoteException {
+        CTFProject projectId = this.getProjectObject();
         if (projectId == null) {
             this.logConsole("Critical Error: projectId cannot be found for " +
                      this.getProject() + ".  This could mean that the project "
@@ -425,21 +393,21 @@ public class CNFileRelease extends AbstractTeamForgeNotifier {
                      "Setting build status to UNSTABLE (or worse).");
             return null;
         }
-        String packageId = this.getPackageId(projectId);
-        if (packageId == null) {
+        CTFPackage pkg = projectId.getPackageByTitle(getPkg());
+        if (pkg == null) {
             this.logConsole("Critical Error: packageId cannot be found for " +
                      this.getPkg() + ".  " +
                      "Setting build status to UNSTABLE (or worse).");
             return null;
         }
-        String releaseId = this.getReleaseId(packageId);
-        if (releaseId == null) {
+        CTFRelease release = pkg.getReleaseByTitle(getRelease());
+        if (release == null) {
             this.logConsole("Critical Error: releaseId cannot be found for " +
                      this.getRelease() + ".  " +
                      "Setting build status to UNSTABLE (or worse).");
             return null;
         }
-        return releaseId;
+        return release;
     }
 
     /**
@@ -447,42 +415,12 @@ public class CNFileRelease extends AbstractTeamForgeNotifier {
      * 
      * @return the matching project id, or null if none is found.
      */
-    public String getProjectId() {
+    public CTFProject getProjectObject() throws RemoteException {
         if (this.cna == null) {
             this.logConsole("Cannot getProjectId, not logged in!");
             return null;
         }
-        return CNHudsonUtil.getProjectId(this.cna, this.getProject());
-    }
-
-    /**
-     * Get the package id.
-     *
-     * @param projectId the id of the project which contains this package.
-     * @return the package id, or null if none is found.
-     */
-    public String getPackageId(String projectId) {
-        if (this.cna == null) {
-            this.logConsole("Cannot getPackageId, not logged in!");
-            return null;
-        }
-        return CNHudsonUtil.getPackageId(this.cna, this.getPkg(),
-                                         projectId);
-    }
-
-    /**
-     * Get the release id.
-     *
-     * @param packageId the id of the package which contains this release.
-     * @return the release id, or null if none is found.
-     */
-    public String getReleaseId(String packageId) {
-        if (this.cna == null) {
-            this.logConsole("Cannot getReleaseId, not logged in!");
-            return null;
-        }
-        return CNHudsonUtil.getReleaseId(this.cna, packageId, 
-                                         this.getRelease());
+        return cna.getProjectByTitle(this.getProject());
     }
 
     /**
@@ -504,7 +442,7 @@ public class CNFileRelease extends AbstractTeamForgeNotifier {
          *
          * @return the form validation
          */
-        public FormValidation doCheckPkg(CollabNetApp cna, @QueryParameter String project, @QueryParameter String pkg) {
+        public FormValidation doCheckPkg(CollabNetApp cna, @QueryParameter String project, @QueryParameter String pkg) throws RemoteException {
             return CNFormFieldValidator.packageCheck(cna,project,pkg);
         }
 
@@ -514,7 +452,7 @@ public class CNFileRelease extends AbstractTeamForgeNotifier {
          * @return the form validation
          */
         public FormValidation doCheckRelease(CollabNetApp cna, @QueryParameter String project,
-                                @QueryParameter String pkg, @QueryParameter String release) {
+                                @QueryParameter String pkg, @QueryParameter String release) throws RemoteException {
             return CNFormFieldValidator.releaseCheck(cna,project,pkg,release,true);
         }
 
@@ -522,7 +460,7 @@ public class CNFileRelease extends AbstractTeamForgeNotifier {
          * Gets a list of packages to choose from and write them as a 
          * JSON string into the response data.
          */
-        public ComboBoxModel doFillPkgItems(CollabNetApp cna, @QueryParameter String project) {
+        public ComboBoxModel doFillPkgItems(CollabNetApp cna, @QueryParameter String project) throws RemoteException {
             return ComboBoxUpdater.getPackages(cna,project);
         }
 
@@ -531,7 +469,7 @@ public class CNFileRelease extends AbstractTeamForgeNotifier {
          * JSON string into the response data.
          */
         public ComboBoxModel doFillReleaseItems(CollabNetApp cna,
-                @QueryParameter String project, @QueryParameter("package") String _package) {
+                @QueryParameter String project, @QueryParameter("package") String _package) throws RemoteException {
             return ComboBoxUpdater.getReleases(cna,project,_package);
         }
     }

@@ -1,26 +1,34 @@
 package hudson.plugins.collabnet.filerelease;
 
-import com.collabnet.ce.webservices.CollabNetApp;
+import com.collabnet.ce.webservices.CTFPackage;
+import com.collabnet.ce.webservices.CTFProject;
+import com.collabnet.ce.webservices.CTFRelease;
+import com.collabnet.ce.webservices.CTFReleaseFile;
 import hudson.Launcher;
 import hudson.model.AbstractBuild;
 import hudson.model.BuildListener;
 import hudson.model.FreeStyleProject;
 import hudson.plugins.collabnet.CNHudsonTestCase;
 import hudson.plugins.collabnet.ConnectionFactory;
+import hudson.plugins.collabnet.TestParam;
 import hudson.plugins.collabnet.documentuploader.FilePattern;
-import hudson.plugins.collabnet.util.CNHudsonUtil;
 import org.jvnet.hudson.test.TestBuilder;
 
 import java.io.IOException;
+import java.rmi.RemoteException;
 
 /**
  * Test document upload facility.
  */
 public class CNFileReleaseTest extends CNHudsonTestCase {
-    private static final String PACKAGE = System.getProperty("fr_package");
-    private static final String RELEASE = System.getProperty("fr_release");
-    private static final String FILE = "test.txt";
-    private static final String FILE_CONTENT = "Test file from FileRelease";
+    @TestParam
+    private String fr_package = "aPackage";
+    @TestParam
+    private String fr_release = "aRelease";
+    @TestParam
+    private String FILE = "test.txt";
+    @TestParam
+    private String FILE_CONTENT = "Test file from FileRelease";
 
     public void testConfigRoundtrip() throws Exception {
         setGlobalConnectionFactory();
@@ -48,10 +56,19 @@ public class CNFileReleaseTest extends CNHudsonTestCase {
     public void testUpload() throws Exception {
         if(!isOnline()) return; // skip if offline
 
+        // make sure package and release exists
+        CTFProject fr = connect().getProjectByTitle(teamforge_project);
+        CTFPackage pkg = fr.getPackageByTitle(fr_package);
+        if (pkg==null)
+            pkg = fr.createPackage(fr_package,"test for Hudson",true);
+        CTFRelease r = pkg.getReleaseByTitle(fr_release);
+        if (r==null)
+            r = pkg.createRelease(fr_release,"test for Hudson","active","Prototype");
+
         FreeStyleProject job = this.createFreeStyleProject();
         job.getPublishersList().add(new CNFileRelease(
                 new ConnectionFactory(teamforge_url, admin_user, password),
-                teamforge_project, PACKAGE, RELEASE, true,
+                teamforge_project, fr_package, fr_release, true,
                 new FilePattern[]{new FilePattern(FILE)}
         ));
         job.getBuildersList().add(new TestBuilder() {
@@ -62,19 +79,15 @@ public class CNFileReleaseTest extends CNHudsonTestCase {
             }
         });
         buildAndAssertSuccess(job);
-        this.verifyFRUpload();
+        this.verifyFRUpload(r);
     }
 
     /**
      * Verify that an upload of the test file was successful.
      */
-    public void verifyFRUpload() {
-        CollabNetApp cna = CNHudsonUtil.getCollabNetApp(teamforge_url, admin_user,
-                password);
-        assert(cna != null);
-        String fileId = CNHudsonUtil.getFileId(cna, teamforge_project, PACKAGE,
-                                               RELEASE, FILE);
-        assert(fileId != null);
+    public void verifyFRUpload(CTFRelease r) throws RemoteException {
+        CTFReleaseFile f = r.getFileByTitle(FILE);
+        assertTrue(f.getId()!=null);
     }
 
     private static final String FIELDS = "connectionFactory,project,pkg,release,filePatterns,overwrite";

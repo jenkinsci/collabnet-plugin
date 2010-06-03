@@ -1,12 +1,11 @@
 package com.collabnet.ce.webservices;
 
 import com.collabnet.ce.soap50.webservices.ClientSoapStubFactory;
-
-import com.collabnet.ce.soap50.webservices.cemain.ICollabNetSoap;
-import com.collabnet.ce.soap50.webservices.cemain.GroupSoapList;
-import com.collabnet.ce.soap50.webservices.cemain.GroupSoapRow;
 import com.collabnet.ce.soap50.webservices.cemain.Group2SoapList;
 import com.collabnet.ce.soap50.webservices.cemain.Group2SoapRow;
+import com.collabnet.ce.soap50.webservices.cemain.GroupSoapList;
+import com.collabnet.ce.soap50.webservices.cemain.GroupSoapRow;
+import com.collabnet.ce.soap50.webservices.cemain.ICollabNetSoap;
 import com.collabnet.ce.soap50.webservices.cemain.ProjectMemberSoapList;
 import com.collabnet.ce.soap50.webservices.cemain.ProjectMemberSoapRow;
 import com.collabnet.ce.soap50.webservices.cemain.ProjectSoapDO;
@@ -14,19 +13,24 @@ import com.collabnet.ce.soap50.webservices.cemain.ProjectSoapList;
 import com.collabnet.ce.soap50.webservices.cemain.ProjectSoapRow;
 import com.collabnet.ce.soap50.webservices.cemain.UserSoapList;
 import com.collabnet.ce.soap50.webservices.cemain.UserSoapRow;
-
-import java.rmi.RemoteException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-
+import com.collabnet.ce.soap50.webservices.filestorage.IFileStorageAppSoap;
+import com.collabnet.ce.soap50.webservices.frs.IFrsAppSoap;
 import hudson.plugins.collabnet.share.TeamForgeShare;
 import hudson.plugins.collabnet.util.CNHudsonUtil;
 import hudson.plugins.collabnet.util.CommonUtil;
 import org.apache.log4j.Logger;
 import org.kohsuke.stapler.QueryParameter;
+
+import javax.activation.DataHandler;
+import javax.activation.FileDataSource;
+import java.io.File;
+import java.rmi.RemoteException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 
 /***
  * This class represents the connection to the CollabNet webservice.
@@ -41,6 +45,8 @@ public class CollabNetApp {
     private String username;
     private String url;
     private ICollabNetSoap icns;
+    protected IFrsAppSoap ifrs;
+    protected IFileStorageAppSoap ifsa;
 
     /**
      * Creates a new session to the server at the given url.
@@ -87,6 +93,10 @@ public class CollabNetApp {
     public CollabNetApp(String url) {
         this.url = url;
         this.icns = this.getICollabNetSoap();
+        this.ifrs = (IFrsAppSoap) ClientSoapStubFactory.
+                    getSoapStub(IFrsAppSoap.class, this.getServerUrl() + SOAP_SERVICE + "FrsApp?wsdl");
+        this.ifsa = (IFileStorageAppSoap) ClientSoapStubFactory.
+                    getSoapStub(IFileStorageAppSoap.class, this.getServerUrl() + SOAP_SERVICE + "FileStorageApp?wsdl");
     }
 
     /**
@@ -166,6 +176,18 @@ public class CollabNetApp {
         this.sessionId = null;
     }
 
+    public CTFFile upload(DataHandler src) throws RemoteException {
+        return new CTFFile(this,this.ifsa.uploadFile(getSessionId(),src));
+    }
+
+    /**
+     * Uploads a file. The returned file object can be then used as an input
+     * to methods like {@link CTFRelease#addFile(String, String, CTFFile)}.
+     */
+    public CTFFile upload(File src) throws RemoteException {
+        return upload(new DataHandler(new FileDataSource(src)));
+    }
+
     /**
      * @param url of the CollabNet server.
      * @return the API version number string.  This string is in the format 
@@ -232,22 +254,6 @@ public class CollabNetApp {
         }
     }
 
-    /**
-     * Return the list of project names.
-     *
-     * @return a Collection of project names.
-     * @throws RemoteException
-     */
-    public Collection<String> getProjects() throws RemoteException {
-        this.checkValidSessionId();
-        ProjectSoapList pslist = this.icns.getProjectList(sessionId);
-        Collection<String> names = new ArrayList<String>();
-        for (ProjectSoapRow row: pslist.getDataRows()) {
-            names.add(row.getTitle());
-        }
-        return names;
-    }
-    
     /**
      * Can the user can be found on the CollabNet server?
      *
@@ -488,7 +494,26 @@ public class CollabNetApp {
                                                          "a valid session.");
         }
     }
-    
+
+    public CTFProject getProjectById(String projectId) throws RemoteException {
+        return new CTFProject(this,icns.getProjectData(sessionId,projectId));
+    }
+
+    public List<CTFProject> getProjects() throws RemoteException {
+        List<CTFProject> r = new ArrayList<CTFProject>();
+        for (ProjectSoapRow row : icns.getProjectList(getSessionId()).getDataRows()) {
+            r.add(new CTFProject(this,row));
+        }
+        return r;
+    }
+
+    public CTFProject getProjectByTitle(String title) throws RemoteException {
+        for (CTFProject p : getProjects())
+            if (p.getTitle().equals(title))
+                return p;
+        return null;
+    }
+
     /**
      * Exception class to throw when something unexpected goes wrong.
      */

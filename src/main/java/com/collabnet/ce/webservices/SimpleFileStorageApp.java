@@ -63,7 +63,7 @@ public class SimpleFileStorageApp extends AbstractSoapApp {
         try {
             id = this.ifsa.startFileUpload(this.getSessionId());
             while ((bytesRead = istream.read(bytes)) > 0) {
-                /* ifsa.write doesn't manage the byte array size as
+                /* ifrs.write doesn't manage the byte array size as
                  * separate data, so it will write the entire array,
                  * no matter how big.  So we check if the real data is
                  * smaller, and in that case, copy to a smaller array.

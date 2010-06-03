@@ -1,5 +1,8 @@
 package hudson.plugins.collabnet.util;
 
+import com.collabnet.ce.webservices.CTFPackage;
+import com.collabnet.ce.webservices.CTFProject;
+import com.collabnet.ce.webservices.CTFRelease;
 import com.collabnet.ce.webservices.CollabNetApp;
 import com.collabnet.ce.webservices.DocumentApp;
 import com.collabnet.cubit.api.CubitConnector;
@@ -14,7 +17,14 @@ import org.apache.commons.httpclient.protocol.ProtocolSocketFactory;
 import org.kohsuke.stapler.StaplerRequest;
 
 import java.io.IOException;
-import java.util.*;
+import java.rmi.RemoteException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -251,56 +261,57 @@ public abstract class CNFormFieldValidator {
      * Class to check that a package exists.  Expects a StaplerRequest with 
      * a url, username, password, project, and package.
      */
-    public static FormValidation packageCheck(CollabNetApp cna, String project, String rpackage) {
+    public static FormValidation packageCheck(CollabNetApp cna, String project, String rpackage) throws RemoteException {
         if (CommonUtil.unset(rpackage)) {
             return FormValidation.error("The package is required.");
         }
-        String projectId = CNHudsonUtil.getProjectId(cna, project);
-        if (projectId != null) {
-            String packageId = CNHudsonUtil.getPackageId(cna, rpackage,
-                                                         projectId);
-            if (packageId == null) {
-                CNHudsonUtil.logoff(cna);
-                return FormValidation.warning("Package could not be found.");
+        try {
+            CTFProject p = cna.getProjectByTitle(project);
+            if (p != null) {
+                CTFPackage pkg = p.getPackageByTitle(rpackage);
+                if (pkg == null) {
+                    return FormValidation.warning("Package could not be found.");
+                }
             }
+            return FormValidation.ok();
+        } finally {
+            CNHudsonUtil.logoff(cna);
         }
-        CNHudsonUtil.logoff(cna);
-        return FormValidation.ok();
     }
 
     /**
      * Class to check that a release exists.  Expects a StaplerRequest with 
      * a url, username, password, project, package (optional), and release.
      */
-    public static FormValidation releaseCheck(CollabNetApp cna, String project, String rpackage, String release, boolean required) {
-        if (CommonUtil.unset(release)) {
-            if (required) {
-                return FormValidation.error("The release is required.");
+    public static FormValidation releaseCheck(CollabNetApp cna, String project, String rpackage, String release, boolean required) throws RemoteException {
+        try {
+            if (CommonUtil.unset(release)) {
+                if (required) {
+                    return FormValidation.error("The release is required.");
+                } else {
+                    return FormValidation.ok();
+                }
+            }
+            CTFProject p = cna.getProjectByTitle(project);
+            if (p==null)    return FormValidation.ok(); // not entered yet?
+
+            CTFPackage pkg = p.getPackageByTitle(rpackage);
+            if (pkg != null) {
+                CTFRelease r = pkg.getReleaseByTitle(release);
+                if (r == null)
+                    return FormValidation.warning("Release could not be found.");
             } else {
-                return FormValidation.ok();
-            }
-        }
-        String projectId = CNHudsonUtil.getProjectId(cna, project);
-        String packageId = CNHudsonUtil.getPackageId(cna, rpackage,
-                                                     projectId);
-        if (packageId != null) {
-            String releaseId = CNHudsonUtil.getReleaseId(cna, packageId,
-                                                         release);
-            if (releaseId == null) {
-                CNHudsonUtil.logoff(cna);
+                // locate the release from all the packages
+                for (CTFPackage x : p.getPackages()) {
+                    if (x.getReleaseByTitle(release)!=null)
+                        return FormValidation.ok();
+                }
                 return FormValidation.warning("Release could not be found.");
             }
-        } else if (projectId != null) {
-            String releaseId = CNHudsonUtil.getProjectReleaseId(cna,
-                                                                projectId,
-                                                                release);
-            if (releaseId == null) {
-                CNHudsonUtil.logoff(cna);
-                return FormValidation.warning("Release could not be found.");
-            }
+            return FormValidation.ok();
+        } finally {
+            CNHudsonUtil.logoff(cna);
         }
-        CNHudsonUtil.logoff(cna);
-        return FormValidation.ok();
     }
 
     /**

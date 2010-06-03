@@ -1,6 +1,7 @@
 package hudson.plugins.collabnet.tracker;
 
 import com.collabnet.ce.soap50.webservices.tracker.ArtifactSoapDO;
+import com.collabnet.ce.webservices.CTFRelease;
 import com.collabnet.ce.webservices.CollabNetApp;
 import com.collabnet.ce.webservices.FileStorageApp;
 import com.collabnet.ce.webservices.TrackerApp;
@@ -391,15 +392,14 @@ public class CNTracker extends AbstractTeamForgeNotifier {
         // check assign user validity
         String assignTo = this.getValidAssignUser(projectId);
         String title = this.getInterpreted(build, this.getTitle());
-        String releaseId = CNHudsonUtil.getProjectReleaseId(this.cna, 
-                                                            projectId, 
+        CTFRelease releaseId = CNHudsonUtil.getProjectReleaseId(this.cna.getProjectById(projectId),
                                                             this.getRelease());
         TrackerApp ta = new TrackerApp(this.cna);
         try {
             ArtifactSoapDO asd = ta.createNewTrackerArtifact(trackerId, title,
                                               description, null, null, status,
                                               null, this.priority, 0, 
-                                              assignTo, releaseId, null, 
+                                              assignTo, releaseId.getId(), null,
                                               build.getLogFile().getName(), 
                                               "text/plain", buildLogId);
             this.log("Created tracker artifact '" + title + "' in tracker '" 
@@ -674,7 +674,7 @@ public class CNTracker extends AbstractTeamForgeNotifier {
          * Form validation for the release field.
          */
         public FormValidation doCheckRelease(CollabNetApp cna, @QueryParameter String project,
-                                @QueryParameter("package") String rpackage, @QueryParameter String release) {
+                                @QueryParameter("package") String rpackage, @QueryParameter String release) throws RemoteException {
             return CNFormFieldValidator.releaseCheck(cna,project,rpackage,release,false);
         }
 
@@ -704,7 +704,7 @@ public class CNTracker extends AbstractTeamForgeNotifier {
          * JSON string into the response data.
          */
         public ComboBoxModel doFillReleaseItems(CollabNetApp cna,
-                @QueryParameter String project, @QueryParameter("package") String _package) {
+                @QueryParameter String project, @QueryParameter("package") String _package) throws RemoteException {
             return ComboBoxUpdater.getReleases(cna,project,_package);
         }
     }

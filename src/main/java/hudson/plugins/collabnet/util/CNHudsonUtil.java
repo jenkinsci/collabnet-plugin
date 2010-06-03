@@ -2,15 +2,13 @@ package hudson.plugins.collabnet.util;
 
 import com.collabnet.ce.soap50.webservices.scm.Repository2SoapDO;
 import com.collabnet.ce.soap50.webservices.tracker.ArtifactSoapDO;
+import com.collabnet.ce.webservices.CTFPackage;
+import com.collabnet.ce.webservices.CTFProject;
+import com.collabnet.ce.webservices.CTFRelease;
 import com.collabnet.ce.webservices.CollabNetApp;
-import com.collabnet.ce.webservices.FrsApp;
 import com.collabnet.ce.webservices.ScmApp;
 import com.collabnet.ce.webservices.TrackerApp;
-import hudson.model.Hudson;
-import hudson.plugins.collabnet.auth.CollabNetSecurityRealm;
 import hudson.plugins.collabnet.share.TeamForgeShare;
-import hudson.security.SecurityRealm;
-import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 
 import java.rmi.RemoteException;
@@ -133,19 +131,12 @@ public class CNHudsonUtil {
      * @param projectId the project id.
      * @return the package id if found, null otherwise.
      */
-    public static String getPackageId(CollabNetApp cna, String rpackage, 
-                                String projectId) {
-        String packageId = null;
-        if (cna != null && projectId != null) {
-            FrsApp fa = new FrsApp(cna);
-            try {
-                packageId = fa.findPackageId(rpackage, projectId);
-            } catch (RemoteException re) {
-                CommonUtil.logRE(log, "getPackageId", re);
-                return null;
-            }
-        }
-        return packageId;
+    public static CTFPackage getPackage(CollabNetApp cna, String rpackage,
+                                String projectId) throws RemoteException {
+        if (cna==null)  return null;
+        CTFProject p = cna.getProjectById(projectId);
+        if (p==null)    return null;
+        return p.getPackageByTitle(rpackage);
     }
 
     /**
@@ -183,74 +174,20 @@ public class CNHudsonUtil {
     }
 
     /**
-     * Get the release id.
-     *
-     * @param cna for accessing the webservice methods.
-     * @param packageId the id of the package which contains this release.
-     * @param release the name of the release
-     * @return the release id, or null if none is found.
-     */
-    public static String getReleaseId(CollabNetApp cna, String packageId, 
-                               String release) {
-        if (cna == null || packageId == null) {
-            return null;
-        }
-        String releaseId = null;
-        FrsApp fa = new FrsApp(cna);
-        try {
-            releaseId = fa.findReleaseIdByPackage(release, packageId);
-        } catch (RemoteException re) {
-            CommonUtil.logRE(log, "getReleaseId", re);
-        }
-        return releaseId;
-    }
-
-    /**
-     * Get the file id.
-     *
-     * @param cna for accessing the webservice methods.
-     * @param releaseId the id of the release.
-     * @param file name
-     * @return the file id, or null if none is found.
-     */
-    public static String getFileId(CollabNetApp cna, String releaseId, 
-                                   String file) {
-        if (cna == null || releaseId == null) {
-            return null;
-        }
-        String fileId = null;
-        FrsApp fa = new FrsApp(cna);
-        try {
-            fileId = fa.findFrsFile(file, releaseId);
-        } catch (RemoteException re) {
-            CommonUtil.logRE(log, "getFileId", re);
-        }
-        return fileId;
-    }
-
-    /**
      * Get a releaseId, given a projectId and a release title.
      *
-     * @param cna for accessing the webservice methods.
-     * @param projectId
      * @param release
      * @return the releaseId in this project which matches the release name
      *         or null if none is found.
      */
-    public static String getProjectReleaseId (CollabNetApp cna, 
-                                              String projectId,
-                                              String release) {
-        if (cna == null || projectId == null) {
-            return null;
+    public static CTFRelease getProjectReleaseId(CTFProject project,  String release) throws RemoteException {
+        if (project==null)  return null;
+
+        for (CTFPackage pkg : project.getPackages()) {
+            CTFRelease r = pkg.getReleaseByTitle(release);
+            if (r!=null)    return r;
         }
-        FrsApp fa = new FrsApp(cna);
-        String releaseId = null;
-        try {
-            releaseId = fa.findReleaseId(release, projectId);
-        } catch (RemoteException re) {
-            CommonUtil.logRE(log, "getProjectReleaseId", re);
-        }
-        return releaseId;
+        return null;
     }
 
     /**
@@ -304,35 +241,6 @@ public class CNHudsonUtil {
         return artifact;
     }
     
-    /**
-     * Given project, package, release, and file name, find the fileId
-     * for a file in the system, or null if none is found.
-     *
-     * @param cna for accessing webservice methods
-     * @param project name
-     * @param rpackage name
-     * @param release name
-     * @param file name
-     */
-    public static String getFileId(CollabNetApp cna, String project, 
-                                   String rpackage, String release, 
-                                   String file) {
-        String fileId = null;
-        String projectId = CNHudsonUtil.getProjectId(cna, project);
-        if (projectId != null) {
-            String packageId = CNHudsonUtil.getPackageId(cna, rpackage, 
-                                                         projectId);
-            if (packageId != null) {
-                String releaseId = CNHudsonUtil.getReleaseId(cna, packageId, 
-                                                             release);
-                if (releaseId != null) {
-                    fileId = CNHudsonUtil.getFileId(cna, releaseId, file);
-                }
-            }
-        }
-        return fileId;
-    }
-
     /**
      * @param cna for accessing the webservice methods.
      * @param username

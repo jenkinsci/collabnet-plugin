@@ -176,26 +176,6 @@
               <value>hudsonReadUser</value>
             </property>
             <!-- end properties for project auth -->
-            <!-- properties for doc uploader -->
-            <property>
-              <name>doc_path</name>
-              <value>stuff/to/upload/${BUILD_ID}</value>
-            </property>
-            <!-- end properties for doc uploader -->
-            <!-- properties for file release -->
-            <property>
-              <name>fr_package</name>
-              <value>test package</value>
-            </property>
-            <property>
-              <name>fr_release</name>
-              <value>test release</value>
-            </property>
-            <property>
-              <name>fr_overwrite</name>
-              <value>true</value>
-            </property>
-            <!-- end properties for file release -->
             <!-- properties for pbl test -->
             <property>
               <name>lm_url</name>
