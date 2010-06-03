@@ -1,10 +1,11 @@
 package hudson.plugins.collabnet.documentuploader;
 
 
-import com.collabnet.ce.soap50.webservices.docman.DocumentSoapDO;
+import com.collabnet.ce.webservices.CTFDocument;
+import com.collabnet.ce.webservices.CTFDocumentFolder;
+import com.collabnet.ce.webservices.CTFFile;
+import com.collabnet.ce.webservices.CTFProject;
 import com.collabnet.ce.webservices.CollabNetApp;
-import com.collabnet.ce.webservices.DocumentApp;
-import com.collabnet.ce.webservices.FileStorageApp;
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.FilePath.FileCallable;
@@ -175,41 +176,37 @@ public class CNDocumentUploader extends AbstractTeamForgeNotifier {
         if (this.cna == null) {
             this.logConsole("Critical Error: login to " + this.getCollabNetUrl() +
                      " failed.  Setting build status to UNSTABLE (or worse).");
-            Result previousBuildStatus = build.getResult();
-            build.setResult(previousBuildStatus.combine(Result.UNSTABLE));
+            build.setResult(Result.UNSTABLE);
             build.addAction(this.createAction(0, null));
             return false;
         }
-        String projectId = this.getProjectId();
-        if (projectId == null) {
+        CTFProject p = cna.getProjectByTitle(this.getProject());
+        if (p == null) {
             this.logConsole("Critical Error: Unable to find project '" +
                      this.getProject() + "'.  " + 
                      "Setting build status to UNSTABLE (or worse).");
-            Result previousBuildStatus = build.getResult();
-            build.setResult(previousBuildStatus.combine(Result.UNSTABLE));
+            build.setResult(Result.UNSTABLE);
             build.addAction(this.createAction(0, null));
             this.logoff();
             return false;
         }
-        DocumentApp da = new DocumentApp(this.cna);
-        String folderId = null;
         String path = this.getInterpreted(build, this.getUploadPath());
+        CTFDocumentFolder folder;
         try {
-            folderId = da.findOrCreatePath(projectId, path);
+            folder = p.getOrCreateDocumentFolder(path);
         } catch (RemoteException re) {
             this.log("findOrCreatePath", re);
             // if this fails, cannot continue
             this.logConsole("Critical Error: Unable to create a path for '" +
                      path + "'.  Setting build status to " +
                      "UNSTABLE (or worse).");
-            Result previousBuildStatus = build.getResult();
-            build.setResult(previousBuildStatus.combine(Result.UNSTABLE));
-            build.addAction(this.createAction(0, folderId));
+            build.setResult(Result.UNSTABLE);
+            build.addAction(this.createAction(0, null));
             this.logoff();
             return false;
         }
-        int numUploaded = this.uploadFiles(folderId, build, listener);
-        build.addAction(this.createAction(numUploaded, folderId));
+        int numUploaded = this.uploadFiles(folder, build, listener);
+        build.addAction(this.createAction(numUploaded, folder));
         try {
             this.cna.logoff();
         } catch (RemoteException re) {
@@ -218,45 +215,23 @@ public class CNDocumentUploader extends AbstractTeamForgeNotifier {
         return true;
     }
 
-    private Action createAction(int numUploaded, String folderId) {
+    private Action createAction(int numUploaded, CTFDocumentFolder folder) {
         String displaymsg = "Download from CollabNet Documents";
         return new CnduResultAction(displaymsg, 
                                     IMAGE_URL + "cn-icon.gif", 
-                                    "console", 
-                                    this.getFolderUrl(folderId), 
+                                    "console",
+                                    folder.getURL(),
                                     numUploaded);
-    }
-
-    /**
-     * @param folderId
-     * @return the url pointing to this folder.
-     */
-    private String getFolderUrl(String folderId) {
-        String path = null;
-        if (folderId != null) {
-            try {
-                DocumentApp da = new DocumentApp(this.cna);
-                path = da.getFolderPath(folderId);
-            } catch (RemoteException re) {
-                this.log("getFolderUrl", re);
-            }
-        }
-        if (path == null) {
-            return this.getCollabNetUrl();
-        } else {
-            return this.getCollabNetUrl() + "/sf/docman/do/listDocuments/" 
-                + path;
-        }
     }
 
     /**
      * Upload files matching the file patterns to the Document Service.
      *
-     * @param folderId folder where the files should be uploaded.
+     * @param folder folder where the files should be uploaded.
      * @param build the current Hudson build.
      * @return the number of files successfully uploaded.
      */
-    public int uploadFiles(String folderId, AbstractBuild<?, ?> build, BuildListener listener)
+    public int uploadFiles(CTFDocumentFolder folder, AbstractBuild<?, ?> build, BuildListener listener)
             throws IOException, InterruptedException {
         int numUploaded = 0;
         String path = this.getInterpreted(build, this.getUploadPath());
@@ -279,19 +254,18 @@ public class CNDocumentUploader extends AbstractTeamForgeNotifier {
 
             FilePath[] filePaths = this.getFilePaths(build, file_pattern);
             for (FilePath uploadFilePath : filePaths) {
-                String fileId = this.uploadFile(uploadFilePath);
-                if (fileId == null) {
+                CTFFile file = this.uploadFile(uploadFilePath);
+                if (file == null) {
                     this.logConsole("Failed to upload " + uploadFilePath.getName() + ".");
                     continue;
                 }
                 try {
-                    String docId = this.updateOrCreateDoc(folderId, fileId,
+                    CTFDocument doc = this.updateOrCreateDoc(folder, file,
                                                    uploadFilePath.getName(),
                                                    CNDocumentUploader.
                                                    getMimeType(uploadFilePath),
                                                    build);
-                    this.logConsole("Uploaded " + uploadFilePath.getName() + " -> "
-                             + this.getDocUrl(docId));
+                    this.logConsole("Uploaded " + uploadFilePath.getName() + " -> " + doc.getURL());
                     numUploaded++;
                 } catch (RemoteException re) {
                     logConsole("Upload file failed: " + re.getMessage());
@@ -300,18 +274,18 @@ public class CNDocumentUploader extends AbstractTeamForgeNotifier {
             }
         }
         if (this.getIncludeBuildLog()) {
-            String fileId = this.uploadBuildLog(build);
-            if (fileId == null) {
+            CTFFile file = this.uploadBuildLog(build);
+            if (file == null) {
                 this.logConsole("Failed to upload " + build.getLogFile().getName() + ".");
             } else {
                 try {
-                    String docId = this.updateOrCreateDoc(folderId, fileId,
+                    CTFDocument docId = this.updateOrCreateDoc(folder, file,
                                                    build.getLogFile().getName(),
                                                    CNDocumentUploader.
                                                    getMimeType(build.
                                                                getLogFile()),
                                                    build);
-                    this.logConsole("Uploaded " + build.getLogFile().getName() + " -> " + this.getDocUrl(docId));
+                    this.logConsole("Uploaded " + build.getLogFile().getName() + " -> " + docId.getURL());
                     numUploaded++;
                 } catch (RemoteException re) {
                     logConsole("Upload log failed: " + re.getMessage(), re);
@@ -320,16 +294,6 @@ public class CNDocumentUploader extends AbstractTeamForgeNotifier {
             }
         }
         return numUploaded;
-    }
-
-    /**
-     * Get the document's URL.
-     *
-     * @param docId document's id.
-     * @return an absolute URL to the document.
-     */
-    private String getDocUrl(String docId) {
-        return this.getCollabNetUrl() + "/sf/go/" + docId;
     }
 
     /**
@@ -374,33 +338,29 @@ public class CNDocumentUploader extends AbstractTeamForgeNotifier {
      * increment it's version and update with the new fileId.
      * Otherwise, create a new document.
      *
-     * @param folderId of the folder where the document will be 
+     * @param folder of the folder where the document will be
      *                 created/updated. 
-     * @param fileId of the already upload build log.
+     * @param file of the already upload build log.
      * @param fileName name of the uploaded file.
      * @param mimeType of the uploaded file.
      * @param build the current Hudson build.
      * @return the docId associated with the new/updated document.
      * @throws RemoteException
      */
-    private String updateOrCreateDoc(String folderId, String fileId, 
+    private CTFDocument updateOrCreateDoc(CTFDocumentFolder folder, CTFFile file,
                                      String fileName, String mimeType, 
                                      AbstractBuild<?, ?> build) 
-        throws RemoteException, IOException, InterruptedException {
-        DocumentApp da = new DocumentApp(this.cna);
-        String docId = da.findDocumentId(folderId, fileName);
-        if (docId != null) {
-            da.updateDoc(docId, fileId);
+        throws IOException, InterruptedException {
+        CTFDocument doc = folder.getDocumentByTitle(fileName);
+        if (doc != null) {
+            doc.update(file);
+            return doc;
         } else {
-            DocumentSoapDO document = da.
-                createDocument(folderId, fileName, 
-                               this.getInterpreted(build, 
-                                                   this.getDescription()), 
+            return folder.createDocument(fileName,
+                               this.getInterpreted(build, this.getDescription()),
                                null, "final", false, fileName, 
-                               mimeType, fileId, null, null);
-            docId = document.getId();
+                               mimeType, file, null, null);
         }
-        return docId;
     }
 
     /**
@@ -415,7 +375,7 @@ public class CNDocumentUploader extends AbstractTeamForgeNotifier {
             mimeType = filePath.act(new FileCallable<String>() {
                 @Override
                 public String invoke(File f, VirtualChannel channel) 
-                throws IOException, RemoteException {
+                throws IOException {
                     if (f.getName().endsWith("log")) {
                         return "text/plain";
                     }
@@ -445,19 +405,17 @@ public class CNDocumentUploader extends AbstractTeamForgeNotifier {
      * @param build the current Hudson build.
      * @return the id associated with the file upload.
      */
-    private String uploadBuildLog(AbstractBuild <?, ?> build) {
+    private CTFFile uploadBuildLog(AbstractBuild <?, ?> build) {
         if (this.cna == null) {
             this.logConsole("Cannot call updateSucceedingBuild, not logged in!");
             return null;
         }
-        String id = null;
-        FileStorageApp sfsa = new FileStorageApp(this.cna);
         try {
-            id = sfsa.uploadFile(build.getLogFile());
+            return cna.upload(build.getLogFile());
         } catch (RemoteException re) {
             this.log("uploadBuildLog", re);
+            return null;
         }
-        return id;
     }
 
     /**
@@ -466,16 +424,16 @@ public class CNDocumentUploader extends AbstractTeamForgeNotifier {
      * @param filePath the path of file to upload
      * @return the id associated with the file upload.
      */
-    private String uploadFile(FilePath filePath) {
+    private CTFFile uploadFile(FilePath filePath) {
         if (this.cna == null) {
             this.logConsole("Cannot call uploadFile, not logged in!");
             return null;
         }
-        String id = null;
 
         try {
             // must upload to same session so temp file will be available later for creation of document
-            id = filePath.act(new RemoteFileUploader(getCollabNetUrl(), getUsername(), cna.getSessionId()));
+            String id = filePath.act(new RemoteFileUploader(getCollabNetUrl(), getUsername(), cna.getSessionId()));
+            return new CTFFile(cna,id);
         } catch (RemoteException re) {
             this.logConsole("upload file failed", re);
         } catch (IOException ioe) {
@@ -483,7 +441,7 @@ public class CNDocumentUploader extends AbstractTeamForgeNotifier {
         } catch (InterruptedException ie) {
             this.logConsole("Could not upload file due to InterruptedException: " + ie.getMessage());
         }
-        return id;
+        return null;
     }
 
     /**
@@ -512,8 +470,7 @@ public class CNDocumentUploader extends AbstractTeamForgeNotifier {
          */
         public String invoke(File f, VirtualChannel channel) throws IOException {
             CollabNetApp cnApp = CNHudsonUtil.recreateCollabNetApp(mUrl, mUsername, mSessionId);
-            FileStorageApp sfsa = new FileStorageApp(cnApp);
-            return sfsa.uploadFile(f);
+            return cnApp.upload(f).getId();
         }
     }
 
@@ -523,19 +480,6 @@ public class CNDocumentUploader extends AbstractTeamForgeNotifier {
     public void logoff() {
         CNHudsonUtil.logoff(this.cna);
         this.cna = null;        
-    }
-
-    /**
-     * Get the project id for the project name.
-     * 
-     * @return the matching project id, or null if none is found.
-     */
-    public String getProjectId() {
-        if (this.cna == null) {
-            this.logConsole("Cannot getProjectId, not logged in!");
-            return null;
-        }
-        return CNHudsonUtil.getProjectId(this.cna, this.getProject());
     }
 
     /**

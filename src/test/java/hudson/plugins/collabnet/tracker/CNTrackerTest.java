@@ -136,6 +136,7 @@ public class CNTrackerTest extends CNHudsonTestCase {
                 return o2.getLastModifiedDate().compareTo(o1.getLastModifiedDate());
             }
         });
+        if (r.isEmpty())    return null;
         return r.get(0);
     }
 

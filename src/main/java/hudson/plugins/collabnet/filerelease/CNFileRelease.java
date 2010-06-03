@@ -7,7 +7,6 @@ import com.collabnet.ce.webservices.CTFProject;
 import com.collabnet.ce.webservices.CTFRelease;
 import com.collabnet.ce.webservices.CTFReleaseFile;
 import com.collabnet.ce.webservices.CollabNetApp;
-import com.collabnet.ce.webservices.FileStorageApp;
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.FilePath.FileCallable;
@@ -260,10 +259,6 @@ public class CNFileRelease extends AbstractTeamForgeNotifier {
                     }
                 }
                 try {
-                    // HACK: start
-                    // All soap App must be preloaded by current classloader for "invoke" call below to work on slave
-                    new FileStorageApp(this.cna);
-                    // HACK: end
                     CTFFile f = new CTFFile(cna,uploadFilePath.act(
                         new RemoteFrsFileUploader(getCollabNetUrl(), getUsername(), cna.getSessionId())
                     ));

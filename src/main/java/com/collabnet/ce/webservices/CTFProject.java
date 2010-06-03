@@ -1,12 +1,12 @@
 package com.collabnet.ce.webservices;
 
-import com.collabnet.ce.soap50.webservices.cemain.ProjectMemberSoapList;
 import com.collabnet.ce.soap50.webservices.cemain.ProjectMemberSoapRow;
 import com.collabnet.ce.soap50.webservices.cemain.ProjectSoapDO;
 import com.collabnet.ce.soap50.webservices.cemain.ProjectSoapRow;
+import com.collabnet.ce.soap50.webservices.docman.DocumentFolderSoapList;
+import com.collabnet.ce.soap50.webservices.docman.DocumentFolderSoapRow;
 import com.collabnet.ce.soap50.webservices.frs.PackageSoapRow;
 import com.collabnet.ce.soap50.webservices.tracker.TrackerSoapRow;
-import hudson.plugins.collabnet.util.CommonUtil;
 
 import java.rmi.RemoteException;
 import java.util.ArrayList;
@@ -81,13 +81,6 @@ public class CTFProject extends CTFObject implements ObjectWithTitle {
             app.getTrackerSoap().createTracker(app.getSessionId(), getId(), name, title, description));
     }
 
-    private <T extends ObjectWithTitle> T findByTitle(List<T> list, String title) {
-        for (T p : list)
-            if (p.getTitle().equals(title))
-                return p;
-        return null;
-    }
-
     public List<CTFUser> getMembers() throws RemoteException {
         List<CTFUser> r = new ArrayList<CTFUser>();
         for (ProjectMemberSoapRow row : app.icns.getProjectMemberList(app.getSessionId(),getId()).getDataRows())
@@ -109,5 +102,53 @@ public class CTFProject extends CTFObject implements ObjectWithTitle {
                 return true;
         }
         return false;
+    }
+
+    public CTFDocumentFolder getRootFolder() throws RemoteException {
+        DocumentFolderSoapList dfsList = app.getDocumentAppSoap().getDocumentFolderList(app.getSessionId(), getId(),false);
+        switch (dfsList.getDataRows().length) {
+        case 0:
+            throw new CollabNetApp.
+                CollabNetAppException("getRootFolder for projectId " +
+                                      title +
+                                      " failed to find any folders");
+        case 1:
+            return new CTFDocumentFolder(this,dfsList.getDataRows()[0]);
+
+        default:
+            StringBuilder rowNames = new StringBuilder();
+            for (DocumentFolderSoapRow row: dfsList.getDataRows()) {
+                rowNames.append(row.getTitle() + ", ");
+            }
+            throw new CollabNetApp.
+                CollabNetAppException("getRootFolder returned unexpected " +
+                                      "number of folders: " +
+                                      rowNames.toString());
+        }
+    }
+
+    /**
+     * Gets to the folder from a path string like "foo/bar/zot", if necessary by creating intermediate directories.
+     */
+    public CTFDocumentFolder getOrCreateDocumentFolder(String documentPath) throws RemoteException {
+        String[] folderNames = documentPath.split("/");
+        int i = 0;
+        // find the root folder since the first document path may or may not
+        // match this.
+        CTFDocumentFolder cur = getRootFolder();
+        if (cur.getTitle().equals(folderNames[i])) {
+            i++;
+        }
+        for (; i < folderNames.length; i++) {
+            CTFDocumentFolder next = cur.getFolderByTitle(folderNames[i]);
+            if (next==null) break;
+            cur = next;
+        }
+
+        // create any missing folders
+        for (; i < folderNames.length; i++) {
+            cur = cur.createFolder(folderNames[i], folderNames[i]);
+        }
+        return cur;
     }
 }

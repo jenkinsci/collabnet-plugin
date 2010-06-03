@@ -13,6 +13,7 @@ import com.collabnet.ce.soap50.webservices.cemain.ProjectSoapList;
 import com.collabnet.ce.soap50.webservices.cemain.ProjectSoapRow;
 import com.collabnet.ce.soap50.webservices.cemain.UserSoapList;
 import com.collabnet.ce.soap50.webservices.cemain.UserSoapRow;
+import com.collabnet.ce.soap50.webservices.docman.IDocumentAppSoap;
 import com.collabnet.ce.soap50.webservices.filestorage.IFileStorageAppSoap;
 import com.collabnet.ce.soap50.webservices.frs.IFrsAppSoap;
 import com.collabnet.ce.soap50.webservices.tracker.ITrackerAppSoap;
@@ -49,6 +50,7 @@ public class CollabNetApp {
     protected IFrsAppSoap ifrs;
     protected IFileStorageAppSoap ifsa;
     private volatile ITrackerAppSoap itas;
+    private volatile IDocumentAppSoap idas;
 
     /**
      * Creates a new session to the server at the given url.
@@ -113,6 +115,11 @@ public class CollabNetApp {
         return itas;
     }
 
+    protected IDocumentAppSoap getDocumentAppSoap() {
+        if (idas==null)
+            idas = createProxy(IDocumentAppSoap.class, "DocumentApp");
+        return idas;
+    }
 
     /**
      * Returns the user name that this connection is set up with.
@@ -139,11 +146,8 @@ public class CollabNetApp {
      * @return client soap stub for the main CollabNet.wsdl.
      */
     private ICollabNetSoap getICollabNetSoap() {
-        String soapURL = this.url + CollabNetApp.SOAP_SERVICE +
-            "CollabNet?wsdl";
-        return (ICollabNetSoap) ClientSoapStubFactory.
-            getSoapStub(ICollabNetSoap.class, soapURL);
-    } 
+        return getICollabNetSoap(url);
+    }
 
     /**
      * @return client soap stub for an arbitrary url.
