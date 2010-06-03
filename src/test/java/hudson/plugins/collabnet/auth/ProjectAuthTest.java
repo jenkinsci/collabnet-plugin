@@ -43,12 +43,15 @@ public class ProjectAuthTest extends AbstractSecurityTestCase {
         CollabNetApp cna = connect();
         CTFProject p = cna.getProjectByTitle(teamforge_project);
         CTFList<CTFRole> existing = p.getRoles();
+        CollabNetRole promote = null;
         for (CollabNetRole role: CNProjectACL.CollabNetRoles.getAllRoles()) {
             if (existing.byTitle(role.getName())==null)
                 p.createRole(role.getName(), role.getDescription());
+            if (role.getName().equals("Hudson Promote"))
+                promote = role;
         }
 
-        for (String name : new String[]{read_user,build_user,config_user,delete_user}) {
+        for (String name : new String[]{read_user,build_user,config_user,delete_user,promote_user}) {
             createUserIfNotExist(cna,name);
             p.addMember(name);
         }
@@ -57,7 +60,8 @@ public class ProjectAuthTest extends AbstractSecurityTestCase {
         grant(existing, CollabNetRoles.HUDSON_BUILD_ROLE, build_user);
         grant(existing, CollabNetRoles.HUDSON_CONFIGURE_ROLE, config_user);
         grant(existing, CollabNetRoles.HUDSON_DELETE_ROLE, delete_user);
-        for (String name : new String[]{read_user,build_user,config_user,delete_user}) {
+        grant(existing, promote, promote_user);
+        for (String name : new String[]{read_user,build_user,config_user,delete_user,promote_user}) {
             grant(existing,CollabNetRoles.HUDSON_READ_ROLE,name);
         }
     }
@@ -102,10 +106,10 @@ public class ProjectAuthTest extends AbstractSecurityTestCase {
         WebClient logIn = new WebClient().login(build_user, build_user);
         logIn.goTo(job.getShortUrl());
         Util.checkPageUnreachable(logIn, job.getShortUrl() + "configure");
-        logIn.goTo(job.getShortUrl() + "build");
+        buildAndAssertSuccess(job);
         setupPromotionAndBuild(job);
-        assert (!isBuildPromotable(logIn, job));
-        assert (!isProjectDeletable(logIn, job));
+        assertFalse(isBuildPromotable(logIn, job));
+        assertFalse(isProjectDeletable(logIn, job));
     }
     
     public void testPromoteUsersAccess() throws Exception {
