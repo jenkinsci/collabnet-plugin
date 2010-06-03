@@ -110,6 +110,9 @@
       <plugin>
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
+          <excludes>
+            <exclude>**/PblUploadTest.java</exclude>
+          </excludes>
           <systemProperties>
             <property>
               <name>project.build.directory</name>
