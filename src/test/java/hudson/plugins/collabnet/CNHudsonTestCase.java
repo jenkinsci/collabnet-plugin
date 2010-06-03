@@ -4,7 +4,6 @@ import com.collabnet.ce.webservices.CollabNetApp;
 import hudson.model.FreeStyleProject;
 import hudson.plugins.collabnet.share.TeamForgeShare;
 import hudson.tasks.Publisher;
-import org.apache.axis.AxisProperties;
 import org.jvnet.hudson.test.HudsonTestCase;
 
 import java.rmi.RemoteException;
@@ -51,6 +50,19 @@ public abstract class CNHudsonTestCase extends HudsonTestCase {
      */
     protected boolean isOnline() {
         return teamforge_url !=null;
+    }
+
+    /**
+     * Used to guard the tests that need to work with a live TeamForge instance.
+     * This method fails the test if we are offline and the user didn't specify the offline mode.
+     * Otherwise this method returns false when the caller should skip the test.
+     */
+    protected boolean verifyOnline() {
+        if (System.getProperty("offline")!=null)
+            return isOnline();
+
+        assertTrue("This test requires a live TeamForge instance. Use -Doffline to skip this test",isOnline());
+        return true;
     }
 
     /**

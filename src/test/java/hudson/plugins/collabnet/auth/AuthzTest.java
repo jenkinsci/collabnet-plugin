@@ -1,141 +1,105 @@
 package hudson.plugins.collabnet.auth;
 
-import com.gargoylesoftware.htmlunit.Page;
-import com.gargoylesoftware.htmlunit.html.HtmlForm;
-import com.gargoylesoftware.htmlunit.html.HtmlPage;
-import com.gargoylesoftware.htmlunit.html.HtmlRadioButtonInput;
-
-import hudson.plugins.collabnet.util.HudsonConstants;
+import com.gargoylesoftware.htmlunit.FailingHttpStatusCodeException;
+import hudson.model.Descriptor;
+import hudson.model.Hudson;
 import hudson.plugins.collabnet.util.Util;
-
-import org.jvnet.hudson.test.HudsonTestCase;
-
+import hudson.security.ACL;
+import hudson.security.AuthorizationStrategy;
+import hudson.security.LegacyAuthorizationStrategy;
+import hudson.security.SparseACL;
 
 /**
- * Test CollabNet Authorization.
+ * Base class for test cases.
+ *
+ * Unlike {@link AuthzTest}, this version doesn't have any setUp/tearDown.
+ *
+ * @author Kohsuke Kawaguchi
  */
-public class AuthzTest extends HudsonTestCase {
-    // TODO: write a script to set this up on a test instance.
-    public static final String TEST_ADMIN_USER = 
-        System.getProperty("admin_user");
-    private static final String TEST_ADMIN_GROUP = 
-        System.getProperty("admin_group");
-    private static final String TEST_ADMIN_GROUP_MEMBER = 
-        System.getProperty("admin_group_member");
-    private static final String TEST_READ_USER = 
-        System.getProperty("read_user");
-    private static final String TEST_READ_GROUP = 
-        System.getProperty("read_group");
-    private static final String TEST_READ_GROUP_MEMBER = 
-        System.getProperty("read_group_member");
-    // all test users share this pw
-    public static final String TEST_PW = System.getProperty("password");
+public class AuthzTest extends AbstractSecurityTestCase {
 
-    private static final String AUTH_NAME = "authorization";
-    private static final String CN_AUTHORIZATION_LABEL = 
-        "CollabNet Authorization";
-    private static final String ADMIN_USERS_ID = "cnas.adminUsers";
-    private static final String ADMIN_GROUP_ID = "cnas.adminGroups";
-    private static final String READ_USERS_ID = "cnas.readUsers";
-    private static final String READ_GROUP_ID = "cnas.readGroups";
-    
+    /**
+     * Verifies that the UI is bound correctly to properties
+     */
+    public void testConfigRoundtrip() throws Exception {
+        hudson.setAuthorizationStrategy(new LegacyAuthorizationStrategy());
+        roundtripAndAssert(new CNAuthorizationStrategy("foo,bar","dev,op","alice,boss,root","god,budda",35) {
+            /**
+             * Allow resubmission of the system config without logging in first.
+             * @return
+             */
+            @Override
+            public ACL getRootACL() {
+                SparseACL acl = new SparseACL(null);
+                acl.add(ACL.ANONYMOUS, Hudson.ADMINISTER, true);
+                return acl;
+            }
 
-    @Override
-    protected void setUp() throws Exception {
-        super.setUp();
-        HtmlPage configurePage = new WebClient().
-            goTo(HudsonConstants.CONFIGURE_PAGE);
-        configurePage = (HtmlPage) AuthnTest.
-            configureCNAuthentication(configurePage);
-        configurePage = (HtmlPage) configureCNAuthorization(configurePage);
-        // save configuration
-        this.submitForm(configurePage, HudsonConstants.CONFIGURE_FORM_NAME);
+            @Override
+            public Descriptor<AuthorizationStrategy> getDescriptor() {
+                return Hudson.getInstance().getDescriptorOrDie(CNAuthorizationStrategy.class);
+            }
+        });
+
+    }
+
+    private void roundtripAndAssert(CNAuthorizationStrategy original) throws Exception {
+        hudson.setAuthorizationStrategy(original);
+        try {
+            submit(createWebClient().goTo("configure").getFormByName("config"));
+            fail(); // submission would succeed but the rendering of the top page would fail, so this should result in an error
+        } catch (FailingHttpStatusCodeException e) {
+            // if the submission succeeds, we should see a new instance
+            assertNotSame(original,hudson.getAuthorizationStrategy());
+            assertEqualBeans(original, hudson.getAuthorizationStrategy(), FIELDS);
+        }
     }
 
     /**
-     * Test that the CNAuthorization has been properly setup.
+     * Makes sure that help link exists on all three options.
      */
-    public void testCNAuthorizationSetup() throws Exception {
-        WebClient loggedInAdmin = new WebClient().login(TEST_ADMIN_USER, 
-                                                        TEST_PW);
-        checkCNAuthorizationSetup(loggedInAdmin);
+    public void testHelpLink() throws Exception {
+        assertHelpExists(CNAuthorizationStrategy.class, FIELDS);
     }
 
     /**
      * Test that the admin user can log in and get to the configure page.
      */
     public void testAdminUserAccess() throws Exception {
-        WebClient loggedInAdmin = new WebClient().login(TEST_ADMIN_USER, 
-                                                        TEST_PW);
-        Util.checkPageReachable(loggedInAdmin, HudsonConstants.CONFIGURE_PAGE);
+        if (!verifyOnline())    return;
+        installAuthorizationStrategy();
+        // admin user should be able to see the system config page
+        createAdminWebClient().goTo("configure");
     }
 
     /**
      * Test that the admin group can log in and get to the configure page.
      */
     public void testAdminGroupAccess() throws Exception {
-        WebClient loggedInAdmin = new WebClient().
-            login(TEST_ADMIN_GROUP_MEMBER, TEST_PW);
-        Util.checkPageReachable(loggedInAdmin, HudsonConstants.CONFIGURE_PAGE);
+        if (!verifyOnline())    return;
+        installAuthorizationStrategy();
+        new WebClient().login(admin_group_member, admin_group_member).goTo("configure");
     }
 
     /**
      * Test that the read user can log in and not get to the configure page.
      */
     public void testReadUserAccess() throws Exception {
-        WebClient loggedInRead = new WebClient().login(TEST_READ_USER, 
-                                                       TEST_PW);
-        Util.checkPageUnreachable(loggedInRead, HudsonConstants.CONFIGURE_PAGE);
-    }   
+        if (!verifyOnline())    return;
+        installAuthorizationStrategy();
+        WebClient loggedInRead = new WebClient().login(read_user,read_user);
+        Util.checkPageUnreachable(loggedInRead, "configure");
+    }
 
     /**
      * Test that the read group can log in and not get to the configure page.
      */
     public void testReadGroupAccess() throws Exception {
-        WebClient loggedInRead = new WebClient().login(TEST_READ_GROUP_MEMBER, 
-                                                       TEST_PW);
-        Util.checkPageUnreachable(loggedInRead, 
-                                  HudsonConstants.CONFIGURE_PAGE);
+        if (!verifyOnline())    return;
+        installAuthorizationStrategy();
+        WebClient loggedInRead = new WebClient().login(read_group_member,read_group_member);
+        Util.checkPageUnreachable(loggedInRead,"configure");
     }
 
-    private void checkCNAuthorizationSetup(WebClient loggedInAdmin) 
-        throws Exception {
-        HtmlPage configurePage = loggedInAdmin.
-            goTo(HudsonConstants.CONFIGURE_PAGE);
-        HtmlRadioButtonInput cnAuth = (HtmlRadioButtonInput) Util.
-            getElementWithLabel(configurePage, AUTH_NAME, 
-                                CN_AUTHORIZATION_LABEL);
-        assert(cnAuth != null);
-        assert(cnAuth.isChecked());
-        Util.checkText(configurePage, ADMIN_USERS_ID, TEST_ADMIN_USER);
-        Util.checkText(configurePage, ADMIN_GROUP_ID, TEST_ADMIN_GROUP);
-        Util.checkText(configurePage, READ_USERS_ID, TEST_READ_USER);
-        Util.checkText(configurePage, READ_GROUP_ID, TEST_READ_GROUP);
-    }
-
-    public static Page configureCNAuthorization(HtmlPage configurePage) 
-        throws Exception {
-        HtmlRadioButtonInput cnAuth = (HtmlRadioButtonInput) Util.
-            getElementWithLabel(configurePage, AUTH_NAME, 
-                                CN_AUTHORIZATION_LABEL);
-        assert(cnAuth != null);
-        cnAuth.click();
-        configurePage = (HtmlPage) Util.setText(configurePage, ADMIN_USERS_ID, 
-                                                TEST_ADMIN_USER);
-        configurePage = (HtmlPage) Util.setText(configurePage, ADMIN_GROUP_ID, 
-                                                TEST_ADMIN_GROUP);
-        configurePage = (HtmlPage) Util.setText(configurePage, READ_USERS_ID, 
-                                                TEST_READ_USER);
-        configurePage = (HtmlPage) Util.setText(configurePage, READ_GROUP_ID, 
-                                                TEST_READ_GROUP);
-        return configurePage;
-    }
-
-    /**
-     * Handles submitting a form on a given page.
-     */
-    public Page submitForm(HtmlPage page, String formName) throws Exception {
-        HtmlForm form = page.getFormByName(formName);
-        return this.submit(form);
-    }
+    private static final String FIELDS = "readUsersStr,readGroupsStr,adminUsersStr,adminGroupsStr,authCacheTimeoutMin";
 }

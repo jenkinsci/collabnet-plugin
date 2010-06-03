@@ -89,6 +89,8 @@ public class CNTrackerTest extends CNHudsonTestCase {
     }
 
     public void testSuccessfulBuildWithTrackerAlwaysUpdate() throws Exception {
+        if (!verifyOnline())    return;
+        
         FreeStyleProject p = createProject(true);
         p.getBuildersList().add(new Shell("echo success"));
         AbstractBuild build = buildAndAssertSuccess(p);
@@ -99,6 +101,8 @@ public class CNTrackerTest extends CNHudsonTestCase {
     }
 
     public void testSuccessfulBuildWithTracker() throws Exception {
+        if (!verifyOnline())    return;
+
         FreeStyleProject p = createProject(false);
         p.getBuildersList().add(new Shell("echo success"));
         AbstractBuild build = buildAndAssertSuccess(p);
@@ -107,6 +111,8 @@ public class CNTrackerTest extends CNHudsonTestCase {
     }
 
     public void testBrokenBuildWithTracker() throws Exception {
+        if (!verifyOnline())    return;
+
         FreeStyleProject p = createProject(true);
         p.getBuildersList().add(new Shell("echo 'Failed Build!'; exit 1"));
 

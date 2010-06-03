@@ -229,22 +229,6 @@ public class Util {
      * Check that this url cannot be reached by the user logged in
      * through this webclient.
      */
-    public static void checkPageReachable(WebClient wc, String url) 
-        throws Exception {
-        boolean failure = false;
-        try {
-            HtmlPage page = wc.goTo(url);
-        } catch (com.gargoylesoftware.htmlunit.FailingHttpStatusCodeException 
-                 fhsce) {
-            failure = true;
-        }
-        assert (failure == false);
-    }
-
-    /**
-     * Check that this url cannot be reached by the user logged in
-     * through this webclient.
-     */
     public static void checkPageUnreachable(WebClient wc, String url) 
         throws Exception {
         boolean failure = false;

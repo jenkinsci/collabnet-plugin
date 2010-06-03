@@ -1,5 +1,6 @@
 package com.collabnet.ce.webservices;
 
+import com.collabnet.ce.soap50.fault.NoSuchObjectFault;
 import com.collabnet.ce.soap50.webservices.ClientSoapStubFactory;
 import com.collabnet.ce.soap50.webservices.cemain.Group2SoapList;
 import com.collabnet.ce.soap50.webservices.cemain.Group2SoapRow;
@@ -290,6 +291,10 @@ public class CollabNetApp {
         return getGroups().byTitle(fullName);
     }
 
+    public CTFGroup createGroup(String fullName, String description) throws RemoteException {
+        return new CTFGroup(this,icns.createGroup(getSessionId(),fullName,description));
+    }
+
     /**
      * Creates a new project and obtains its ID.
      *
@@ -360,8 +365,25 @@ public class CollabNetApp {
         return getUser(username);
     }
 
+    /**
+     * Retrieves the user, or null if no such user exists.
+     */
     public CTFUser getUser(String username) throws RemoteException {
-        return new CTFUser(this,this.icns.getUserData(getSessionId(),username));
+        try {
+            return new CTFUser(this,this.icns.getUserData(getSessionId(),username));
+        } catch (NoSuchObjectFault e) {
+            return null;
+        }
+    }
+
+    /**
+     * @param locale
+     *      Locale of the new user (currently supported locales are "en" for English, "ja" for Japanese).
+     * @param timeZone
+     *      User's time zone. The ID for a TimeZone, either an abbreviation such as "PST", a full name such as "America/Los_Angeles", or a custom ID such as "GMT-8:00".
+     */
+    public CTFUser createUser(String username, String email, String fullName, String locale, String timeZone, boolean isSuperUser, boolean isRestrictedUser, String password) throws RemoteException {
+        return new CTFUser(this,this.icns.createUser(getSessionId(),username,email,fullName,locale,timeZone,isSuperUser,isRestrictedUser,password));
     }
 
     /**

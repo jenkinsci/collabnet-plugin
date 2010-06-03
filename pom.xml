@@ -110,50 +110,11 @@
       <plugin>
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
-          <excludes>
-            <!-- to test, comment out tests below and set the CAPS
-                 values properly for your local system; also make
-                 sure you have test project and users as below. -->
-            <exclude>**/AuthnTest*</exclude>
-            <exclude>**/AuthzTest*</exclude>
-            <exclude>**/ProjectAuthTest*</exclude>
-            <exclude>**/FileReleaseTest*</exclude>
-            <exclude>**/PblUploadTest*</exclude>
-            <exclude>**/TrackerTest*</exclude>
-          </excludes>
           <systemProperties>
             <property>
               <name>project.build.directory</name>
               <value>${basedir}/target</value>
             </property>
-            <!-- properties for authn -->
-            <property>
-              <name>invalid_user</name>
-              <value>nonuser</value>
-            </property>
-            <!-- end properties for authn -->
-            <!-- properties for authz -->
-            <property>
-              <name>admin_group</name>
-              <value>hudsonAdmins</value>
-            </property>
-            <property>
-              <name>admin_group_member</name>
-              <value>hudsonAdminMember</value>
-            </property>
-            <property>
-              <name>read_user</name>
-              <value>hudsonRead</value>
-            </property>
-            <property>
-              <name>read_group</name>
-              <value>hudsonReaders</value>
-            </property>
-            <property>
-              <name>read_group_member</name>
-              <value>hudsonReadMember</value>
-            </property>
-            <!-- end properties for authz -->
             <!-- properties for project auth -->
             <property>
               <name>build_user</name>

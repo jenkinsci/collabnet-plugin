@@ -120,6 +120,13 @@ public class CTFUser extends CTFObject implements ObjectWithTitle {
         return groups;
     }
 
+    /**
+     * Adds the user to the this group.
+     */
+    public void addTo(CTFGroup g) throws RemoteException {
+        g.addMember(this);
+    }
+
     @Override
     public boolean equals(Object o) {
         if (o == null || getClass() != o.getClass()) return false;

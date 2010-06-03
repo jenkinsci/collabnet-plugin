@@ -1,28 +1,23 @@
 package hudson.plugins.collabnet.auth;
 
+import com.gargoylesoftware.htmlunit.FailingHttpStatusCodeException;
 import com.gargoylesoftware.htmlunit.Page;
 import com.gargoylesoftware.htmlunit.html.HtmlForm;
 import com.gargoylesoftware.htmlunit.html.HtmlInput;
 import com.gargoylesoftware.htmlunit.html.HtmlPage;
-import com.gargoylesoftware.htmlunit.html.HtmlCheckBoxInput;
-import com.gargoylesoftware.htmlunit.html.HtmlTextInput;
 
-import hudson.model.FreeStyleBuild;
 import hudson.model.FreeStyleProject;
 
-import hudson.plugins.collabnet.util.BuildCompleteListener;
-import hudson.plugins.collabnet.util.HudsonConstants;
 import hudson.plugins.collabnet.util.Util;
 import hudson.plugins.collabnet.util.WithLocalPlugin;
-
-import org.jvnet.hudson.test.HudsonTestCase;
+import hudson.plugins.promoted_builds.JobPropertyImpl;
+import hudson.plugins.promoted_builds.PromotionProcess;
+import hudson.plugins.promoted_builds.conditions.ManualCondition;
 
 /**
  * Test authorization for a Hudson job associated with a CN project.
  */
-public class ProjectAuthTest extends HudsonTestCase {
-    private static final String CN_PROJECT_NAME = 
-        System.getProperty("teamforge_project");
+public class ProjectAuthTest extends AbstractSecurityTestCase {
     private static final String CN_BUILDER = System.getProperty("build_user");
     private static final String CN_CONFIGER = 
         System.getProperty("config_user");
@@ -31,109 +26,92 @@ public class ProjectAuthTest extends HudsonTestCase {
         System.getProperty("promote_user");
     private static final String CN_READER = System.getProperty("read_user");
 
-    private static final String PROJECT_ID = "capp_project";
     private static final String PROMOTION_NAME = "promote_name";
-    private static final String JOB_FORM_NAME = "config";
 
     @Override
     protected void setUp() throws Exception {
         super.setUp();
-        HtmlPage configurePage = new WebClient().goTo(HudsonConstants.
-                                                      CONFIGURE_PAGE);
-        configurePage = (HtmlPage) AuthnTest.
-            configureCNAuthentication(configurePage);
-        configurePage = (HtmlPage) AuthzTest.
-            configureCNAuthorization(configurePage);
-        // save configuration
-        this.submitForm(configurePage, HudsonConstants.CONFIGURE_FORM_NAME);
+        installAuthorizationStrategy();
     }
 
-    public void testProjectSetup() throws Exception {
-        WebClient loggedInAdmin = new WebClient().
-            login(AuthzTest.TEST_ADMIN_USER, AuthzTest.TEST_PW);
-        FreeStyleProject job = this.setupProjectForAuth(loggedInAdmin);
-        HtmlPage jobConfigPage = (HtmlPage) loggedInAdmin.
-            goTo(job.getShortUrl() + "configure");
-        Util.checkText(jobConfigPage, PROJECT_ID, CN_PROJECT_NAME);
+    public void testConfigRoundtrip() throws Exception {
+        assertRoundtrip(new CNAuthProjectProperty(teamforge_project, false, null, false));
+        assertRoundtrip(new CNAuthProjectProperty(teamforge_project, true, null, true));
     }
-        
+
+    private void assertRoundtrip(CNAuthProjectProperty before) throws Exception {
+        FreeStyleProject job = createFreeStyleProject();
+        job.addProperty(before);
+        submit(createAdminWebClient().getPage(job,"configure").getFormByName("config"));
+        CNAuthProjectProperty after = job.getProperty(CNAuthProjectProperty.class);
+        assertEqualBeans(before,after,"project,createRoles,grantDefaultRoles");
+    }
+
     @WithLocalPlugin (value="promoted-builds")
     public void testReadUsersAccess() throws Exception {
-        WebClient loggedInAdmin = new WebClient().
-            login(AuthzTest.TEST_ADMIN_USER, AuthzTest.TEST_PW);
-        FreeStyleProject job = this.setupProjectForAuth(loggedInAdmin);
-        WebClient logIn = new WebClient().login(CN_READER, AuthzTest.TEST_PW);
-        Util.checkPageReachable(logIn, job.getShortUrl());
+        FreeStyleProject job = this.setupProjectForAuth();
+        WebClient logIn = createWebClient().login(CN_READER, CN_READER);
+        logIn.getPage(job);
         Util.checkPageUnreachable(logIn, job.getShortUrl() + "configure");
         Util.checkPageUnreachable(logIn, job.getShortUrl() + "build");
-        setupPromotionAndBuild(loggedInAdmin, job);
-        assert (isBuildPromotable(logIn, job) == false);
-        assert (isProjectDeletable(logIn, job) == false);
+        setupPromotionAndBuild(job);
+        assert (!isBuildPromotable(logIn, job));
+        assert (!isProjectDeletable(logIn, job));
     }
     
     @WithLocalPlugin (value="promoted-builds")
     public void testBuildUsersAccess() throws Exception {
-        WebClient loggedInAdmin = new WebClient().
-            login(AuthzTest.TEST_ADMIN_USER, AuthzTest.TEST_PW);
-        FreeStyleProject job = this.setupProjectForAuth(loggedInAdmin);
-        WebClient logIn = new WebClient().login(CN_BUILDER, AuthzTest.TEST_PW);
-        Util.checkPageReachable(logIn, job.getShortUrl());
+        FreeStyleProject job = this.setupProjectForAuth();
+        WebClient logIn = new WebClient().login(CN_BUILDER, CN_BUILDER);
+        logIn.goTo(job.getShortUrl());
         Util.checkPageUnreachable(logIn, job.getShortUrl() + "configure");
-        Util.checkPageReachable(logIn, job.getShortUrl() + "build");
-        setupPromotionAndBuild(loggedInAdmin, job);
-        assert (isBuildPromotable(logIn, job) == false);
-        assert (isProjectDeletable(logIn, job) == false);
+        logIn.goTo(job.getShortUrl() + "build");
+        setupPromotionAndBuild(job);
+        assert (!isBuildPromotable(logIn, job));
+        assert (!isProjectDeletable(logIn, job));
     }
     
     @WithLocalPlugin (value="promoted-builds")
     public void testPromoteUsersAccess() throws Exception {
-        WebClient loggedInAdmin = new WebClient().
-            login(AuthzTest.TEST_ADMIN_USER, AuthzTest.TEST_PW);
-        FreeStyleProject job = this.setupProjectForAuth(loggedInAdmin);
-        WebClient logIn = new WebClient().login(CN_PROMOTER, 
-                                                AuthzTest.TEST_PW);
-        Util.checkPageReachable(logIn, job.getShortUrl());
+        FreeStyleProject job = this.setupProjectForAuth();
+        WebClient logIn = new WebClient().login(CN_PROMOTER, CN_PROMOTER);
+        logIn.goTo(job.getShortUrl());
         Util.checkPageUnreachable(logIn, job.getShortUrl() + "configure");
         Util.checkPageUnreachable(logIn, job.getShortUrl() + "build");
-        setupPromotionAndBuild(loggedInAdmin, job);
-        assert (isBuildPromotable(logIn, job) == true);
-        assert (isProjectDeletable(logIn, job) == false);
+        setupPromotionAndBuild(job);
+        assert (isBuildPromotable(logIn, job));
+        assert (!isProjectDeletable(logIn, job));
     }
     
     @WithLocalPlugin (value="promoted-builds")
     public void testConfigureUsersAccess() throws Exception {
-        WebClient loggedInAdmin = new WebClient().
-            login(AuthzTest.TEST_ADMIN_USER, AuthzTest.TEST_PW);
-        FreeStyleProject job = this.setupProjectForAuth(loggedInAdmin);
-        WebClient logIn = new WebClient().login(CN_CONFIGER, 
-                                                AuthzTest.TEST_PW);
-        Util.checkPageReachable(logIn, job.getShortUrl());
-        Util.checkPageReachable(logIn, job.getShortUrl() + "configure");
+        FreeStyleProject job = this.setupProjectForAuth();
+        WebClient logIn = new WebClient().login(CN_CONFIGER, CN_CONFIGER);
+        logIn.goTo(job.getShortUrl());
+        logIn.goTo(job.getShortUrl() + "configure");
         Util.checkPageUnreachable(logIn, job.getShortUrl() + "build");
-        setupPromotionAndBuild(loggedInAdmin, job);
-        assert (isBuildPromotable(logIn, job) == false);
-        assert (isProjectDeletable(logIn, job) == false);
+        setupPromotionAndBuild(job);
+        assert (!isBuildPromotable(logIn, job));
+        assert (!isProjectDeletable(logIn, job));
     }
 
     @WithLocalPlugin (value="promoted-builds")
     public void testDeleteUsersAccess() throws Exception {
-        WebClient loggedInAdmin = new WebClient().
-            login(AuthzTest.TEST_ADMIN_USER, AuthzTest.TEST_PW);
-        FreeStyleProject job = this.setupProjectForAuth(loggedInAdmin);
-        WebClient logIn = new WebClient().login(CN_DELETER, AuthzTest.TEST_PW);
-        Util.checkPageReachable(logIn, job.getShortUrl());
+        FreeStyleProject job = this.setupProjectForAuth();
+        WebClient logIn = new WebClient().login(CN_DELETER, CN_DELETER);
+        logIn.goTo(job.getShortUrl());
         Util.checkPageUnreachable(logIn, job.getShortUrl() + "configure");
         Util.checkPageUnreachable(logIn, job.getShortUrl() + "build");
-        setupPromotionAndBuild(loggedInAdmin, job);
-        assert (isBuildPromotable(logIn, job) == false);
-        assert (isProjectDeletable(logIn, job) == true);
+        setupPromotionAndBuild(job);
+        assert (!isBuildPromotable(logIn, job));
+        assert (isProjectDeletable(logIn, job));
     }
 
     private boolean isProjectDeletable(WebClient logIn, FreeStyleProject job) 
         throws Exception {
         boolean deletable = true;
         try {
-            HtmlPage jobDeletePage = (HtmlPage) logIn.goTo(job.getShortUrl() 
+            HtmlPage jobDeletePage = logIn.goTo(job.getShortUrl()
                                                            + "delete");
             this.submitDeleteForm(jobDeletePage);
         } catch (com.gargoylesoftware.htmlunit.FailingHttpStatusCodeException 
@@ -149,11 +127,10 @@ public class ProjectAuthTest extends HudsonTestCase {
         throws Exception {
         boolean promotable = true;
         try {
-            HtmlPage buildPromotePage = (HtmlPage) logIn.
+            HtmlPage buildPromotePage = logIn.
                 goTo(job.getShortUrl() + "lastBuild/promotion/");
             this.submitPromoteForm(buildPromotePage);
-        } catch (com.gargoylesoftware.htmlunit.FailingHttpStatusCodeException 
-                 fhsce) {
+        } catch (FailingHttpStatusCodeException fhsce) {
             promotable = false;
         } catch (FormNotFoundException fnfe) {
             promotable = false;
@@ -164,14 +141,9 @@ public class ProjectAuthTest extends HudsonTestCase {
     /**
      * Setup a new Hudson job to use authorization from the CN project.
      */
-    public FreeStyleProject setupProjectForAuth(WebClient loggedInAdmin) 
-        throws Exception {
+    public FreeStyleProject setupProjectForAuth() throws Exception {
         FreeStyleProject job = this.createFreeStyleProject();
-        HtmlPage jobConfigPage = (HtmlPage) loggedInAdmin.
-            goTo(job.getShortUrl() + "configure");
-        jobConfigPage = (HtmlPage) Util.setText(jobConfigPage, PROJECT_ID, 
-                                                CN_PROJECT_NAME);
-        this.submitForm(jobConfigPage, JOB_FORM_NAME);
+        job.addProperty(new CNAuthProjectProperty(teamforge_project,false,null,false));
         return job;
     }
 
@@ -179,31 +151,14 @@ public class ProjectAuthTest extends HudsonTestCase {
      * Setup the Hudson job with a promotion and run one build (so that 
      * promotion pages will show up).
      */
-    public void setupPromotionAndBuild(WebClient loggedInAdmin, 
-                                       FreeStyleProject job) throws Exception {
-        HtmlPage jobConfigPage = (HtmlPage) loggedInAdmin.
-            goTo(job.getShortUrl() + "configure");
-        HtmlCheckBoxInput promoteCheck = (HtmlCheckBoxInput) Util.
-            getFirstHtmlElementByName(jobConfigPage, "promotions");
-        assert(promoteCheck != null);
-        promoteCheck.click();
-        HtmlTextInput promoteName = (HtmlTextInput) Util.
-            getFirstHtmlElementByName(jobConfigPage, "config.name");
-        promoteName.setValueAttribute(PROMOTION_NAME);
-        HtmlCheckBoxInput manualCheck = (HtmlCheckBoxInput) Util.
-            getFirstHtmlElementByName(jobConfigPage, 
-                                      "hudson-plugins-promoted_builds-" +
-                                      "conditions-ManualCondition");
-        manualCheck.click();
-        // sometimes this value gets lost, but it's not a real bug
-        // this is a work around.
-        jobConfigPage = (HtmlPage) Util.setText(jobConfigPage, PROJECT_ID, 
-                                                CN_PROJECT_NAME);
-        this.submitForm(jobConfigPage, JOB_FORM_NAME);
-        loggedInAdmin.goTo(job.getShortUrl() + "build");
+    public void setupPromotionAndBuild(FreeStyleProject job) throws Exception {
+        JobPropertyImpl prop = new JobPropertyImpl(job);
+        job.addProperty(prop);
+        PromotionProcess proc = prop.addProcess(PROMOTION_NAME);
+        proc.conditions.add(new ManualCondition());
+
         // wait til the build completes
-        new BuildCompleteListener(FreeStyleBuild.class, job)
-            .waitForBuildToComplete(2*60*1000);
+        buildAndAssertSuccess(job);
     }
 
     

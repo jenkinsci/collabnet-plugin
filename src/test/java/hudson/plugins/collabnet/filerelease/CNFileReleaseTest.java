@@ -54,7 +54,7 @@ public class CNFileReleaseTest extends CNHudsonTestCase {
      * Test FileRelease upload by building and uploading a test file.
      */
     public void testUpload() throws Exception {
-        if(!isOnline()) return; // skip if offline
+        if(!verifyOnline()) return; // skip if offline
 
         // make sure package and release exists
         CTFProject fr = connect().getProjectByTitle(teamforge_project);

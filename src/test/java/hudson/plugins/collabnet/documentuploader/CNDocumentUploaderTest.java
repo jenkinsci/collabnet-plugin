@@ -29,7 +29,7 @@ public class CNDocumentUploaderTest extends CNHudsonTestCase {
      * is really on the CN server.
      */
     public void testDocUpload() throws Exception {
-        if(!isOnline()) return; // skip if offline
+        if(!verifyOnline()) return; // skip if offline
 
         // a test project that creates './abc' and uploads that file.
         FreeStyleProject job = this.createFreeStyleProject();
