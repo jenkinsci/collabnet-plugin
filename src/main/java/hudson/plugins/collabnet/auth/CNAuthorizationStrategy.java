@@ -1,31 +1,30 @@
 package hudson.plugins.collabnet.auth;
 
+import com.collabnet.ce.webservices.CollabNetApp;
 import hudson.Extension;
-import hudson.model.AbstractProject;
 import hudson.model.AbstractItem;
+import hudson.model.AbstractProject;
 import hudson.model.Computer;
 import hudson.model.Descriptor;
 import hudson.model.Job;
 import hudson.model.User;
 import hudson.model.View;
+import hudson.plugins.collabnet.util.CNFormFieldValidator;
 import hudson.security.ACL;
 import hudson.security.AuthorizationStrategy;
 import hudson.util.FormValidation;
-
-import hudson.plugins.collabnet.util.CNFormFieldValidator;
-
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.logging.Logger;
-
 import hudson.util.VersionNumber;
 import net.sf.json.JSONObject;
-
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.StaplerResponse;
+
+import java.io.IOException;
+import java.rmi.RemoteException;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.logging.Logger;
 
 import static hudson.Util.join;
 import static hudson.plugins.collabnet.util.CommonUtil.splitCommaStr;
@@ -209,11 +208,11 @@ public class CNAuthorizationStrategy extends AuthorizationStrategy {
          * @return the currently saved configured CollabNet url
          */
         public static String getCollabNetUrl() {
-            CNConnection conn = CNConnection.getInstance();
+            CollabNetApp conn = CNConnection.getInstance();
             if (conn == null) {
                 return null;
             }
-            return conn.getCollabNetApp().getServerUrl();
+            return conn.getServerUrl();
         }
 
         /**
@@ -224,7 +223,21 @@ public class CNAuthorizationStrategy extends AuthorizationStrategy {
             if (url == null) {
                 return null;
             }
-            return CNConnection.getVersion(url);
+            String version;
+            try {
+                version = CollabNetApp.getApiVersion(url);
+            } catch (RemoteException re) {
+                log.info("getVersion: failed with RemoteException: " +
+                         re.getMessage());
+                return null;
+            }
+            try {
+                return new VersionNumber(version);
+            } catch (IllegalArgumentException iae) {
+                log.severe("getVersion: unexpected error when attempting to " +
+                           "parse CollabNet version: " + iae.getMessage());
+                return null;
+            }
         }
 
         /**
@@ -267,11 +280,11 @@ public class CNAuthorizationStrategy extends AuthorizationStrategy {
         /**
          * Check that the users are valid.
          */
-        public FormValidation doCheckAdminUsersStr(@QueryParameter String value) {
+        public FormValidation doCheckAdminUsersStr(@QueryParameter String value) throws RemoteException {
             return CNFormFieldValidator.userListCheck(value);
         }
 
-        public FormValidation doCheckReadUsersStr(@QueryParameter String value) {
+        public FormValidation doCheckReadUsersStr(@QueryParameter String value) throws RemoteException {
             return CNFormFieldValidator.userListCheck(value);
         }
 
@@ -279,11 +292,11 @@ public class CNAuthorizationStrategy extends AuthorizationStrategy {
          * Check that the groups are valid.
          */
         public FormValidation doCheckAdminGroupsStr(@QueryParameter String groups,
-                @QueryParameter String users) {
+                @QueryParameter String users) throws RemoteException {
             return CNFormFieldValidator.groupListCheck(groups, users);
         } 
 
-        public FormValidation doCheckReadGroupsStr(@QueryParameter String value) {
+        public FormValidation doCheckReadGroupsStr(@QueryParameter String value) throws RemoteException {
             return CNFormFieldValidator.groupListCheck(value,null);
         }
 

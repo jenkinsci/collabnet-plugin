@@ -42,4 +42,16 @@ public class CTFUser implements ObjectWithTitle {
     public String getTitle() {
         return userName;
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == null || getClass() != o.getClass()) return false;
+        CTFUser that = (CTFUser) o;
+        return userName.equals(that.userName);
+    }
+
+    @Override
+    public int hashCode() {
+        return userName.hashCode();
+    }
 }

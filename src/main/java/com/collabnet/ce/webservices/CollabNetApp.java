@@ -268,15 +268,8 @@ public class CollabNetApp {
      * @throws RemoteException
      */
     public String getProjectId(String projectName) throws RemoteException {
-        this.checkValidSessionId();
-        ProjectSoapList pslist = this.icns.getProjectList(sessionId);
-        ProjectSoapRow[] rows = pslist.getDataRows();
-        for (ProjectSoapRow row : rows) {
-            logger.debug(row.getId() + " " + row.getTitle());
-            if (row.getTitle().equals(projectName)) {
-                return row.getId();
-            }
-        }
+        CTFProject p = getProjectByTitle(projectName);
+        if (p!=null)    return p.getId();
         return null;
     }
 

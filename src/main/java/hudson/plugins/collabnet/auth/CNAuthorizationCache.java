@@ -2,6 +2,7 @@ package hudson.plugins.collabnet.auth;
 
 import com.collabnet.ce.webservices.CTFList;
 import com.collabnet.ce.webservices.CTFRole;
+import com.collabnet.ce.webservices.CollabNetApp;
 import hudson.model.Hudson;
 import hudson.security.AuthorizationStrategy;
 import hudson.security.Permission;
@@ -56,8 +57,8 @@ public class CNAuthorizationCache {
         if (userPermSet == null) {
             userPermSet = new HashSet<Permission>();
             try {
-                CNConnection conn = CNConnection.getInstance();
-                CTFList<CTFRole> roleNameSet = conn.getCollabNetApp().getProjectById(projectId).getUserRoles(username);
+                CollabNetApp conn = CNConnection.getInstance();
+                CTFList<CTFRole> roleNameSet = conn.getProjectById(projectId).getUserRoles(username);
                 Collection<CollabNetRole> userRoles = CNProjectACL.CollabNetRoles.getMatchingRoles(roleNameSet);
                 for (CollabNetRole role : userRoles) {
                     userPermSet.addAll(role.getPermissions());

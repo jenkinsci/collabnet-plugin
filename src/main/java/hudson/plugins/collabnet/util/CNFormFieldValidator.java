@@ -7,7 +7,7 @@ import com.collabnet.ce.webservices.CTFScmRepository;
 import com.collabnet.ce.webservices.CTFTracker;
 import com.collabnet.ce.webservices.CollabNetApp;
 import com.collabnet.cubit.api.CubitConnector;
-import hudson.plugins.collabnet.auth.CNConnection;
+import hudson.plugins.collabnet.auth.CNAuthentication;
 import hudson.util.FormValidation;
 import org.apache.axis.utils.StringUtils;
 import org.apache.commons.httpclient.HttpClient;
@@ -213,13 +213,13 @@ public abstract class CNFormFieldValidator {
     /**
      * Checks if a project name is valid, by using the given connection.
      */
-    public static FormValidation projectCheck(CollabNetApp app, String project) {
+    public static FormValidation projectCheck(CollabNetApp app, String project) throws RemoteException {
         if (CommonUtil.unset(project)) {
             return FormValidation.error("The project is required.");
         }
         if (app != null) {
             try {
-                if (CNHudsonUtil.getProjectId(app, project) == null) {
+                if (app.getProjectByTitle(project) == null) {
                     return FormValidation.warning(String.format(
                             "Project '%s' cannot be found, or user %s does not have permission to access it.",
                             project, app.getUsername()));
@@ -400,16 +400,16 @@ public abstract class CNFormFieldValidator {
      * The check only works for a logged-in site-admin.  Otherwise,
      * give a warning that we cannot check the users' validity.
      */
-    public static FormValidation userListCheck(String userStr) {
+    public static FormValidation userListCheck(String userStr) throws RemoteException {
         if (userStr == null || userStr.equals("")) {
             return FormValidation.ok();
         }
-        CNConnection conn = CNConnection.getInstance();
-        if (conn == null || !conn.isSuperUser()) {
+        CNAuthentication auth = CNAuthentication.get();
+        if (auth == null || !auth.isSuperUser()) {
             return FormValidation.warning("Cannot check if users exist unless logged " +
                     "in as a TeamForge site admin.  Be careful!");
         }
-        Collection<String> invalidUsers = getInvalidUsers(conn, userStr);
+        Collection<String> invalidUsers = getInvalidUsers(auth.getCredentials(), userStr);
         if (!invalidUsers.isEmpty()) {
             return FormValidation.error("The following users do not exist: " +
                   invalidUsers);
@@ -418,15 +418,15 @@ public abstract class CNFormFieldValidator {
     }
 
     /**
-     * @param conn
+     * @param cna
      * @param userStr
      * @return the collection of users from the array which do not exist.
      */
-    private static Collection<String> getInvalidUsers(CNConnection conn, String userStr) {
+    private static Collection<String> getInvalidUsers(CollabNetApp cna, String userStr) throws RemoteException {
         String[] users = CommonUtil.splitCommaStr(userStr);
         Collection<String> invalidUsers = new ArrayList<String>();
         for (String user: users) {
-            if (!conn.isUsernameValid(user)) {
+            if (!cna.isUsernameValid(user)) {
                 invalidUsers.add(user);
             }
         }
@@ -439,7 +439,7 @@ public abstract class CNFormFieldValidator {
      * the current user if s/he will be locked out once that user
      * saves the configuration.
      */
-    public static FormValidation groupListCheck(String groupStr, String userStr) {
+    public static FormValidation groupListCheck(String groupStr, String userStr) throws RemoteException {
         Collection<String> invalidGroups = getInvalidGroups(groupStr);
         if (!invalidGroups.isEmpty()) {
             return FormValidation.error("The following groups do not exist: " +
@@ -464,23 +464,19 @@ public abstract class CNFormFieldValidator {
      * @param groupStr
      * @return the collection of groups from the array which do not exist.
      */
-    private static Collection<String> getInvalidGroups(String groupStr) {
-        CNConnection conn = CNConnection.getInstance();
-        if (conn == null) {
+    private static Collection<String> getInvalidGroups(String groupStr) throws RemoteException {
+        CNAuthentication auth = CNAuthentication.get();
+        if (auth == null) {
             // cannot connect to check.
             return Collections.emptyList();
         }
-        if (!conn.isSuperUser()) {
+        if (!auth.isSuperUser()) {
             // only super users can see all groups and do this check.
             return Collections.emptyList();
         }
         String[] groups = CommonUtil.splitCommaStr(groupStr);
-        Collection<String> invalidGroups = new ArrayList<String>();
-        for (String group: groups) {
-            if (!conn.isGroupnameValid(group)) {
-                invalidGroups.add(group);
-            }
-        }
+        Set<String> invalidGroups = new HashSet<String>(Arrays.asList(groups));
+        invalidGroups.removeAll(auth.getCredentials().getGroups().keySet());
         return invalidGroups;
     }
 
@@ -494,15 +490,15 @@ public abstract class CNFormFieldValidator {
      *         authorizations.
      */
     private static boolean locksOutCurrentUser(String userStr, String groupStr) {
-        CNConnection conn = CNConnection.getInstance();
-        if (conn == null) {
+        CNAuthentication auth = CNAuthentication.get();
+        if (auth == null) {
             // cannot check
             return false;
         }
-        if (conn.isSuperUser()) {
+        if (auth.isSuperUser()) {
             return false;
         }
-        String currentUser = conn.getUsername();
+        String currentUser = auth.getPrincipal();
         String[] users = CommonUtil.splitCommaStr(userStr);
         for (String user: users) {
             if (user.equals(currentUser)) {
@@ -510,7 +506,7 @@ public abstract class CNFormFieldValidator {
             }
         }
         String[] groups = CommonUtil.splitCommaStr(groupStr);
-        return !conn.isMemberOfAny(Arrays.asList(groups));
+        return !auth.isMemberOfAny(Arrays.asList(groups));
     }
 
 

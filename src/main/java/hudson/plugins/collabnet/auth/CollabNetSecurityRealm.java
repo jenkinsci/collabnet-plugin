@@ -8,6 +8,7 @@ import hudson.model.Hudson;
 import hudson.plugins.collabnet.util.CNHudsonUtil;
 import hudson.security.SecurityRealm;
 import hudson.util.FormValidation;
+import hudson.util.VersionNumber;
 import hudson.util.spring.BeanBuilder;
 import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.methods.GetMethod;
@@ -39,17 +40,16 @@ public class CollabNetSecurityRealm extends SecurityRealm {
         this.mEnableSSOAuthToCTF = enableSSOAuthToCTF;
 
         CollabNetApp cn = new CollabNetApp(this.collabNetUrl);
-        int apiVersion[] = {0}; // so that a failure to retrieve the version doesn't result in NPE down the road
         try {
-            apiVersion = CNHudsonUtil.getVersionArray(cn.getApiVersion());
+            VersionNumber apiVersion = new VersionNumber(cn.getApiVersion());
+            if (apiVersion.compareTo(new VersionNumber("5.3.0.0")) >= 0) {
+                // starting with CTF 5.3, redirect no longer works after login
+                mEnableSSORedirect = false;
+            }
         } catch (RemoteException re) {
             // ignore
         }
 
-        if (CNHudsonUtil.compareVersion(apiVersion, new int[] {5, 3, 0, 0}) >= 0) {
-            // starting with CTF 5.3, redirect no longer works after login
-            mEnableSSORedirect = false;
-        }
     }
 
     public String getCollabNetUrl() {
@@ -147,11 +147,7 @@ public class CollabNetSecurityRealm extends SecurityRealm {
             try {
                 GetMethod get = new GetMethod(soapURL);
                 int status = client.executeMethod(get);
-                if (status == 200) {
-                    return true;
-                } else {
-                    return false;
-                }
+                return status == 200;
             } catch (IOException e) {
                 return false;
             } catch (IllegalArgumentException iae) {

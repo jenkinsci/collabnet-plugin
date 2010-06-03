@@ -644,7 +644,7 @@ public class CNTracker extends AbstractTeamForgeNotifier {
          */
         public ComboBoxModel doFillAssignUserItems(CollabNetApp cna, @QueryParameter String project)
             throws IOException {
-            return ComboBoxUpdater. getUsers(cna,project);
+            return ComboBoxUpdater.getUsers(cna,project);
         }
         
         /**

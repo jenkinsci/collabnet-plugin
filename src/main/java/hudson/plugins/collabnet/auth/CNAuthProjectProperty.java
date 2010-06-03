@@ -1,11 +1,17 @@
 package hudson.plugins.collabnet.auth;
 
+import com.collabnet.ce.webservices.CTFList;
+import com.collabnet.ce.webservices.CTFProject;
+import com.collabnet.ce.webservices.CTFRole;
+import com.collabnet.ce.webservices.CTFUser;
+import com.collabnet.ce.webservices.CollabNetApp;
 import hudson.Extension;
 import hudson.model.Hudson;
 import hudson.model.Item;
 import hudson.model.Job;
 import hudson.model.JobProperty;
 import hudson.model.JobPropertyDescriptor;
+import hudson.plugins.collabnet.util.ComboBoxUpdater;
 import hudson.plugins.collabnet.util.CommonUtil;
 import hudson.security.Permission;
 import hudson.util.ComboBoxModel;
@@ -14,11 +20,14 @@ import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 
 import java.io.IOException;
+import java.rmi.RemoteException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.logging.Logger;
+
+import static java.util.logging.Level.WARNING;
 
 /**
  * Job property to associate a Hudson job with a CollabNet Project for
@@ -68,12 +77,18 @@ public class CNAuthProjectProperty extends JobProperty<Job<?, ?>> {
      */
     private void loadProjectIdIfNecessary() {
         if (CommonUtil.isEmpty(projectId) && !CommonUtil.isEmpty(project)) {
-            CNConnection conn = CNConnection.getInstance();
+            CollabNetApp conn = CNConnection.getInstance();
             if (conn == null) {
                 return;
             }
 
-            projectId = conn.getProjectId(project);
+            try {
+                CTFProject p = conn.getProjectByTitle(project);
+                projectId = p!=null ? p.getId() : null;
+            } catch (RemoteException e) {
+                projectId = null;
+                log.log(WARNING,"Failed to load project ID of "+project,e);
+            }
 
             if (!mIsNotLoadedFromDisk) {
                 if (this.owner != null) {
@@ -97,13 +112,19 @@ public class CNAuthProjectProperty extends JobProperty<Job<?, ?>> {
         if (!CommonUtil.isEmpty(projectId)) {
             // always use the name from project id if project id exists - this allows us to address scenario where
             // while the app is running, the project name was changed on the server
-            CNConnection conn = CNConnection.getInstance();
+            CollabNetApp conn = CNConnection.getInstance();
             if (conn != null) {
-                return conn.getProjectName(projectId);
+                try {
+                    CTFProject p = conn.getProjectById(projectId);
+                    if (p!=null)
+                        return p.getTitle();
+                } catch (RemoteException e) {
+                    // fall back to the stored project name
+                }
             }
         }
 
-        return "";
+        return project;
     }
 
     /**
@@ -168,28 +189,50 @@ public class CNAuthProjectProperty extends JobProperty<Job<?, ?>> {
     private void loadRoles() {
         String projectIdStr = getProjectId();
         if (!CommonUtil.isEmpty(projectIdStr)) {
-            CNConnection conn = CNConnection.getInstance();
-            if (conn == null) {
-                log.warning("Cannot loadRoles, incorrect authentication type.");
-                return;
-            }
-            if (this.getCreateRoles()) {
-                List<String> roleNames = new ArrayList<String>();
-                List<String> descriptions = new ArrayList<String>();
-                for (CollabNetRole role: CNProjectACL.CollabNetRoles.getAllRoles()) {
-                    roleNames.add(role.getName());
-                    descriptions.add(role.getDescription());
+            try {
+                CollabNetApp conn = CNConnection.getInstance();
+                if (conn == null) {
+                    log.warning("Cannot loadRoles, incorrect authentication type.");
+                    return;
                 }
-                conn.addRoles(projectIdStr, roleNames, descriptions);
-            }
-            
-            if (this.getGrantDefaultRoles()) {
-                // load up some default roles
-                // this should be an option later
-                conn.grantRoles(projectIdStr, this.getDefaultUserRoles(), conn.getUsers(projectIdStr));
-                conn.grantRoles(projectIdStr, this.getDefaultAdminRoles(), conn.getAdmins(projectIdStr));
+                CTFProject p = conn.getProjectById(getProjectId());
+                if (this.getCreateRoles()) {
+                    CTFList<CTFRole> existing = p.getRoles();
+                    for (CollabNetRole role: CNProjectACL.CollabNetRoles.getAllRoles()) {
+                        if (existing.byTitle(role.getName())==null)
+                            p.createRole(role.getName(), role.getDescription());
+                    }
+                }
+
+                if (this.getGrantDefaultRoles()) {
+                    // load up some default roles
+                    // this should be an option later
+                    grantRoles(p, this.getDefaultUserRoles(), p.getMembers());
+                    grantRoles(p, this.getDefaultAdminRoles(), p.getAdmins());
+                }
+            } catch (RemoteException e) {
+                log.log(WARNING, "Cannot loadRoles, incorrect authentication type.", e);
             }
         }   
+    }
+
+    private void grantRoles(CTFProject p, Collection<String> roleNames, List<CTFUser> members) throws RemoteException {
+        CTFList<CTFRole> roles = p.getRoles();
+        for (String name : roleNames) {
+            CTFRole r = roles.byTitle(name);
+            if (r==null)        continue; // this indicates an abstraction leakage
+
+            CTFList<CTFUser> existing = r.getMembers();
+            for (CTFUser m : members) {
+                if (!existing.contains(m))
+                    try {
+                        r.grant(m);
+                    } catch (RemoteException re) {
+                        log.severe("grantRoles: failed with RemoteException: " +
+                            re.getMessage());
+                    }
+            }
+        }
     }
 
     /**
@@ -219,23 +262,23 @@ public class CNAuthProjectProperty extends JobProperty<Job<?, ?>> {
         /**
          * Form validation for the project field.
          */
-        public FormValidation doCheckProject(@QueryParameter String value) {
+        public FormValidation doCheckProject(@QueryParameter String value) throws RemoteException {
             String project = value;
             if (CommonUtil.isEmpty(project)) {
                 return FormValidation.warning("If left empty, all users will be able to configure and access this " +
                     "build");
             }
 
-            CNConnection conn = CNConnection.getInstance();
-            if (conn == null) {
+            CNAuthentication auth = CNAuthentication.get();
+            if (auth == null) {
                 return FormValidation.warning("Cannot check project name, improper" +
                         " authentication type.");
             }
-            String projectId = conn.getProjectId(project);
-            boolean superUser = conn.isSuperUser();
+            CTFProject p = auth.getCredentials().getProjectByTitle(project);
+            boolean superUser = auth.isSuperUser();
             boolean hudsonAdmin = Hudson.getInstance().getACL()
                 .hasPermission(Hudson.ADMINISTER);
-            if (CommonUtil.isEmpty(projectId)) {
+            if (p==null) {
                 if (superUser) {
                     return FormValidation.error("This project does not exist.");
                 } else {
@@ -243,7 +286,7 @@ public class CNAuthProjectProperty extends JobProperty<Job<?, ?>> {
                           "to this project.  This setting change will not be saved.");
                 }
             }
-            FormValidation ok = FormValidation.ok("Currently selected project: " + projectId + ":" + project);
+            FormValidation ok = FormValidation.ok("Currently selected project: " + p.getId() + ":" + project);
             if (superUser) {
                 // all other errors should not be valid for a
                 // superuser, since superusers are Hudson Admins
@@ -251,7 +294,7 @@ public class CNAuthProjectProperty extends JobProperty<Job<?, ?>> {
                 // all-powerful in the CollabNet server.
                 return ok;
             }
-            if (!conn.isProjectAdmin(projectId)) {
+            if (!auth.isProjectAdmin(p)) {
                 return FormValidation.warning("The current user is not a project admin in " +
                      "the project, so he/she cannot create or " +
                      "grant roles.");
@@ -263,7 +306,7 @@ public class CNAuthProjectProperty extends JobProperty<Job<?, ?>> {
             }
             // check that the user will have configure permissions
             // on this page
-            CNProjectACL acl = new CNProjectACL(projectId);
+            CNProjectACL acl = new CNProjectACL(p.getId());
             if (!acl.hasPermission(CNAuthProjectProperty
                                    .CONFIGURE_PROPERTY)) {
                 CollabNetRole roleNeeded =
@@ -287,20 +330,20 @@ public class CNAuthProjectProperty extends JobProperty<Job<?, ?>> {
          *
          * @return an array of project names.
          */
-        public ComboBoxModel doFillProjectItems() {
-            CNConnection conn = CNConnection.getInstance();
+        public ComboBoxModel doFillProjectItems() throws RemoteException {
+            CollabNetApp conn = CNConnection.getInstance();
             if (conn == null) {
                 return new ComboBoxModel();
             }
-            return new ComboBoxModel(conn.getProjects());
+            return ComboBoxUpdater.toModel(conn.getProjects());
         }
 
         /**
          * @return the CollabNet server url.
          */
         public String getCollabNetUrl() {
-            CNConnection conn = CNConnection.getInstance();
-            return conn.getCollabNetApp().getServerUrl();
+            CollabNetApp conn = CNConnection.getInstance();
+            return conn.getServerUrl();
         }
     }
 }

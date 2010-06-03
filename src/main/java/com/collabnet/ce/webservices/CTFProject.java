@@ -3,6 +3,7 @@ package com.collabnet.ce.webservices;
 import com.collabnet.ce.soap50.webservices.cemain.ProjectMemberSoapRow;
 import com.collabnet.ce.soap50.webservices.cemain.ProjectSoapDO;
 import com.collabnet.ce.soap50.webservices.cemain.ProjectSoapRow;
+import com.collabnet.ce.soap50.webservices.cemain.UserSoapRow;
 import com.collabnet.ce.soap50.webservices.docman.DocumentFolderSoapList;
 import com.collabnet.ce.soap50.webservices.docman.DocumentFolderSoapRow;
 import com.collabnet.ce.soap50.webservices.frs.PackageSoapRow;
@@ -99,6 +100,16 @@ public class CTFProject extends CTFObject implements ObjectWithTitle {
     public List<CTFUser> getMembers() throws RemoteException {
         List<CTFUser> r = new ArrayList<CTFUser>();
         for (ProjectMemberSoapRow row : app.icns.getProjectMemberList(app.getSessionId(),getId()).getDataRows())
+            r.add(new CTFUser(row));
+        return r;
+    }
+
+    /**
+     * Gets the administrators of this project.
+     */
+    public List<CTFUser> getAdmins() throws RemoteException {
+        List<CTFUser> r = new ArrayList<CTFUser>();
+        for (UserSoapRow row : app.icns.listProjectAdmins(app.getSessionId(),getId()).getDataRows())
             r.add(new CTFUser(row));
         return r;
     }

@@ -246,7 +246,7 @@ public class TeamForge extends SubversionRepositoryBrowser {
         /**
          * Form validation for the project field.
          */
-        public FormValidation doCheckProject(CollabNetApp app, @QueryParameter String value) {
+        public FormValidation doCheckProject(CollabNetApp app, @QueryParameter String value) throws RemoteException {
             return CNFormFieldValidator.projectCheck(app,value);
         }
 
@@ -273,7 +273,7 @@ public class TeamForge extends SubversionRepositoryBrowser {
          * Gets a list of repos to choose from and write them as a 
          * JSON string into the response data.
          */
-        public ComboBoxModel doFillRepoItems(CollabNetApp cna, @QueryParameter String project) {
+        public ComboBoxModel doFillRepoItems(CollabNetApp cna, @QueryParameter String project) throws RemoteException {
             return ComboBoxUpdater.getRepos(cna,project);
         }
     }

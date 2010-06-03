@@ -84,31 +84,13 @@ public abstract class ComboBoxUpdater {
         return cbm;
     }
 
-    public static ComboBoxModel getRepos(CollabNetApp cna, String project) {
-        String projectId = CNHudsonUtil.getProjectId(cna, project);
-        ComboBoxModel list = getRepoList(cna, projectId);
-        CNHudsonUtil.logoff(cna);
-        return list;
+    public static ComboBoxModel getRepos(CollabNetApp cna, String project) throws RemoteException {
+        CTFProject p =  cna.getProjectByTitle(project);
+        if (p==null)    return EMPTY_MODEL;
+        return toModel(p.getScmRepositories());
     }
 
-    /**
-     * @return a list of repos which has been sanitized.
-     */
-    public static ComboBoxModel getRepoList(CollabNetApp cna,
-                                                 String projectId) {
-        if (cna != null) {
-            try {
-                CTFProject p = cna.getProjectByTitle(projectId);
-                if (p!=null)
-                    return new ComboBoxModel(toModel(p.getScmRepositories()));
-            } catch (RemoteException re) {
-                CommonUtil.logRE(log, "getRepoList", re);
-            }
-        }
-        return EMPTY_MODEL;
-    }
-
-    private static ComboBoxModel toModel(Collection<? extends ObjectWithTitle> list) {
+    public static ComboBoxModel toModel(Collection<? extends ObjectWithTitle> list) {
         ComboBoxModel r = new ComboBoxModel();
         for (ObjectWithTitle t : list)
             r.add(t.getTitle());
@@ -124,11 +106,10 @@ public abstract class ComboBoxUpdater {
         return EMPTY_MODEL;
     }
 
-    public static ComboBoxModel getUsers(CollabNetApp cna, String project) {
-        String projectId = CNHudsonUtil.getProjectId(cna, project);
-        ComboBoxModel list = getUserList(cna, projectId);
-        CNHudsonUtil.logoff(cna);
-        return list;
+    public static ComboBoxModel getUsers(CollabNetApp cna, String project) throws RemoteException {
+        CTFProject p = cna.getProjectByTitle(project);
+        if (p==null)    return EMPTY_MODEL;
+        return toModel(p.getMembers());
     }
 
     /**

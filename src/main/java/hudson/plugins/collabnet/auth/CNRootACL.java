@@ -3,12 +3,10 @@ package hudson.plugins.collabnet.auth;
 import hudson.model.Hudson;
 import hudson.security.ACL;
 import hudson.security.Permission;
+import org.acegisecurity.Authentication;
 
 import java.util.Collection;
-
 import java.util.logging.Logger;
-
-import org.acegisecurity.Authentication;
 
 /**
  * Root ACL for the CollabNet Authorization.  It gives a set of users
@@ -71,8 +69,8 @@ public class CNRootACL extends ACL {
                 return true;
             }
 
-            CNConnection conn = CNConnection.getInstance(a);
-            if (conn == null) {
+            CNAuthentication auth = CNAuthentication.cast(a);
+            if (auth == null) {
                 // if the authentication is the wrong type, return true
                 log.severe("Improper Authentication type used with " +
                            "CNAuthorizationStrategy!  CNAuthorization " +
@@ -81,14 +79,14 @@ public class CNRootACL extends ACL {
                            "Hudson instance.");
                 return false;
             }
-            if (conn.isSuperUser() || 
+            if (auth.isSuperUser() ||
                 this.adminUsers.contains(username) || 
-                conn.isMemberOfAny(this.adminGroups)) {
+                auth.isMemberOfAny(this.adminGroups)) {
                 // admins have every permission
                 return true;
             }
             if (this.readUsers.contains(username) ||
-                conn.isMemberOfAny(this.readGroups)) {
+                auth.isMemberOfAny(this.readGroups)) {
                 for(Permission permission = p; permission!=null; 
                     permission=permission.impliedBy) {
                     if (permission.equals(Permission.READ)) {

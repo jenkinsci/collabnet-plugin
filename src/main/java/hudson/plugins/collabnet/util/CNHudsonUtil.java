@@ -4,9 +4,9 @@ import com.collabnet.ce.webservices.CTFPackage;
 import com.collabnet.ce.webservices.CTFProject;
 import com.collabnet.ce.webservices.CTFRelease;
 import com.collabnet.ce.webservices.CTFScmRepository;
-import com.collabnet.ce.webservices.CTFTracker;
 import com.collabnet.ce.webservices.CollabNetApp;
 import hudson.plugins.collabnet.share.TeamForgeShare;
+import hudson.util.VersionNumber;
 import org.kohsuke.stapler.StaplerRequest;
 
 import java.rmi.RemoteException;
@@ -122,22 +122,6 @@ public class CNHudsonUtil {
     }
 
     /**
-     * Get the packageId for the package name.
-     *
-     * @param cna the collab net app instance to use
-     * @param rpackage name of the package.
-     * @param projectId the project id.
-     * @return the package id if found, null otherwise.
-     */
-    public static CTFPackage getPackage(CollabNetApp cna, String rpackage,
-                                String projectId) throws RemoteException {
-        if (cna==null)  return null;
-        CTFProject p = cna.getProjectById(projectId);
-        if (p==null)    return null;
-        return p.getPackageByTitle(rpackage);
-    }
-
-    /**
      * Get the projectId for the project name.
      *
      * @param cna for accessing the webservice methods.
@@ -157,21 +141,6 @@ public class CNHudsonUtil {
     }
 
     /**
-     * Get the project name for the project with given id.
-     *
-     * @param cna for accessing the webservice methods.
-     * @param projectId id.
-     * @return the id for the project or null, if no such project exist.
-     */
-    public static String getProjectName(CollabNetApp cna, String projectId) {
-        String projectName = null;
-        if (cna != null) {
-            projectName = cna.getProjectName(projectId);
-        }
-        return projectName;
-    }
-
-    /**
      * Get a releaseId, given a projectId and a release title.
      *
      * @param release
@@ -185,21 +154,6 @@ public class CNHudsonUtil {
             CTFRelease r = pkg.getReleaseByTitle(release);
             if (r!=null)    return r;
         }
-        return null;
-    }
-
-    /**
-     * Given a tracker title and a projectId, find the matching tracker id.
-     * 
-     * @param trackerName
-     * @return the tracker id for the tracker that matches this name, or null
-     *         if no matching tracker is found.
-     */
-    public static String getTrackerId(CTFProject p, 
-                                      String trackerName) throws RemoteException {
-        if (p==null)    return null;
-        CTFTracker t = p.getTrackerByTitle(trackerName);
-        if (t!=null)    return t.getId();
         return null;
     }
 
@@ -233,14 +187,16 @@ public class CNHudsonUtil {
             url = repo.getScmViewerUrl();
 
             if (cna != null) {
-                int apiVersion[] = null;
+                VersionNumber apiVersion;
                 try {
-                    apiVersion = getVersionArray(cna.getApiVersion());
+                    apiVersion = new VersionNumber(cna.getApiVersion());
                 } catch (RemoteException re) {
                     CommonUtil.logRE(log, "getScmViewerUrl", re);
+                    return null;
                 }
 
-                if (isSupportedVersion(new int[] {5, 3, 0, 0}, new int[] {6, 0, 0, 0}, apiVersion)) {
+                if (new VersionNumber("5.3.0.0").compareTo(apiVersion)<=0
+                &&  apiVersion.compareTo(new VersionNumber("6.0.0.0"))<0) {
                     // starting with CTF 5.3, you can use the new viewRepositorySource method that does auth for viewvc
                     url = collabnetUrl + "/sf/scm/do/viewRepositorySource/" + repo.getPath();
                 }
@@ -264,60 +220,6 @@ public class CNHudsonUtil {
             }
         }
         return versionNums;
-    }
-
-    /**
-     * Check if the actual version is within the range of the start/end support version
-     * @param startSupportVersion the start version, inclusive. null to ignore check.
-     * @param endSupportVersion the ending version, not inclusive. null to ignore check.
-     * @param actualVersion the actual version
-     * @return true if actual version is between start version (inclusive) and end version (non inclusive)
-     */
-    public static boolean isSupportedVersion(int[] startSupportVersion, int[] endSupportVersion, int[] actualVersion) {
-        if (actualVersion == null || actualVersion.length != 4) {
-            log.warning("Unable to determine api version: isSupportedVersion returning false");
-            return false;
-        }
-
-        if (startSupportVersion != null) {
-            if (startSupportVersion.length != 4) {
-                return false;
-            }
-            if (compareVersion(actualVersion, startSupportVersion) == -1) {
-                // means actual version is before the start support version
-                return false;
-            }
-        }
-
-        if (endSupportVersion != null) {
-            if (endSupportVersion.length != 4) {
-                return false;
-            }
-            if (compareVersion(actualVersion, endSupportVersion) != -1) {
-                // means actual version is either after or the same as endSupport version
-                return false;
-            }
-        }
-        return true;
-    }
-
-    /**
-     * Compare two equal length version array
-     * @param version1 first version
-     * @param version2 second version
-     * @return -1 if version1 is less than version2, 0 if they are the same, and 1 if version1 is greater than version2
-     */
-    public static int compareVersion(int[] version1, int[] version2) {
-        for (int i=0; i < version1.length; i++) {
-            int v1 = version1[i];
-            int v2 = version2[i];
-            if (v1 > v2) {
-                return 1;
-            } else if (v1 < v2) {
-                return -1;
-            }
-        }
-        return 0;
     }
 
     /**
