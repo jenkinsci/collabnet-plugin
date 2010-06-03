@@ -2,6 +2,7 @@ package hudson.plugins.collabnet.auth;
 
 import com.collabnet.ce.webservices.CollabNetApp;
 import hudson.Extension;
+import hudson.Util;
 import hudson.model.AbstractItem;
 import hudson.model.AbstractProject;
 import hudson.model.Computer;
@@ -22,10 +23,13 @@ import org.kohsuke.stapler.StaplerResponse;
 
 import java.io.IOException;
 import java.rmi.RemoteException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 import java.util.logging.Logger;
 
+import static hudson.Util.fixNull;
 import static hudson.Util.join;
 import static hudson.plugins.collabnet.util.CommonUtil.splitCommaStr;
 import static java.lang.Math.max;
@@ -57,13 +61,13 @@ public class CNAuthorizationStrategy extends AuthorizationStrategy {
      *                  have all permissions in Hudson.
      * @param permCacheTimeoutMin the cache timeout in min, after which the cache entries are cleared. -1 to disable.
      */
-    public CNAuthorizationStrategy(String[] readUsers, String [] readGroups,
-                                   String[] adminUsers, String [] adminGroups, int permCacheTimeoutMin)
+    public CNAuthorizationStrategy(List<String> readUsers, List<String> readGroups,
+                                   List<String> adminUsers, List<String> adminGroups, int permCacheTimeoutMin)
     {
-        this.readUsers = Arrays.asList(readUsers);
-        this.readGroups = Arrays.asList(readGroups);
-        this.adminUsers = Arrays.asList(adminUsers);
-        this.adminGroups = Arrays.asList(adminGroups);
+        this.readUsers = new ArrayList<String>(readUsers);
+        this.readGroups = new ArrayList<String>(readGroups);
+        this.adminUsers = new ArrayList<String>(adminUsers);
+        this.adminGroups = new ArrayList<String>(adminGroups);
         mAuthCacheTimeoutMin = max(0,permCacheTimeoutMin); // can't be negative
         this.rootACL = new CNRootACL(this.adminUsers, this.adminGroups, 
                                      this.readUsers, this.readGroups);
@@ -293,7 +297,7 @@ public class CNAuthorizationStrategy extends AuthorizationStrategy {
          */
         public FormValidation doCheckAdminGroupsStr(@QueryParameter String groups,
                 @QueryParameter String users) throws RemoteException {
-            return CNFormFieldValidator.groupListCheck(groups, users);
+            return CNFormFieldValidator.groupListCheck(fixNull(groups), fixNull(users));
         } 
 
         public FormValidation doCheckReadGroupsStr(@QueryParameter String value) throws RemoteException {

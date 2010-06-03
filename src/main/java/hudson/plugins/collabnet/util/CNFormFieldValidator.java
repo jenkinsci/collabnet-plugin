@@ -20,7 +20,6 @@ import org.kohsuke.stapler.StaplerRequest;
 import java.io.IOException;
 import java.rmi.RemoteException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -425,9 +424,8 @@ public abstract class CNFormFieldValidator {
      * @return the collection of users from the array which do not exist.
      */
     private static Collection<String> getInvalidUsers(CollabNetApp cna, String userStr) throws RemoteException {
-        String[] users = CommonUtil.splitCommaStr(userStr);
         Collection<String> invalidUsers = new ArrayList<String>();
-        for (String user: users) {
+        for (String user: CommonUtil.splitCommaStr(userStr)) {
             if (!cna.isUsernameValid(user)) {
                 invalidUsers.add(user);
             }
@@ -476,8 +474,7 @@ public abstract class CNFormFieldValidator {
             // only super users can see all groups and do this check.
             return Collections.emptyList();
         }
-        String[] groups = CommonUtil.splitCommaStr(groupStr);
-        Set<String> invalidGroups = new HashSet<String>(Arrays.asList(groups));
+        Set<String> invalidGroups = new HashSet<String>(CommonUtil.splitCommaStr(groupStr));
         invalidGroups.removeAll(auth.getCredentials().getGroups().getTitles());
         return invalidGroups;
     }
@@ -501,14 +498,12 @@ public abstract class CNFormFieldValidator {
             return false;
         }
         String currentUser = auth.getPrincipal();
-        String[] users = CommonUtil.splitCommaStr(userStr);
-        for (String user: users) {
+        for (String user: CommonUtil.splitCommaStr(userStr)) {
             if (user.equals(currentUser)) {
                 return false;
             }
         }
-        String[] groups = CommonUtil.splitCommaStr(groupStr);
-        return !auth.isMemberOfAny(Arrays.asList(groups));
+        return !auth.isMemberOfAny(CommonUtil.splitCommaStr(groupStr));
     }
 
 

@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
@@ -134,18 +135,17 @@ public class CommonUtil {
      * @return an array of the strings, with leading and trailing 
      *         whitespace removed.
      */
-    public static String[] splitCommaStr(String commaStr) {
-        Collection<String> results = 
-            new ArrayList<String>(Arrays.asList(commaStr.trim()
-                                                .split("\\s*,\\s*")));
+    public static List<String> splitCommaStr(String commaStr) {
+        List<String> results =
+            new ArrayList<String>(Arrays.asList(commaStr.trim().split("\\s*,\\s*")));
         for (Iterator<String> it = results.iterator(); it.hasNext();) {
-            String next = (String)it.next();
+            String next = it.next();
             next = next.trim();
             if (next.equals("")) {
                 it.remove();
             }
         }
-        return results.toArray(new String[0]);
+        return results;
     }
 
     /**
