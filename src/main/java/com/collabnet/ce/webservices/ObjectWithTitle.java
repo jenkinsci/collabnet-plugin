@@ -8,4 +8,5 @@ package com.collabnet.ce.webservices;
  */
 public interface ObjectWithTitle {
     String getTitle();
+    String getId();
 }

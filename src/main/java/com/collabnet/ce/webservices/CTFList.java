@@ -29,6 +29,17 @@ public class CTFList<T extends ObjectWithTitle> extends ArrayList<T> {
     }
 
     /**
+     * Looks up the object by its ID.
+     */
+    public T byId(String id) {
+        for (T t : this) {
+            if (t.getId().equals(id))
+                return t;
+        }
+        return null;
+    }
+
+    /**
      * Gets the view of this list where titles are returned instead of {@code T}.
      */
     public List<String> getTitles() {
