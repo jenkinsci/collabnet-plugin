@@ -1,13 +1,7 @@
 package hudson.plugins.collabnet.filerelease;
 
-import hudson.model.FreeStyleProject;
 import hudson.plugins.collabnet.CNHudsonTestCase;
-import hudson.plugins.collabnet.ConnectionFactory;
-import hudson.plugins.collabnet.documentuploader.CNDocumentUploader;
-import hudson.plugins.collabnet.documentuploader.DocUploadTest;
 import hudson.plugins.collabnet.documentuploader.FilePattern;
-import hudson.plugins.collabnet.share.TeamForgeShare;
-import org.jvnet.hudson.test.HudsonTestCase;
 
 /**
  * Test document upload facility.
