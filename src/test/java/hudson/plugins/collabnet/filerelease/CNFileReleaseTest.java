@@ -58,7 +58,7 @@ public class CNFileReleaseTest extends CNHudsonTestCase {
 
         // make sure package and release exists
         CTFProject fr = connect().getProjectByTitle(teamforge_project);
-        CTFPackage pkg = fr.getPackageByTitle(fr_package);
+        CTFPackage pkg = fr.getPackages().byTitle(fr_package);
         if (pkg==null)
             pkg = fr.createPackage(fr_package,"test for Hudson",true);
         CTFRelease r = pkg.getReleaseByTitle(fr_release);

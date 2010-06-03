@@ -34,7 +34,7 @@ public abstract class CNHudsonTestCase extends HudsonTestCase {
 
         if (isOnline()) {
             CollabNetApp app = connect();
-            if (app.getProjectId(teamforge_project)==null) {
+            if (app.getProjectByTitle(teamforge_project)==null) {
                 app.createProject(teamforge_project, teamforge_project,"Test bed for the collab.net Hudson plugin");
             }
         }

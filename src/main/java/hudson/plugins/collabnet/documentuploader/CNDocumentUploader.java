@@ -351,7 +351,7 @@ public class CNDocumentUploader extends AbstractTeamForgeNotifier {
                                      String fileName, String mimeType, 
                                      AbstractBuild<?, ?> build) 
         throws IOException, InterruptedException {
-        CTFDocument doc = folder.getDocumentByTitle(fileName);
+        CTFDocument doc = folder.getDocuments().byTitle(fileName);
         if (doc != null) {
             doc.update(file);
             return doc;

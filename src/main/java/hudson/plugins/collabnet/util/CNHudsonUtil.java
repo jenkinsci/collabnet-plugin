@@ -122,25 +122,6 @@ public class CNHudsonUtil {
     }
 
     /**
-     * Get the projectId for the project name.
-     *
-     * @param cna for accessing the webservice methods.
-     * @param project name.
-     * @return the id for the project or null, if no such project exist.
-     */
-    public static String getProjectId(CollabNetApp cna, String project) {
-        String projectId = null;
-        if (cna != null) {
-            try {
-                projectId = cna.getProjectId(project);
-            } catch (RemoteException re) {
-                CommonUtil.logRE(log, "getProjectId", re);
-            }
-        } 
-        return projectId;
-    }
-
-    /**
      * Get a releaseId, given a projectId and a release title.
      *
      * @param release
@@ -231,7 +212,7 @@ public class CNHudsonUtil {
                                      String repoName) throws RemoteException {
         CTFProject p = cna.getProjectByTitle(projectName);
         if (p==null)    return null;
-        CTFScmRepository r = p.getScmRepositoryByTitle(repoName);
+        CTFScmRepository r = p.getScmRepositories().byTitle(repoName);
         if (r==null)    return null;
         return r.getSystemId();
     }
@@ -248,7 +229,7 @@ public class CNHudsonUtil {
         if (p==null) {
             return null;
         }
-        return p.getScmRepositoryByTitle(repoName);
+        return p.getScmRepositories().byTitle(repoName);
     }
 
     /**

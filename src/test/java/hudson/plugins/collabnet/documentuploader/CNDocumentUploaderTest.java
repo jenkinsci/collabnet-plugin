@@ -58,7 +58,7 @@ public class CNDocumentUploaderTest extends CNHudsonTestCase {
         CTFDocumentFolder f = p.getOrCreateDocumentFolder(CommonUtil.
                 getInterpreted(build.getEnvironment(TaskListener.NULL), doc_path));
         assert(f != null);
-        CTFDocument doc = f.getDocumentByTitle("log");
+        CTFDocument doc = f.getDocuments().byTitle("log");
         assert(doc != null);
 
         // verify that the variable expansion worked

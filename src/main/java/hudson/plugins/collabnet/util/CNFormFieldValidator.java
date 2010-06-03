@@ -268,7 +268,7 @@ public abstract class CNFormFieldValidator {
         try {
             CTFProject p = cna.getProjectByTitle(project);
             if (p != null) {
-                CTFPackage pkg = p.getPackageByTitle(rpackage);
+                CTFPackage pkg = p.getPackages().byTitle(rpackage);
                 if (pkg == null) {
                     return FormValidation.warning("Package could not be found.");
                 }
@@ -295,7 +295,7 @@ public abstract class CNFormFieldValidator {
             CTFProject p = cna.getProjectByTitle(project);
             if (p==null)    return FormValidation.ok(); // not entered yet?
 
-            CTFPackage pkg = p.getPackageByTitle(rpackage);
+            CTFPackage pkg = p.getPackages().byTitle(rpackage);
             if (pkg != null) {
                 CTFRelease r = pkg.getReleaseByTitle(release);
                 if (r == null)
@@ -328,7 +328,7 @@ public abstract class CNFormFieldValidator {
                 return FormValidation.error("The repository name is required.");
             }
             if (p != null) {
-                CTFScmRepository r = p.getScmRepositoryByTitle(repoName);
+                CTFScmRepository r = p.getScmRepositories().byTitle(repoName);
                 if (r == null) {
                     return FormValidation.warning("Repository could not be " +
                                                   "found.");
@@ -353,7 +353,7 @@ public abstract class CNFormFieldValidator {
         CollabNetApp cna = CNHudsonUtil.getCollabNetApp(request);
         CTFProject p = cna.getProjectByTitle(project);
         if (p!=null) {
-            CTFTracker t = p.getTrackerByTitle(tracker);
+            CTFTracker t = p.getTrackers().byTitle(tracker);
             if (t == null) {
                 CNHudsonUtil.logoff(cna);
                 return FormValidation.warning("Tracker could not be found.");
@@ -476,7 +476,7 @@ public abstract class CNFormFieldValidator {
         }
         String[] groups = CommonUtil.splitCommaStr(groupStr);
         Set<String> invalidGroups = new HashSet<String>(Arrays.asList(groups));
-        invalidGroups.removeAll(auth.getCredentials().getGroups().keySet());
+        invalidGroups.removeAll(auth.getCredentials().getGroups().getTitles());
         return invalidGroups;
     }
 

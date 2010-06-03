@@ -50,34 +50,20 @@ public class CTFProject extends CTFObject implements ObjectWithTitle {
         return new CTFPackage(this, app.getFrsAppSoap().createPackage(app.getSessionId(), getId(), title, description, isPublished));
     }
 
-    /**
-     * Finds a package by its title, or return null if not found.
-     */
-    public CTFPackage getPackageByTitle(String title) throws RemoteException {
-        return findByTitle(getPackages(),title);
-    }
-
-    public List<CTFPackage> getPackages() throws RemoteException {
-        List<CTFPackage> r = new ArrayList<CTFPackage>();
+    public CTFList<CTFPackage> getPackages() throws RemoteException {
+        CTFList<CTFPackage> r = new CTFList<CTFPackage>();
         for (PackageSoapRow row : app.getFrsAppSoap().getPackageList(app.getSessionId(), getId()).getDataRows()) {
             r.add(new CTFPackage(this,row));
         }
         return r;
     }
 
-    public List<CTFTracker> getTrackers() throws RemoteException {
-        List<CTFTracker> r = new ArrayList<CTFTracker>();
+    public CTFList<CTFTracker> getTrackers() throws RemoteException {
+        CTFList<CTFTracker> r = new CTFList<CTFTracker>();
         for (TrackerSoapRow row : app.getTrackerSoap().getTrackerList(app.getSessionId(), getId()).getDataRows()) {
             r.add(new CTFTracker(this,row));
         }
         return r;
-    }
-
-    /**
-     * Finds a tracker by its title, or return null if not found.
-     */
-    public CTFTracker getTrackerByTitle(String title) throws RemoteException {
-        return findByTitle(getTrackers(),title);
     }
 
     public CTFTracker createTracker(String name, String title, String description) throws RemoteException {
@@ -85,12 +71,8 @@ public class CTFProject extends CTFObject implements ObjectWithTitle {
             app.getTrackerSoap().createTracker(app.getSessionId(), getId(), name, title, description));
     }
 
-    public CTFScmRepository getScmRepositoryByTitle(String title) throws RemoteException {
-        return findByTitle(getScmRepositories(),title);
-    }
-
-    public List<CTFScmRepository> getScmRepositories() throws RemoteException {
-        List<CTFScmRepository> r = new ArrayList<CTFScmRepository>();
+    public CTFList<CTFScmRepository> getScmRepositories() throws RemoteException {
+        CTFList<CTFScmRepository> r = new CTFList<CTFScmRepository>();
         for (RepositorySoapRow row : app.getScmAppSoap().getRepositoryList(app.getSessionId(), getId()).getDataRows()) {
             r.add(new CTFScmRepository(this,row));
         }
@@ -100,7 +82,7 @@ public class CTFProject extends CTFObject implements ObjectWithTitle {
     public List<CTFUser> getMembers() throws RemoteException {
         List<CTFUser> r = new ArrayList<CTFUser>();
         for (ProjectMemberSoapRow row : app.icns.getProjectMemberList(app.getSessionId(),getId()).getDataRows())
-            r.add(new CTFUser(row));
+            r.add(new CTFUser(app,row));
         return r;
     }
 
@@ -110,7 +92,7 @@ public class CTFProject extends CTFObject implements ObjectWithTitle {
     public List<CTFUser> getAdmins() throws RemoteException {
         List<CTFUser> r = new ArrayList<CTFUser>();
         for (UserSoapRow row : app.icns.listProjectAdmins(app.getSessionId(),getId()).getDataRows())
-            r.add(new CTFUser(row));
+            r.add(new CTFUser(app,row));
         return r;
     }
 
@@ -196,7 +178,7 @@ public class CTFProject extends CTFObject implements ObjectWithTitle {
             i++;
         }
         for (; i < folderNames.length; i++) {
-            CTFDocumentFolder next = cur.getFolderByTitle(folderNames[i]);
+            CTFDocumentFolder next = cur.getFolders().byTitle(folderNames[i]);
             if (next==null) break;
             cur = next;
         }
@@ -224,7 +206,7 @@ public class CTFProject extends CTFObject implements ObjectWithTitle {
             i++;
         }
         for (; i < folderNames.length; i++) {
-            CTFDocumentFolder next = cur.getFolderByTitle(folderNames[i]);
+            CTFDocumentFolder next = cur.getFolders().byTitle(folderNames[i]);
             if (next == null) {
                 return folderNames[i];
             } else {

@@ -225,7 +225,7 @@ public class CNTracker extends AbstractTeamForgeNotifier {
                 build.setResult(UNSTABLE);
                 return false;
             }
-            CTFTracker t = p.getTrackerByTitle(this.tracker);
+            CTFTracker t = p.getTrackers().byTitle(this.tracker);
             if (t == null) {
                 this.log("Critical Error: trackerId cannot be found for " +
                          this.tracker + ".  This could mean the tracker does " +

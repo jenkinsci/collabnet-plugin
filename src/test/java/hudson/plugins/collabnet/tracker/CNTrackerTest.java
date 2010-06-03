@@ -40,7 +40,7 @@ public class CNTrackerTest extends CNHudsonTestCase {
         if (isOnline()) {
             // make sure the tracker exists
             CTFProject p = connect().getProjectByTitle(teamforge_project);
-            if (p.getTrackerByTitle(tracker)==null)
+            if (p.getTrackers().byTitle(tracker) ==null)
                 p.createTracker("test",tracker,"test tracker for Hudson");
 
             // make sure the admin user is a member of this project
@@ -130,7 +130,7 @@ public class CNTrackerTest extends CNHudsonTestCase {
     private CTFArtifact getArtifact(AbstractBuild build) throws Exception {
         String title = CommonUtil.getInterpreted(build.getEnvironment(TaskListener.NULL), this.title);
         CollabNetApp cna = connect();
-        List<CTFArtifact> r = cna.getProjectByTitle(teamforge_project).getTrackerByTitle(tracker).getArtifactsByTitle(title);
+        List<CTFArtifact> r = cna.getProjectByTitle(teamforge_project).getTrackers().byTitle(tracker).getArtifactsByTitle(title);
         Collections.sort(r, new Comparator<CTFArtifact>() {
             public int compare(CTFArtifact o1, CTFArtifact o2) {
                 return o2.getLastModifiedDate().compareTo(o1.getLastModifiedDate());

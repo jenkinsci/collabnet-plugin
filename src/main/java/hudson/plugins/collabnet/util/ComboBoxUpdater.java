@@ -55,7 +55,7 @@ public abstract class ComboBoxUpdater {
         if (CommonUtil.unset(rpackage)) {
             return getReleaseList(p);
         } else {
-            CTFPackage pkg = p.getPackageByTitle(rpackage);
+            CTFPackage pkg = p.getPackages().byTitle(rpackage);
             return getReleaseList(pkg);
         }
     }
@@ -115,11 +115,10 @@ public abstract class ComboBoxUpdater {
     /**
      * @return a list of usernames which has been sanitized.
      */
-    public static ComboBoxModel getUserList(CollabNetApp cna,
-                                                 String projectId) {
-        if (cna != null && projectId != null) {
+    public static ComboBoxModel getUserList(CTFProject p) {
+        if (p!=null) {
             try {
-                return new ComboBoxModel(cna.getUsers(projectId));
+                return toModel(p.getMembers());
             } catch (RemoteException re) {
                 CommonUtil.logRE(log, "getUserList", re);
             }

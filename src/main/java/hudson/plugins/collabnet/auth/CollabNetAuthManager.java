@@ -27,14 +27,13 @@ public class CollabNetAuthManager implements AuthenticationManager {
         throws BadCredentialsException {
         String username = authentication.getName();
         String password = (String) authentication.getCredentials();
-        CollabNetApp cna = null;
         try {
-            cna = new CollabNetApp(this.getCollabNetUrl(), username, password);
+            CollabNetApp cna = new CollabNetApp(this.getCollabNetUrl(), username, password);
+            return new CNAuthentication(authentication.getName(), cna);
         } catch (RemoteException re) {
             throw new BadCredentialsException("Failed to log into " + 
                                               this.getCollabNetUrl() + ": " + 
                                               re.getMessage());
         }
-        return new CNAuthentication(authentication.getName(), cna);
     }
 }

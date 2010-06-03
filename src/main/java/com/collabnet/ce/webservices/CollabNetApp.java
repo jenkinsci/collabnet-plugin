@@ -3,13 +3,7 @@ package com.collabnet.ce.webservices;
 import com.collabnet.ce.soap50.webservices.ClientSoapStubFactory;
 import com.collabnet.ce.soap50.webservices.cemain.Group2SoapList;
 import com.collabnet.ce.soap50.webservices.cemain.Group2SoapRow;
-import com.collabnet.ce.soap50.webservices.cemain.GroupSoapList;
-import com.collabnet.ce.soap50.webservices.cemain.GroupSoapRow;
 import com.collabnet.ce.soap50.webservices.cemain.ICollabNetSoap;
-import com.collabnet.ce.soap50.webservices.cemain.ProjectMemberSoapList;
-import com.collabnet.ce.soap50.webservices.cemain.ProjectMemberSoapRow;
-import com.collabnet.ce.soap50.webservices.cemain.ProjectSoapDO;
-import com.collabnet.ce.soap50.webservices.cemain.ProjectSoapList;
 import com.collabnet.ce.soap50.webservices.cemain.ProjectSoapRow;
 import com.collabnet.ce.soap50.webservices.cemain.UserSoapList;
 import com.collabnet.ce.soap50.webservices.cemain.UserSoapRow;
@@ -31,10 +25,7 @@ import java.io.File;
 import java.rmi.RemoteException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 
 /***
  * This class represents the connection to the CollabNet webservice.
@@ -261,35 +252,6 @@ public class CollabNetApp {
     }
     
     /**
-     * Find the project that matches the given name, and return it's id.
-     * 
-     * @param projectName
-     * @return id for this project (if a match is found), null otherwise.
-     * @throws RemoteException
-     */
-    public String getProjectId(String projectName) throws RemoteException {
-        CTFProject p = getProjectByTitle(projectName);
-        if (p!=null)    return p.getId();
-        return null;
-    }
-
-    /**
-     * Find the project that matches the given name, and return it's id.
-     *
-     * @param projectId
-     * @return name for this project (if a match is found), null otherwise.
-     */
-    public String getProjectName(String projectId) {
-        this.checkValidSessionId();
-        try {
-            ProjectSoapDO projectDO = icns.getProjectData(sessionId, projectId);
-            return projectDO.getTitle();
-        } catch (RemoteException e) {
-            return null;
-        }
-    }
-
-    /**
      * Can the user can be found on the CollabNet server?
      *
      * @param username to check. 
@@ -308,161 +270,24 @@ public class CollabNetApp {
     }
     
     /**
-     * Is the user a member of the group?
-     *
-     * @param username to check.
-     * @param group
-     * @return true, if the user is a member of the group, false otherwise.
-     * @throws RemoteException
-     */
-    public boolean isUserMemberOfGroup (String username, String group) 
-        throws RemoteException {
-        this.checkValidSessionId();
-        GroupSoapList gList = this.icns.getUserGroupList(this.sessionId, 
-                                                         username);
-        for (GroupSoapRow row: gList.getDataRows()) {
-            if (row.getFullName().equals(group)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    /**
-     * Get a list of the groups the user belongs to.  This will only work
-     * if logged in as the user in question, or if the logged in user has
-     * superuser permissions.
-     *
-     * @param username
-     * @return collection of group names.
-     * @throws RemoteException
-     */
-    public Collection<String> getUserGroups(String username) 
-        throws RemoteException {
-        this.checkValidSessionId();
-        Collection<String> groups = new ArrayList<String>();
-        GroupSoapList gList = this.icns.getUserGroupList(this.sessionId, 
-                                                         username);
-        for (GroupSoapRow row: gList.getDataRows()) {
-            groups.add(row.getFullName());
-        }
-        return groups;
-    }
-
-    /**
-     * Is the user a project admin?
-     * @param username to check.
-     * @param projectId
-     * @return true if the user is an admin of this project, false otherwise.
-     * @throws RemoteException
-     */
-    public boolean isUserProjectAdmin(String username, String projectId) 
-        throws RemoteException {
-        this.checkValidSessionId();
-        UserSoapList usList = this.icns.listProjectAdmins(this.sessionId, 
-                                                          projectId);
-        for (UserSoapRow row: usList.getDataRows()) {
-            if (row.getUserName().equals(username)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    /**
-     * @param username
-     * @return true if the user is a super user.  False if not, or if the user
-     *         is not found.
-     * @throws RemoteException
-     */
-    public boolean isUserSuper(String username) throws RemoteException {
-        this.checkValidSessionId();
-        UserSoapList usList = this.icns.findUsers(this.sessionId, username);
-        for (UserSoapRow row: usList.getDataRows()) {
-            if (row.getUserName().equals(username)) {
-                return row.getSuperUser();
-            }
-        }
-        return false;
-    }
-
-    /**
-     * Get the usernames of all users.
-     *
-     * @param projectId the project id
-     * @return collection of usernames
-     * @throws RemoteException
-     */
-    public Collection<String> getUsers(String projectId) 
-        throws RemoteException {
-        this.checkValidSessionId();
-        Collection<String> users = new ArrayList<String>();
-        ProjectMemberSoapList pmList = this.icns.
-            getProjectMemberList(this.sessionId, projectId);
-        for (ProjectMemberSoapRow row: pmList.getDataRows()) {
-            users.add(row.getUserName());
-        }
-        return users;
-    }
-
-    /**
-     * Get the usernames of all project admins.
-     *
-     * @param projectId the project id
-     * @return collection of admin usernames
-     * @throws RemoteException
-     */
-    public Collection<String> getAdmins(String projectId) 
-        throws RemoteException {
-        this.checkValidSessionId();
-        Collection<String> admins = new ArrayList<String>();
-        UserSoapList usList = this.icns.listProjectAdmins(this.sessionId, 
-                                                          projectId);
-        for (UserSoapRow row: usList.getDataRows()) {
-            admins.add(row.getUserName());
-        }
-        return admins;
-    }
-
-    /**
      * Get the list of all Groups on the system.
      * Can only be called by SuperUsers.
      *
      * @return a Map of all group name/ids.
      * @throws RemoteException 
      */
-    public Map<String, String> getGroups() throws RemoteException {
+    public CTFList<CTFGroup> getGroups() throws RemoteException {
         this.checkValidSessionId();
-        Map<String, String> nameId = new HashMap<String, String>();
+        CTFList<CTFGroup> r = new CTFList<CTFGroup>();
         Group2SoapList gsList = this.icns.getGroupList2(this.sessionId, null);
         for (Group2SoapRow row: gsList.getDataRows()) {
-            nameId.put(row.getFullName(), row.getId());
+            r.add(new CTFGroup(this,row));
         }
-        return nameId;
-    } 
+        return r;
+    }
 
-    /**
-     * Given a list of group names, return a list of all unique users that 
-     * are members of any of the groups.  If the group name is not found,
-     * no error is thrown.
-     * Only works for SuperUsers.
-     *
-     * @param groupNames collection of group names.
-     * @return a collection of user names.
-     * @throws RemoteException
-     */
-    public Collection<String> getUsersInGroups(Collection<String> groupNames) 
-        throws RemoteException {
-        this.checkValidSessionId();
-        Map<String, String> groupNameIds = this.getGroups();
-        Collection<String> users = new HashSet<String>();
-        for (String groupName: groupNames) {
-            String id = groupNameIds.get(groupName);
-            if (id != null) {
-                users.addAll(this.getGroupUsers(id));
-            }
-        }
-        return users;
+    public CTFGroup getGroupByTitle(String fullName) throws RemoteException {
+        return getGroups().byTitle(fullName);
     }
 
     /**
@@ -526,6 +351,17 @@ public class CollabNetApp {
             if (p.getTitle().equals(title))
                 return p;
         return null;
+    }
+
+    /**
+     * Returns the current user that's logged in.
+     */
+    public CTFUser getMyself() throws RemoteException {
+        return getUser(username);
+    }
+
+    public CTFUser getUser(String username) throws RemoteException {
+        return new CTFUser(this,this.icns.getUserData(getSessionId(),username));
     }
 
     /**

@@ -23,8 +23,8 @@ public class CTFDocumentFolder extends CTFFolder {
         super(parent, data);
     }
 
-    public List<CTFDocumentFolder> getFolders() throws RemoteException {
-        List<CTFDocumentFolder> r = new ArrayList<CTFDocumentFolder>();
+    public CTFList<CTFDocumentFolder> getFolders() throws RemoteException {
+        CTFList<CTFDocumentFolder> r = new CTFList<CTFDocumentFolder>();
 
         DocumentFolderSoapList dfsList = app.getDocumentAppSoap().getDocumentFolderList(app.getSessionId(),getId(),false);
         for (DocumentFolderSoapRow row : dfsList.getDataRows())
@@ -32,26 +32,18 @@ public class CTFDocumentFolder extends CTFFolder {
         return r;
     }
 
-    public CTFDocumentFolder getFolderByTitle(String title) throws RemoteException {
-        return findByTitle(getFolders(),title);
-    }
-
     public CTFDocumentFolder createFolder(String title, String description) throws RemoteException {
         return new CTFDocumentFolder(this,app.getDocumentAppSoap().createDocumentFolder(
                 app.getSessionId(), getId(), title, description));
     }
 
-    public List<CTFDocument> getDocuments() throws RemoteException {
+    public CTFList<CTFDocument> getDocuments() throws RemoteException {
         DocumentSoapList list = app.getDocumentAppSoap().getDocumentList(app.getSessionId(), getId(), null);
 
-        List<CTFDocument> r = new ArrayList<CTFDocument>();
+        CTFList<CTFDocument> r = new CTFList<CTFDocument>();
         for (DocumentSoapRow row : list.getDataRows())
             r.add(new CTFDocument(this,row));
         return r;
-    }
-
-    public CTFDocument getDocumentByTitle(String title) throws RemoteException {
-        return findByTitle(getDocuments(),title);
     }
 
     public CTFDocument createDocument(java.lang.String title,

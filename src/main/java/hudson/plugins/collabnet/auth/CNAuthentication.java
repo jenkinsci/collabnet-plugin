@@ -1,6 +1,7 @@
 package hudson.plugins.collabnet.auth;
 
 import com.collabnet.ce.webservices.CTFProject;
+import com.collabnet.ce.webservices.CTFUser;
 import com.collabnet.ce.webservices.CollabNetApp;
 import hudson.model.Hudson;
 import hudson.security.Permission;
@@ -19,8 +20,9 @@ import java.util.logging.Logger;
  */
 public class CNAuthentication implements Authentication {
     public static final String SUPER_USER = "SuperUser";
-    private String principal;
-    private CollabNetApp cna;
+    private final String principal;
+    private final CTFUser myself;
+    private final CollabNetApp cna;
     private GrantedAuthority[] authorities;
     private Collection<String> groups;
     private boolean authenticated = false;
@@ -29,9 +31,10 @@ public class CNAuthentication implements Authentication {
 
     private static Logger log = Logger.getLogger("CNAuthentication");
     
-    public CNAuthentication(Object principal, Object credentials) {
+    public CNAuthentication(Object principal, Object credentials) throws RemoteException {
         this.principal = (String) principal;
         this.cna = (CollabNetApp) credentials;
+        this.myself = cna.getMyself();
         this.setupAuthorities();
         this.setupGroups();
         this.setAuthenticated(true);
@@ -45,7 +48,7 @@ public class CNAuthentication implements Authentication {
     private void setupAuthorities() {
         boolean isSuper = false;
         try {
-            isSuper = this.cna.isUserSuper(this.principal);
+            isSuper = myself.isSuperUser();
         } catch (RemoteException re) {
             log.info("setupAuthoritites: failed with RemoteException: " + 
                      re.getMessage());
@@ -66,7 +69,7 @@ public class CNAuthentication implements Authentication {
     private void setupGroups() {
         this.groups = Collections.emptyList();
         try {
-            this.groups = cna.getUserGroups(this.principal);
+            this.groups = myself.getGroupNames();
         } catch (RemoteException re) {
             // not much we can do
         }
@@ -176,8 +179,7 @@ public class CNAuthentication implements Authentication {
      */
     public boolean isProjectAdmin(CTFProject p) {
         try {
-            return this.cna.
-                isUserProjectAdmin(this.principal, p.getId());
+            return p.getAdmins().contains(cna.getMyself());
         } catch (RemoteException re) {
             log.info("isProjectAdmin: failed with RemoteException: " + re.getMessage());
             return false;

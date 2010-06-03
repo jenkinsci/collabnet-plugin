@@ -388,7 +388,7 @@ public class CNFileRelease extends AbstractTeamForgeNotifier {
                      "Setting build status to UNSTABLE (or worse).");
             return null;
         }
-        CTFPackage pkg = projectId.getPackageByTitle(getPkg());
+        CTFPackage pkg = projectId.getPackages().byTitle(getPkg());
         if (pkg == null) {
             this.logConsole("Critical Error: packageId cannot be found for " +
                      this.getPkg() + ".  " +
