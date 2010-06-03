@@ -262,13 +262,7 @@ public class CollabNetApp {
      */
     public boolean isUsernameValid(String username) throws RemoteException {
         this.checkValidSessionId();
-        UserSoapList usList = this.icns.findUsers(this.sessionId, username);
-        for (UserSoapRow row: usList.getDataRows()) {
-            if (row.getUserName().equals(username)) {
-                return true;
-            }
-        }
-        return false;
+        return getUser(username)!=null;
     }
     
     /**
