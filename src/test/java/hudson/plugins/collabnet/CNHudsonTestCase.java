@@ -1,14 +1,13 @@
 package hudson.plugins.collabnet;
 
-import hudson.model.Describable;
-import hudson.model.Descriptor;
+import com.collabnet.ce.webservices.CollabNetApp;
 import hudson.model.FreeStyleProject;
 import hudson.plugins.collabnet.share.TeamForgeShare;
-import hudson.plugins.collabnet.tracker.CNTracker;
 import hudson.tasks.Publisher;
+import org.apache.axis.AxisProperties;
 import org.jvnet.hudson.test.HudsonTestCase;
 
-import java.util.concurrent.Callable;
+import java.rmi.RemoteException;
 
 /**
  * Base class for test cases.
@@ -16,12 +15,30 @@ import java.util.concurrent.Callable;
  * @author Kohsuke Kawaguchi
  */
 public abstract class CNHudsonTestCase extends HudsonTestCase {
-    protected final String CN_URL = System.getProperty("teamforge_url");
+    @TestParam
+    protected String teamforge_url;
     // this user needs access to the project and access to the projects
     // document creation/view
-    protected final String TEST_USER = System.getProperty("admin_user");
-    protected final String TEST_PW = System.getProperty("password");
-    protected final String CN_PROJECT_NAME = System.getProperty("teamforge_project");
+    @TestParam
+    protected String admin_user;
+    @TestParam
+    protected String password;
+    @TestParam
+    protected String teamforge_project;
+
+    @Override
+    protected void setUp() throws Exception {
+        super.setUp();
+
+        TestConfiguration.INSTANCE.injectTo(this);
+
+        if (isOnline()) {
+            CollabNetApp app = connect();
+            if (app.getProjectId(teamforge_project)==null) {
+                app.createProject(teamforge_project, teamforge_project,"Test bed for the collab.net Hudson plugin");
+            }
+        }
+    }
 
     /**
      * Some of the test requires a working TeamForge instance to send a request to.
@@ -33,7 +50,7 @@ public abstract class CNHudsonTestCase extends HudsonTestCase {
      * should use this flag to decide if the test should be skipped or not.
      */
     protected boolean isOnline() {
-        return CN_URL!=null;
+        return teamforge_url !=null;
     }
 
     /**
@@ -50,6 +67,11 @@ public abstract class CNHudsonTestCase extends HudsonTestCase {
         return new ConnectionFactory("http://www.google.com/", "abc", "def");
     }
 
+    protected CollabNetApp connect() throws RemoteException {
+        TrustAllSocketFactory.install();
+        return new CollabNetApp(teamforge_url, admin_user, password);
+    }
+
     /**
      * Roundtrips a publisher object via configuration and make sure they are still intact.
      */
@@ -60,5 +82,4 @@ public abstract class CNHudsonTestCase extends HudsonTestCase {
         T after = (T)p.getPublishersList().get(before.getClass());
         assertEqualBeans(before,after,fields);
     }
-
 }

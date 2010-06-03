@@ -9,6 +9,7 @@ import hudson.model.FreeStyleProject;
 import hudson.model.TaskListener;
 import hudson.plugins.collabnet.CNHudsonTestCase;
 import hudson.plugins.collabnet.ConnectionFactory;
+import hudson.plugins.collabnet.TestParam;
 import hudson.plugins.collabnet.util.CommonUtil;
 import org.jvnet.hudson.test.TestBuilder;
 
@@ -18,7 +19,8 @@ import java.io.IOException;
  * Test document upload facility.
  */
 public class CNDocumentUploaderTest extends CNHudsonTestCase {
-    private static final String TEST_PATH = System.getProperty("doc_path");
+    @TestParam
+    protected String doc_path = "upload/test";
 
     /**
      * Setup the doc upload, run a build, check that the build log
@@ -36,8 +38,8 @@ public class CNDocumentUploaderTest extends CNHudsonTestCase {
             }
         });
         job.getPublishersList().add(new CNDocumentUploader(
-                new ConnectionFactory(CN_URL,TEST_USER,TEST_PW),
-                CN_PROJECT_NAME, TEST_PATH, "uploaded from hudson build #${BUILD_NUMBER}",
+                new ConnectionFactory(teamforge_url, admin_user, password),
+                teamforge_project, doc_path, "uploaded from hudson build #${BUILD_NUMBER}",
                 new FilePattern[] {new FilePattern("./abc")}, true
         ));
 
@@ -48,16 +50,19 @@ public class CNDocumentUploaderTest extends CNHudsonTestCase {
      * Attempt to find the uploaded doc on the CN server.
      */
     private void verifyDocUploaded(AbstractBuild build) throws Exception {
-        CollabNetApp cna = new CollabNetApp(CN_URL, TEST_USER, TEST_PW);
-        String projectId = cna.getProjectId(CN_PROJECT_NAME);
+        CollabNetApp cna = connect();
+        String projectId = cna.getProjectId(teamforge_project);
         assert(projectId != null);
         DocumentApp da = new DocumentApp(cna);
         String folderId = da.
             findOrCreatePath(projectId, CommonUtil.
-                             getInterpreted(build.getEnvironment(TaskListener.NULL), TEST_PATH));
+                             getInterpreted(build.getEnvironment(TaskListener.NULL), doc_path));
         assert(folderId != null);
         String docId = da.findDocumentId(folderId, "log");
         assert(docId != null);
+
+        // verify that the variable expansion worked
+        assertEquals("uploaded from hudson build #1",da.getDocument(docId).getDescription());
     }
 
     /**

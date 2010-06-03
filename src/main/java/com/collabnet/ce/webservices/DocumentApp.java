@@ -257,4 +257,11 @@ public class DocumentApp extends AbstractSoapApp {
                                createLocked, fileName, mimeType, fileId, 
                                associationId, associationDesc);        
     }
+
+    /**
+     * Obtains the information about a document.
+     */
+    public DocumentSoapDO getDocument(String documentId) throws RemoteException {
+        return this.da.getDocumentData(this.getSessionId(),documentId,0/*current version*/);
+    }
 }

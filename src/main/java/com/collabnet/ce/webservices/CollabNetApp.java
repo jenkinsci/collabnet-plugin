@@ -446,6 +446,21 @@ public class CollabNetApp {
     }
 
     /**
+     * Creates a new project and obtains its ID.
+     *
+     * @param name
+     *      ID of the project. Used as a token in URL. Can be null, in which case
+     *      inferred from the title parameter.
+     * @param title
+     *      Human readable title of the project that can include whitespace and so on.
+     * @param description
+     *      Longer human readable description of the project.
+     */
+    public String createProject(String name, String title, String description) throws RemoteException {
+        return this.icns.createProject(this.sessionId,name,title,description).getId();
+    }
+
+    /**
      * Return a collection of users that are active members of the group.
      *
      * @param groupId

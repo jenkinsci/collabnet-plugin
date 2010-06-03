@@ -50,8 +50,8 @@ public class CNFileReleaseTest extends CNHudsonTestCase {
 
         FreeStyleProject job = this.createFreeStyleProject();
         job.getPublishersList().add(new CNFileRelease(
-                new ConnectionFactory(CN_URL,TEST_USER,TEST_PW),
-                CN_PROJECT_NAME, PACKAGE, RELEASE, true,
+                new ConnectionFactory(teamforge_url, admin_user, password),
+                teamforge_project, PACKAGE, RELEASE, true,
                 new FilePattern[]{new FilePattern(FILE)}
         ));
         job.getBuildersList().add(new TestBuilder() {
@@ -69,10 +69,10 @@ public class CNFileReleaseTest extends CNHudsonTestCase {
      * Verify that an upload of the test file was successful.
      */
     public void verifyFRUpload() {
-        CollabNetApp cna = CNHudsonUtil.getCollabNetApp(CN_URL, TEST_USER,
-                                                        TEST_PW);
+        CollabNetApp cna = CNHudsonUtil.getCollabNetApp(teamforge_url, admin_user,
+                password);
         assert(cna != null);
-        String fileId = CNHudsonUtil.getFileId(cna, CN_PROJECT_NAME, PACKAGE,
+        String fileId = CNHudsonUtil.getFileId(cna, teamforge_project, PACKAGE,
                                                RELEASE, FILE);
         assert(fileId != null);
     }

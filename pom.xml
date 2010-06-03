@@ -126,22 +126,6 @@
               <name>project.build.directory</name>
               <value>${basedir}/target</value>
             </property>
-            <!--property>
-              <name>teamforge_url</name>
-              <value>TEAMFORGE_URL</value>
-            </property-->
-            <property>
-              <name>admin_user</name>
-              <value>testAdmin</value>
-            </property>
-            <property>
-              <name>password</name>
-              <value>testpw</value> 
-            </property>
-            <property>
-              <name>teamforge_project</name>
-              <value>hudsonTestProject</value>
-            </property>
             <!-- properties for authn -->
             <property>
               <name>invalid_user</name>
