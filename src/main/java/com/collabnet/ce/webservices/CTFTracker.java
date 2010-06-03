@@ -3,6 +3,7 @@ package com.collabnet.ce.webservices;
 import com.collabnet.ce.soap50.types.SoapFieldValues;
 import com.collabnet.ce.soap50.types.SoapFilter;
 import com.collabnet.ce.soap50.webservices.tracker.ArtifactSoapRow;
+import com.collabnet.ce.soap50.webservices.tracker.TrackerSoapDO;
 import com.collabnet.ce.soap50.webservices.tracker.TrackerSoapRow;
 
 import java.rmi.RemoteException;
@@ -16,6 +17,11 @@ public class CTFTracker extends CTFFolder {
     private CTFProject project;
 
     CTFTracker(CTFProject parent, TrackerSoapRow data) {
+        super(parent,data);
+        this.project = parent;
+    }
+
+    CTFTracker(CTFProject parent, TrackerSoapDO data) {
         super(parent,data);
         this.project = parent;
     }

@@ -64,7 +64,10 @@ public abstract class CNHudsonTestCase extends HudsonTestCase {
      * Create some non-null instance of {@link ConnectionFactory}
      */
     protected ConnectionFactory createConnectionFactory() {
-        return new ConnectionFactory("http://www.google.com/", "abc", "def");
+        if (isOnline())
+            return new ConnectionFactory(teamforge_url, admin_user, password);
+        else
+            return new ConnectionFactory("http://www.google.com/", "abc", "def");
     }
 
     protected CollabNetApp connect() throws RemoteException {

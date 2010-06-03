@@ -237,8 +237,8 @@ public class CNTracker extends AbstractTeamForgeNotifier {
             }
             CTFArtifact issue = this.findTrackerArtifact(t, build);
             Result buildStatus = build.getResult();
-            // no issue and failure found
             if (issue == null) {
+                // no issue and failure found
                 if (buildStatus.isWorseThan(SUCCESS)) {
                     this.log("Build is not successful; opening a new issue.");
                     String description = "The build has failed.  Latest " +
@@ -365,12 +365,12 @@ public class CNTracker extends AbstractTeamForgeNotifier {
         // check assign user validity
         String assignTo = this.getValidAssignUser(t.getProject());
         String title = this.getInterpreted(build, this.getTitle());
-        CTFRelease releaseId = CNHudsonUtil.getProjectReleaseId(t.getProject(),this.getRelease());
+        CTFRelease release = CNHudsonUtil.getProjectReleaseId(t.getProject(),this.getRelease());
         try {
             CTFArtifact asd = t.createArtifact(title,
                                               description, null, null, status,
                                               null, this.priority, 0, 
-                                              assignTo, releaseId.getId(), null,
+                                              assignTo, release!=null?release.getId():null, null,
                                               build.getLogFile().getName(), 
                                               "text/plain", buildLog);
             this.log("Created tracker artifact '" + title + "' in tracker '" 

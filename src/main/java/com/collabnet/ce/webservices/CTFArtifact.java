@@ -35,6 +35,8 @@ public class CTFArtifact extends CTFObject {
         data.setId(src.getId());
         data.setLastModifiedDate(src.getLastModifiedDate());
         data.setPriority(src.getPriority());
+        data.setStatus(src.getStatus());
+        data.setStatusClass(src.getStatusClass());
     }
 
     CTFArtifact(CTFObject parent, ArtifactSoapDO data) {

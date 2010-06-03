@@ -76,6 +76,11 @@ public class CTFProject extends CTFObject implements ObjectWithTitle {
         return findByTitle(getTrackers(),title);
     }
 
+    public CTFTracker createTracker(String name, String title, String description) throws RemoteException {
+        return new CTFTracker(this,
+            app.getTrackerSoap().createTracker(app.getSessionId(), getId(), name, title, description));
+    }
+
     private <T extends ObjectWithTitle> T findByTitle(List<T> list, String title) {
         for (T p : list)
             if (p.getTitle().equals(title))
@@ -88,6 +93,14 @@ public class CTFProject extends CTFObject implements ObjectWithTitle {
         for (ProjectMemberSoapRow row : app.icns.getProjectMemberList(app.getSessionId(),getId()).getDataRows())
             r.add(new CTFUser(row));
         return r;
+    }
+
+    public void addMember(String userName) throws RemoteException {
+        app.icns.addProjectMember(app.getSessionId(),getId(),userName);
+    }
+
+    public void addMember(CTFUser u) throws RemoteException {
+        addMember(u.getUserName());
     }
 
     public boolean hasMember(String username) throws RemoteException {
