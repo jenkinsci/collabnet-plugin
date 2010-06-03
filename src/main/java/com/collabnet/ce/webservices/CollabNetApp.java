@@ -17,6 +17,7 @@ import com.collabnet.ce.soap50.webservices.tracker.ITrackerAppSoap;
 import hudson.plugins.collabnet.share.TeamForgeShare;
 import hudson.plugins.collabnet.util.CNHudsonUtil;
 import hudson.plugins.collabnet.util.CommonUtil;
+import org.apache.axis.AxisFault;
 import org.apache.log4j.Logger;
 import org.kohsuke.stapler.QueryParameter;
 
@@ -373,6 +374,11 @@ public class CollabNetApp {
             return new CTFUser(this,this.icns.getUserData(getSessionId(),username));
         } catch (NoSuchObjectFault e) {
             return null;
+        } catch (AxisFault e) {
+            // somehow Axis is failing to create a strongly typed binding.
+            if (NoSuchObjectFault.FAULT_CODE.equals(e.getFaultCode()))
+                return null;
+            throw e;
         }
     }
 

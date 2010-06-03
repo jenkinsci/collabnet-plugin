@@ -31,8 +31,8 @@ public class CTFUser extends CTFObject implements ObjectWithTitle {
     }
 
     CTFUser(CollabNetApp app, UserSoapDO data) {
-        super(app,data.getId());
-        this.userName = data.getId();
+        super(app,data.getUsername());
+        this.userName = data.getUsername();
         this.fullName = data.getFullName();
         this.email = data.getEmail();
         this.data = data;
