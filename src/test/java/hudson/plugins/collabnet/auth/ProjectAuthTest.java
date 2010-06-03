@@ -18,6 +18,8 @@ import hudson.plugins.collabnet.util.Util;
 import hudson.plugins.promoted_builds.JobPropertyImpl;
 import hudson.plugins.promoted_builds.PromotionProcess;
 import hudson.plugins.promoted_builds.conditions.ManualCondition;
+import hudson.security.ACL;
+import org.acegisecurity.context.SecurityContextHolder;
 
 import java.rmi.RemoteException;
 
@@ -78,6 +80,8 @@ public class ProjectAuthTest extends AbstractSecurityTestCase {
     }
 
     public void testConfigRoundtrip() throws Exception {
+        SecurityContextHolder.getContext().setAuthentication(ACL.SYSTEM); // so that the test code can see everything
+
         assertRoundtrip(new CNAuthProjectProperty(teamforge_project, false, null, false));
         assertRoundtrip(new CNAuthProjectProperty(teamforge_project, true, null, true));
     }

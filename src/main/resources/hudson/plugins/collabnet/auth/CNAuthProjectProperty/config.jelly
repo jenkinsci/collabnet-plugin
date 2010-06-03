@@ -23,12 +23,15 @@
           <input type="hidden" name="_.storedProjectId" value="${instance.projectId}"/>
         </f:description>
 
-        <f:optionalBlock field="createRoles"
-         title="Create Hudson roles in CollabNet TeamForge for this project." />
+        <f:entry field="createRoles">
+          <f:checkbox />
+          <label class="attach-previous">Create Hudson roles in CollabNet TeamForge for this project.</label>
+        </f:entry>
 
-        <f:optionalBlock field="grantDefaultRoles"
-         title="Grant default permissions to members of the project." />
-
+        <f:entry field="grantDefaultRoles">
+          <f:checkbox />
+          <label class="attach-previous">Grant default permissions to members of the project.</label>
+        </f:entry>
       </table>
     </fieldset>
   </f:block>
