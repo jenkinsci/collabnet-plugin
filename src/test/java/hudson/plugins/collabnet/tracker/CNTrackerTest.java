@@ -26,7 +26,7 @@ import java.util.List;
  */
 public class CNTrackerTest extends CNHudsonTestCase {
     @TestParam
-    private String tracker = "test-tracker";
+    private String tracker = "testtracker";
     @TestParam
     private int priority = 1;
     @TestParam
@@ -41,7 +41,7 @@ public class CNTrackerTest extends CNHudsonTestCase {
             // make sure the tracker exists
             CTFProject p = connect().getProjectByTitle(teamforge_project);
             if (p.getTrackers().byTitle(tracker) ==null)
-                p.createTracker("test",tracker,"test tracker for Hudson");
+                p.createTracker(tracker,tracker,"test tracker for Hudson");
 
             // make sure the admin user is a member of this project
             if (!p.hasMember(admin_user))

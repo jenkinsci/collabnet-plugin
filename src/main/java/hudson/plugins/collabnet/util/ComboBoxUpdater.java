@@ -85,6 +85,7 @@ public abstract class ComboBoxUpdater {
     }
 
     public static ComboBoxModel getRepos(CollabNetApp cna, String project) throws RemoteException {
+        if (cna==null)  return EMPTY_MODEL;
         CTFProject p =  cna.getProjectByTitle(project);
         if (p==null)    return EMPTY_MODEL;
         return toModel(p.getScmRepositories());

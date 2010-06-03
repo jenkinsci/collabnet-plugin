@@ -34,9 +34,6 @@ public class TeamForge extends SubversionRepositoryBrowser {
     private String repo;
     private boolean overrideAuth;
 
-    private transient static TeamForgeShare.TeamForgeShareDescriptor 
-        shareDescriptor = null;
-
     /**
      * DataBoundConstructor for building the object from form data.
      */
@@ -147,10 +144,7 @@ public class TeamForge extends SubversionRepositoryBrowser {
      */
     public static TeamForgeShare.TeamForgeShareDescriptor 
         getTeamForgeShareDescriptor() {
-        if (shareDescriptor == null) {
-            shareDescriptor = TeamForgeShare.getTeamForgeShareDescriptor();
-        }
-        return shareDescriptor;
+        return TeamForgeShare.getTeamForgeShareDescriptor();
     }
 
     public URL getFileLink(SubversionChangeLogSet.Path path) 

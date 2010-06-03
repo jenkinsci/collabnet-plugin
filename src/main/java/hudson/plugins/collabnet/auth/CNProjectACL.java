@@ -54,7 +54,7 @@ public class CNProjectACL extends ACL {
         }
 
         CNAuthentication cnAuth = (CNAuthentication) a;
-        String username = (String) cnAuth.getPrincipal();
+        String username = cnAuth.getPrincipal();
         Set<Permission> userPerms = cnAuth.getUserProjectPermSet(username, projectId);
         for(; permission!=null; permission=permission.impliedBy) {
             if (userPerms.contains(permission)) {
@@ -65,8 +65,21 @@ public class CNProjectACL extends ACL {
     }
 
     public static class CollabNetRoles {
-        private static Collection<CollabNetRole> roles =
-            Collections.emptyList();
+        private static Collection<CollabNetRole> roles = Collections.emptyList();
+
+        public static final CollabNetRole HUDSON_READ_ROLE = new CollabNetRole("Hudson Read", "Allows users " +
+                                    "read-access to Hudson jobs.",
+                                    Hudson.READ, Item.READ);
+        public static final CollabNetRole HUDSON_BUILD_ROLE = new CollabNetRole("Hudson Build/Cancel", "Allow " +
+                                    "users to start a new build, or " +
+                                    "to cancel a build.",
+                                    AbstractProject.BUILD, AbstractProject.ABORT, AbstractProject.WORKSPACE, Item.BUILD, SCM.TAG);
+        public static final CollabNetRole HUDSON_CONFIGURE_ROLE = new CollabNetRole("Hudson Configure", "Allow users" +
+                                    " to configure a build.",
+                                    Item.CONFIGURE);
+        public static final CollabNetRole HUDSON_DELETE_ROLE = new CollabNetRole("Hudson Delete", "Allow users to "
+                                    + "delete builds.",
+                                    Item.DELETE);
 
         /**
          * Get the applicable hudson roles matching a set of user role names
@@ -90,34 +103,10 @@ public class CNProjectACL extends ACL {
         public static Collection<CollabNetRole> getAllRoles() {
             if (CollabNetRoles.roles.isEmpty()) {
                 roles = new ArrayList<CollabNetRole>();
-                Collection<Permission> tempPermission =
-                    new ArrayList<Permission>();
-                tempPermission.add(Hudson.READ);
-                tempPermission.add(Item.READ);
-                roles.add(new CollabNetRole("Hudson Read", "Allows users " +
-                                            "read-access to Hudson jobs.",
-                                            tempPermission));
-                tempPermission.clear();
-                tempPermission.add(AbstractProject.BUILD);
-                tempPermission.add(AbstractProject.ABORT);
-                tempPermission.add(AbstractProject.WORKSPACE);
-                tempPermission.add(Item.BUILD);
-                tempPermission.add(SCM.TAG); // if you have permission to build, you can create tag
-                roles.add(new CollabNetRole("Hudson Build/Cancel", "Allow " +
-                                            "users to start a new build, or " +
-                                            "to cancel a build.",
-                                            tempPermission));
-                tempPermission.clear();
-                tempPermission.add(Item.CONFIGURE);
-                roles.add(new CollabNetRole("Hudson Configure", "Allow users" +
-                                            " to configure a build.",
-                                            tempPermission));
-                tempPermission.clear();
-                tempPermission.add(Item.DELETE);
-                roles.add(new CollabNetRole("Hudson Delete", "Allow users to "
-                                            + "delete builds.",
-                                            tempPermission));
-                tempPermission.clear();
+                roles.add(HUDSON_READ_ROLE);
+                roles.add(HUDSON_BUILD_ROLE);
+                roles.add(HUDSON_CONFIGURE_ROLE);
+                roles.add(HUDSON_DELETE_ROLE);
                 // add build promotion as a permission, if the build promotion
                 // plugin is present.
                 if (Hudson.getInstance().getPlugin("promoted-builds") != null) {
@@ -130,22 +119,17 @@ public class CNProjectACL extends ACL {
                             break;
                         }
                     }
+                    Permission promotePermission = null;
                     if (promote != null) {
-                        Permission promotePermission = null;
                         try {
                             promotePermission = (Permission) promote.get(null);
                         } catch (IllegalAccessException iae) {}
-                        if (promotePermission != null) {
-                            // if we have the permission, add it
-                            tempPermission.add(promotePermission);
-                        }
                     }
 
                     roles.add(new CollabNetRole("Hudson Promote",
                                             "Allow users to " +
                                             "promote builds.",
-                                            tempPermission));
-                    tempPermission.clear();
+                                            promotePermission!=null ? new Permission[]{promotePermission} : new Permission[0] ));
                 }
             }
             return CollabNetRoles.roles;

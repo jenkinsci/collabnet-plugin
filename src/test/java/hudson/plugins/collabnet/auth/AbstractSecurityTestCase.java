@@ -57,7 +57,7 @@ public abstract class AbstractSecurityTestCase extends CNHudsonTestCase {
         rg.addMember(rgm);
     }
 
-    private CTFUser createUser(CollabNetApp cna, String name) throws RemoteException {
+    public CTFUser createUser(CollabNetApp cna, String name) throws RemoteException {
         return cna.createUser(name, name +"@example.org", name,"en","PST",false,false, name);
     }
 

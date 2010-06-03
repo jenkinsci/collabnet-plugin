@@ -2,8 +2,11 @@ package hudson.plugins.collabnet.auth;
 
 import hudson.security.Permission;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.ArrayList;
+
+import static java.util.Arrays.asList;
 
 /**
  * This class stores information about each CollabNet Role (name, description,
@@ -15,14 +18,10 @@ public class CollabNetRole {
     private Collection<Permission> permissions;
 
     public CollabNetRole(String name, String description, 
-                         Collection<Permission> permissions) {
+                         Permission... permissions) {
         this.name = name;
         this.description = description;
-        if (permissions != null) {
-            this.permissions = new ArrayList<Permission>(permissions);
-        } else {
-            this.permissions = new ArrayList<Permission>();
-        }
+        this.permissions = new ArrayList<Permission>(asList(permissions));
     }
 
     public CollabNetRole(String name, String description) {

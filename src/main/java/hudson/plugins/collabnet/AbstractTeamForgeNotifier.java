@@ -146,11 +146,6 @@ public abstract class AbstractTeamForgeNotifier extends Notifier {
      * @return the TeamForge share descriptor.
      */
     public static TeamForgeShare.TeamForgeShareDescriptor getTeamForgeShareDescriptor() {
-        if (shareDescriptor == null) {
-            shareDescriptor = TeamForgeShare.getTeamForgeShareDescriptor();
-        }
-        return shareDescriptor;
+        return TeamForgeShare.getTeamForgeShareDescriptor();
     }
-
-    private transient static TeamForgeShare.TeamForgeShareDescriptor shareDescriptor = null;
 }
