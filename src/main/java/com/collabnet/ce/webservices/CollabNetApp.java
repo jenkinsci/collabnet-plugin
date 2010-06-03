@@ -16,6 +16,7 @@ import com.collabnet.ce.soap50.webservices.cemain.UserSoapRow;
 import com.collabnet.ce.soap50.webservices.docman.IDocumentAppSoap;
 import com.collabnet.ce.soap50.webservices.filestorage.IFileStorageAppSoap;
 import com.collabnet.ce.soap50.webservices.frs.IFrsAppSoap;
+import com.collabnet.ce.soap50.webservices.scm.IScmAppSoap;
 import com.collabnet.ce.soap50.webservices.tracker.ITrackerAppSoap;
 import hudson.plugins.collabnet.share.TeamForgeShare;
 import hudson.plugins.collabnet.util.CNHudsonUtil;
@@ -51,6 +52,7 @@ public class CollabNetApp {
     protected IFileStorageAppSoap ifsa;
     private volatile ITrackerAppSoap itas;
     private volatile IDocumentAppSoap idas;
+    private volatile IScmAppSoap isas;
 
     /**
      * Creates a new session to the server at the given url.
@@ -119,6 +121,12 @@ public class CollabNetApp {
         if (idas==null)
             idas = createProxy(IDocumentAppSoap.class, "DocumentApp");
         return idas;
+    }
+
+    protected IScmAppSoap getScmAppSoap() {
+        if (isas==null)
+            isas = createProxy(IScmAppSoap.class, "ScmApp");
+        return isas;
     }
 
     /**

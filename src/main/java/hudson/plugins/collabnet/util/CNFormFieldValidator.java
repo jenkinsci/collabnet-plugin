@@ -3,9 +3,9 @@ package hudson.plugins.collabnet.util;
 import com.collabnet.ce.webservices.CTFPackage;
 import com.collabnet.ce.webservices.CTFProject;
 import com.collabnet.ce.webservices.CTFRelease;
+import com.collabnet.ce.webservices.CTFScmRepository;
 import com.collabnet.ce.webservices.CTFTracker;
 import com.collabnet.ce.webservices.CollabNetApp;
-import com.collabnet.ce.webservices.DocumentApp;
 import com.collabnet.cubit.api.CubitConnector;
 import hudson.plugins.collabnet.auth.CNConnection;
 import hudson.util.FormValidation;
@@ -244,10 +244,9 @@ public abstract class CNFormFieldValidator {
         }
         checkInterpretedString(path);
 
-        String projectId = CNHudsonUtil.getProjectId(app, project);
-        if (projectId != null) {
-            DocumentApp da = new DocumentApp(app);
-            String missing = da.verifyPath(projectId, path);
+        CTFProject p = app.getProjectByTitle(project);
+        if (p != null) {
+            String missing =  p.verifyPath(path);
             if (missing != null) {
                 CNHudsonUtil.logoff(app);
                 return FormValidation.warning(String.format(
@@ -319,24 +318,26 @@ public abstract class CNFormFieldValidator {
      * Class to check that a repo exists.  Expects a StaplerRequest with 
      * a url, username, password, and project.
      */
-    public static FormValidation repoCheck(StaplerRequest request) {
+    public static FormValidation repoCheck(StaplerRequest request) throws RemoteException {
         String project = request.getParameter("project");
         String repoName = request.getParameter("repo");
         CollabNetApp cna = CNHudsonUtil.getCollabNetApp(request);
-        String projectId = CNHudsonUtil.getProjectId(cna, project);
-        if (CommonUtil.unset(repoName)) {
-            return FormValidation.error("The repository name is required.");
-        }
-        if (projectId != null) {
-            String repoId = CNHudsonUtil.getRepoId(cna, projectId, repoName);
-            if (repoId == null) {
-                CNHudsonUtil.logoff(cna);
-                return FormValidation.warning("Repository could not be " +
-                                              "found.");
+        try {
+            CTFProject p = cna.getProjectByTitle(project);
+            if (CommonUtil.unset(repoName)) {
+                return FormValidation.error("The repository name is required.");
             }
+            if (p != null) {
+                CTFScmRepository r = p.getScmRepositoryByTitle(repoName);
+                if (r == null) {
+                    return FormValidation.warning("Repository could not be " +
+                                                  "found.");
+                }
+            }
+            return FormValidation.ok();
+        } finally {
+            CNHudsonUtil.logoff(cna);
         }
-        CNHudsonUtil.logoff(cna);
-        return FormValidation.ok();
     }
 
     /**

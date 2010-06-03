@@ -1,7 +1,9 @@
 package hudson.plugins.collabnet.documentuploader;
 
+import com.collabnet.ce.webservices.CTFDocument;
+import com.collabnet.ce.webservices.CTFDocumentFolder;
+import com.collabnet.ce.webservices.CTFProject;
 import com.collabnet.ce.webservices.CollabNetApp;
-import com.collabnet.ce.webservices.DocumentApp;
 import hudson.Launcher;
 import hudson.model.AbstractBuild;
 import hudson.model.BuildListener;
@@ -51,18 +53,16 @@ public class CNDocumentUploaderTest extends CNHudsonTestCase {
      */
     private void verifyDocUploaded(AbstractBuild build) throws Exception {
         CollabNetApp cna = connect();
-        String projectId = cna.getProjectId(teamforge_project);
-        assert(projectId != null);
-        DocumentApp da = new DocumentApp(cna);
-        String folderId = da.
-            findOrCreatePath(projectId, CommonUtil.
-                             getInterpreted(build.getEnvironment(TaskListener.NULL), doc_path));
-        assert(folderId != null);
-        String docId = da.findDocumentId(folderId, "log");
-        assert(docId != null);
+        CTFProject p = cna.getProjectByTitle(teamforge_project);
+        assert(p != null);
+        CTFDocumentFolder f = p.getOrCreateDocumentFolder(CommonUtil.
+                getInterpreted(build.getEnvironment(TaskListener.NULL), doc_path));
+        assert(f != null);
+        CTFDocument doc = f.getDocumentByTitle("log");
+        assert(doc != null);
 
         // verify that the variable expansion worked
-        assertEquals("uploaded from hudson build #1",da.getDocument(docId).getDescription());
+        assertEquals("uploaded from hudson build #1",doc.getDescription());
     }
 
     /**

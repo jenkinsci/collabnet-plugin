@@ -6,6 +6,7 @@ import com.collabnet.ce.soap50.webservices.cemain.ProjectSoapRow;
 import com.collabnet.ce.soap50.webservices.docman.DocumentFolderSoapList;
 import com.collabnet.ce.soap50.webservices.docman.DocumentFolderSoapRow;
 import com.collabnet.ce.soap50.webservices.frs.PackageSoapRow;
+import com.collabnet.ce.soap50.webservices.scm.RepositorySoapRow;
 import com.collabnet.ce.soap50.webservices.tracker.TrackerSoapRow;
 
 import java.rmi.RemoteException;
@@ -81,6 +82,18 @@ public class CTFProject extends CTFObject implements ObjectWithTitle {
             app.getTrackerSoap().createTracker(app.getSessionId(), getId(), name, title, description));
     }
 
+    public CTFScmRepository getScmRepositoryByTitle(String title) throws RemoteException {
+        return findByTitle(getScmRepositories(),title);
+    }
+
+    public List<CTFScmRepository> getScmRepositories() throws RemoteException {
+        List<CTFScmRepository> r = new ArrayList<CTFScmRepository>();
+        for (RepositorySoapRow row : app.getScmAppSoap().getRepositoryList(app.getSessionId(), getId()).getDataRows()) {
+            r.add(new CTFScmRepository(this,row));
+        }
+        return r;
+    }
+
     public List<CTFUser> getMembers() throws RemoteException {
         List<CTFUser> r = new ArrayList<CTFUser>();
         for (ProjectMemberSoapRow row : app.icns.getProjectMemberList(app.getSessionId(),getId()).getDataRows())
@@ -151,4 +164,30 @@ public class CTFProject extends CTFObject implements ObjectWithTitle {
         }
         return cur;
     }
+
+    /**
+     * Verify a document folder path.  If at any point the folder
+     * is missing, return the name of the first missing folder.
+     *
+     * @param documentPath string with folders separated by '/'.
+     * @return the first missing folder, or null if all are found.
+     * @throws RemoteException
+     */
+     public String verifyPath(String documentPath) throws RemoteException {
+        String[] folderNames = documentPath.split("/");
+        int i = 0;
+        CTFDocumentFolder cur = getRootFolder();
+        if (cur.getTitle().equals(folderNames[i])) {
+            i++;
+        }
+        for (; i < folderNames.length; i++) {
+            CTFDocumentFolder next = cur.getFolderByTitle(folderNames[i]);
+            if (next == null) {
+                return folderNames[i];
+            } else {
+                cur = next;
+            }
+        }
+        return null;
+     }
 }

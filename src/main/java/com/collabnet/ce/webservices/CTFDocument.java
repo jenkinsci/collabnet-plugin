@@ -11,12 +11,16 @@ import java.rmi.RemoteException;
  * @author Kohsuke Kawaguchi
  */
 public class CTFDocument extends CTFItem {
+    private final String description;
+
     public CTFDocument(CTFObject parent, DocumentSoapRow data) {
         super(parent, toItemSoapDO(data));
+        this.description = data.getDescription();
     }
 
     public CTFDocument(CTFObject parent, DocumentSoapDO data) {
         super(parent, data);
+        this.description = data.getDescription();
     }
 
     private static ItemSoapDO toItemSoapDO(DocumentSoapRow data) {
@@ -25,6 +29,10 @@ public class CTFDocument extends CTFItem {
         r.setId(data.getId());
         // not sure how the rest of the parameters match up
         return r;
+    }
+
+    public String getDescription() {
+        return description;
     }
 
     /**

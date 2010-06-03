@@ -3,10 +3,8 @@ package hudson.plugins.collabnet.util;
 import com.collabnet.ce.webservices.CTFPackage;
 import com.collabnet.ce.webservices.CTFProject;
 import com.collabnet.ce.webservices.CTFRelease;
-import com.collabnet.ce.webservices.CTFTracker;
 import com.collabnet.ce.webservices.CollabNetApp;
 import com.collabnet.ce.webservices.ObjectWithTitle;
-import com.collabnet.ce.webservices.ScmApp;
 import hudson.util.ComboBoxModel;
 
 import java.rmi.RemoteException;
@@ -99,9 +97,10 @@ public abstract class ComboBoxUpdater {
     public static ComboBoxModel getRepoList(CollabNetApp cna,
                                                  String projectId) {
         if (cna != null) {
-            ScmApp sa = new ScmApp(cna);
             try {
-                return new ComboBoxModel(sa.getRepos(projectId));
+                CTFProject p = cna.getProjectByTitle(projectId);
+                if (p!=null)
+                    return new ComboBoxModel(toModel(p.getScmRepositories()));
             } catch (RemoteException re) {
                 CommonUtil.logRE(log, "getRepoList", re);
             }

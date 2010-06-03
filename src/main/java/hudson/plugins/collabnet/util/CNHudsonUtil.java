@@ -1,12 +1,11 @@
 package hudson.plugins.collabnet.util;
 
-import com.collabnet.ce.soap50.webservices.scm.Repository2SoapDO;
 import com.collabnet.ce.webservices.CTFPackage;
 import com.collabnet.ce.webservices.CTFProject;
 import com.collabnet.ce.webservices.CTFRelease;
+import com.collabnet.ce.webservices.CTFScmRepository;
 import com.collabnet.ce.webservices.CTFTracker;
 import com.collabnet.ce.webservices.CollabNetApp;
-import com.collabnet.ce.webservices.ScmApp;
 import hudson.plugins.collabnet.share.TeamForgeShare;
 import org.kohsuke.stapler.StaplerRequest;
 
@@ -192,8 +191,6 @@ public class CNHudsonUtil {
     /**
      * Given a tracker title and a projectId, find the matching tracker id.
      * 
-     * @param cna for accessing the webservice methods.
-     * @param projectId
      * @param trackerName
      * @return the tracker id for the tracker that matches this name, or null
      *         if no matching tracker is found.
@@ -228,12 +225,12 @@ public class CNHudsonUtil {
      * @param repoName name of the repository
      * @return the scm viewer url
      */
-    public static String getScmViewerUrl(CollabNetApp cna, String collabnetUrl, String projectName, String repoName) {
+    public static String getScmViewerUrl(CollabNetApp cna, String collabnetUrl, String projectName, String repoName) throws RemoteException {
         String url = null;
-        Repository2SoapDO repoData = CNHudsonUtil.getRepoData(cna, projectName, repoName);
-        if (repoData != null) {
+        CTFScmRepository repo = CNHudsonUtil.getRepoData(cna, projectName, repoName);
+        if (repo != null) {
             // normally, just use the defined scm viewer url
-            url = repoData.getScmViewerUrl();
+            url = repo.getScmViewerUrl();
 
             if (cna != null) {
                 int apiVersion[] = null;
@@ -245,7 +242,7 @@ public class CNHudsonUtil {
 
                 if (isSupportedVersion(new int[] {5, 3, 0, 0}, new int[] {6, 0, 0, 0}, apiVersion)) {
                     // starting with CTF 5.3, you can use the new viewRepositorySource method that does auth for viewvc
-                    url = collabnetUrl + "/sf/scm/do/viewRepositorySource/" + repoData.getPath();
+                    url = collabnetUrl + "/sf/scm/do/viewRepositorySource/" + repo.getPath();
                 }
             }
         }
@@ -329,14 +326,12 @@ public class CNHudsonUtil {
      * @param repoName
      */
     public static String getSystemId(CollabNetApp cna, String projectName, 
-                                     String repoName) {
-        String systemId = null;
-        Repository2SoapDO repoData = CNHudsonUtil.getRepoData(cna, projectName,
-                                                              repoName);
-        if (repoData != null) {
-            systemId = repoData.getSystemId();
-        }
-        return systemId;
+                                     String repoName) throws RemoteException {
+        CTFProject p = cna.getProjectByTitle(projectName);
+        if (p==null)    return null;
+        CTFScmRepository r = p.getScmRepositoryByTitle(repoName);
+        if (r==null)    return null;
+        return r.getSystemId();
     }
     
     /**
@@ -344,42 +339,14 @@ public class CNHudsonUtil {
      * @param projectName
      * @param repoName
      */
-    private static Repository2SoapDO getRepoData(CollabNetApp cna, 
+    private static CTFScmRepository getRepoData(CollabNetApp cna,
                                                  String projectName,
-                                                 String repoName) {
-        Repository2SoapDO repoData = null;
-        String projectId = CNHudsonUtil.getProjectId(cna, projectName);
-        if (projectId == null) {
+                                                 String repoName) throws RemoteException {
+        CTFProject p = cna.getProjectByTitle(projectName);
+        if (p==null) {
             return null;
         }
-        String repoId = CNHudsonUtil.getRepoId(cna, projectId, repoName);
-        if (repoId == null) {
-            return null;
-        }
-        ScmApp sa = new ScmApp(cna);
-        try {
-            repoData = sa.getRepoData(repoId);
-        } catch (RemoteException re) {
-            CommonUtil.logRE(log, "getScmViewerUrl", re);
-        }
-        return repoData;
-    }
-
-    /**
-     * @param cna for accessing the webservice methods.
-     * @param projectId
-     * @param repoName
-     */
-    public static String getRepoId(CollabNetApp cna, String projectId, 
-                                   String repoName) {
-        String repoId = null;
-        ScmApp sa = new ScmApp(cna);
-        try {
-            repoId = sa.getRepoId(projectId, repoName);
-        } catch (RemoteException re) {
-            CommonUtil.logRE(log, "getRepoId", re);
-        }
-        return repoId;
+        return p.getScmRepositoryByTitle(repoName);
     }
 
     /**
