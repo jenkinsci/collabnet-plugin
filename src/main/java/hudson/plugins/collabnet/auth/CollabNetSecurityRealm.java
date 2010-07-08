@@ -20,6 +20,8 @@ import javax.servlet.Filter;
 import javax.servlet.FilterConfig;
 import java.io.IOException;
 import java.rmi.RemoteException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 
 public class CollabNetSecurityRealm extends SecurityRealm {
@@ -48,8 +50,8 @@ public class CollabNetSecurityRealm extends SecurityRealm {
             }
         } catch (RemoteException re) {
             // ignore
+            LOGGER.log(Level.WARNING, "Failed to retrieve the CTF version from "+this.collabNetUrl,re);
         }
-
     }
 
     public String getCollabNetUrl() {
@@ -155,4 +157,6 @@ public class CollabNetSecurityRealm extends SecurityRealm {
             }
         }    
     }
+
+    private static final Logger LOGGER = Logger.getLogger(CollabNetSecurityRealm.class.getName());
 }
