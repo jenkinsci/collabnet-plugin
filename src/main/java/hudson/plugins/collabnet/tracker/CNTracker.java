@@ -255,49 +255,51 @@ public class CNTracker extends AbstractTeamForgeNotifier {
                         this.createNewTrackerArtifact(t,"Closed", description, build);
                     }
                 }
-            }
-            // update existing fail -> fail
-            else if (issue.getStatusClass().equals("Open") &&
-                       buildStatus.isWorseThan(SUCCESS)) {
-                this.log("Build is continuing to fail; updating issue.");
-                this.updateFailingBuild(issue, build);
-            }
-            // close or update existing  fail -> succeed
-            else if (issue.getStatusClass().equals("Open") &&
-                     buildStatus.isBetterOrEqualTo(SUCCESS)) {
-                if (this.getCloseOnSuccess()) {
-                    this.log("Build succeeded; closing issue.");
-                    this.closeSucceedingBuild(issue, build);
-                } else {
-                    // just update
-                    this.log("Build succeeded; updating issue.");
-                    this.updateSucceedingBuild(issue, build);
-                }
-            }
-            // create new succeed -> fail
-            else if (issue.getStatusClass().equals("Close") &&
-                     buildStatus.isWorseThan(SUCCESS)) {
-                // create new or reopen?
-                if (this.getAlwaysUpdate()) {
-                    this.log("Build is not successful; re-opening issue.");
+            } else {// update existing issue
+                issue.refill();
+                if (issue.getStatusClass().equals("Open") &&
+                        buildStatus.isWorseThan(SUCCESS)) {
+                    // update existing fail -> fail
+                    this.log("Build is continuing to fail; updating issue.");
                     this.updateFailingBuild(issue, build);
+                }
+                // close or update existing  fail -> succeed
+                else if (issue.getStatusClass().equals("Open") &&
+                        buildStatus.isBetterOrEqualTo(SUCCESS)) {
+                    if (this.getCloseOnSuccess()) {
+                        this.log("Build succeeded; closing issue.");
+                        this.closeSucceedingBuild(issue, build);
+                    } else {
+                        // just update
+                        this.log("Build succeeded; updating issue.");
+                        this.updateSucceedingBuild(issue, build);
+                    }
+                }
+                // create new succeed -> fail
+                else if (issue.getStatusClass().equals("Close") &&
+                        buildStatus.isWorseThan(SUCCESS)) {
+                    // create new or reopen?
+                    if (this.getAlwaysUpdate()) {
+                        this.log("Build is not successful; re-opening issue.");
+                        this.updateFailingBuild(issue, build);
+                    } else {
+                        this.log("Build is not successful; opening a new issue.");
+                        String description = "The build has failed.  Latest " +
+                                "build status: " + build.getResult() + ".  For more " +
+                                "info, see " + this.getBuildUrl(build);
+                        this.createNewTrackerArtifact(t, "Open", description, build);
+                    }
+                } else if (issue.getStatusClass().equals("Close") &&
+                        buildStatus.isBetterOrEqualTo(SUCCESS)) {
+                    this.log("Build continues to be successful!");
+                    if (this.getAlwaysUpdate()) {
+                        this.updateSucceedingBuild(issue, build);
+                    }
                 } else {
-                    this.log("Build is not successful; opening a new issue.");
-                    String description = "The build has failed.  Latest " +
-                        "build status: " + build.getResult() + ".  For more " +
-                        "info, see " + this.getBuildUrl(build);
-                    this.createNewTrackerArtifact(t, "Open", description, build);
+                    this.log("Unexpected state:  result is: " + buildStatus +
+                            ".  Issue status " + "class is: " + issue.getStatusClass()
+                            + ".");
                 }
-            } else if (issue.getStatusClass().equals("Close") &&
-                       buildStatus.isBetterOrEqualTo(SUCCESS)) {
-                this.log("Build continues to be successful!");
-                if (this.getAlwaysUpdate()) {
-                    this.updateSucceedingBuild(issue, build);
-                }
-            } else {
-                this.log("Unexpected state:  result is: " + buildStatus +
-                         ".  Issue status " + "class is: " + issue.getStatusClass()
-                         + ".");
             }
             return true;
         } finally {
