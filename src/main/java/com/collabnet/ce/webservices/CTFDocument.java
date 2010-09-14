@@ -41,6 +41,7 @@ public class CTFDocument extends CTFItem {
     public void update(CTFFile file) throws RemoteException {
         IDocumentAppSoap soap = app.getDocumentAppSoap();
         DocumentSoapDO docData = soap.getDocumentData(app.getSessionId(), getId(), 0);
+        docData.setCurrentVersion(docData.getLatestVersion()+1); // make the new version active
         soap.setDocumentData(app.getSessionId(), docData, file.getId());
     }
 
