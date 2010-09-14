@@ -41,8 +41,8 @@ public class CTFPackage extends CTFFolder {
         return null;
     }
 
-    public List<CTFRelease> getReleases() throws RemoteException {
-        List<CTFRelease> r = new ArrayList<CTFRelease>();
+    public CTFList<CTFRelease> getReleases() throws RemoteException {
+        CTFList<CTFRelease> r = new CTFList<CTFRelease>();
         for (ReleaseSoapRow row : app.getFrsAppSoap().getReleaseList(app.getSessionId(), getId()).getDataRows()) {
             r.add(new CTFRelease(this,row));
         }
