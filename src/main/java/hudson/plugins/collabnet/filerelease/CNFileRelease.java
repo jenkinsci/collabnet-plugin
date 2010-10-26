@@ -13,7 +13,6 @@ import hudson.FilePath.FileCallable;
 import hudson.Launcher;
 import hudson.model.AbstractBuild;
 import hudson.model.BuildListener;
-import hudson.model.FreeStyleProject;
 import hudson.model.Result;
 import hudson.plugins.collabnet.AbstractTeamForgeNotifier;
 import hudson.plugins.collabnet.ConnectionFactory;
@@ -322,15 +321,7 @@ public class CNFileRelease extends AbstractTeamForgeNotifier {
      */
     private FilePath[] getFilePaths(AbstractBuild<?, ?> build, 
                                     String pattern) {
-        FilePath workspace;
-        if (FreeStyleProject.class.isInstance(build.getProject())) { // generic instanceof causes compilation error
-            // our standard project
-            workspace = build.getWorkspace();
-        } else {
-            // promoted build - use the project's workspace, since the build doesn't always account for custom workspace
-            // may be a bug with promoted build?
-            workspace = build.getProject().getRootProject().getWorkspace();
-        }
+        FilePath workspace = build.getWorkspace();
 
         String logEntry = "Searching ant pattern '" + pattern + "'";
         FilePath[] uploadFilePaths = new FilePath[0];

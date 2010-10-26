@@ -75,19 +75,22 @@ public abstract class CNFormFieldValidator {
     }
 
     /**
-     * Returns true if a url is valid, false otherwise.
+     * Returns form validation that represents the validity of the URL.
      */
-    public static boolean checkUrl(String url) {
+    public static FormValidation checkUrl(String url) {
         HttpClient client = new HttpClient();
         try {
             GetMethod get = new GetMethod(url);
             int status = client.executeMethod(get);
-            return status == 200;
+            if (status == 200)
+                return FormValidation.ok();
+            else
+                return FormValidation.error(url+" reported HTTP status code "+status);
         } catch (IOException e) {
-            return false;
-        } catch (IllegalArgumentException iae) {
-            return false;
-        } 
+            return FormValidation.error(e,"Failed to connect to "+url+" : "+e.getMessage());
+        } catch (IllegalArgumentException e) {
+            return FormValidation.error(e,"Failed to connect to "+url+" : "+e.getMessage());
+        }
     }
 
     /**
@@ -158,10 +161,7 @@ public abstract class CNFormFieldValidator {
                          new EasySSLProtocolSocketFactory(),
                          443);
         Protocol.registerProtocol("https", acceptAllSsl);
-        if (!checkUrl(hostUrl)) {
-            return FormValidation.error("Invalid Host URL.");
-        }
-        return FormValidation.ok();
+        return checkUrl(hostUrl);
     }
 
     /**
@@ -173,22 +173,17 @@ public abstract class CNFormFieldValidator {
         if (CommonUtil.unset(collabNetUrl)) {
             return FormValidation.error("The CollabNet TeamForge URL is required.");
         }
-        if (!checkSoapUrl(collabNetUrl)) {
-            return FormValidation.error("Invalid CollabNet TeamForge URL.");
-        }
-        return FormValidation.ok();
+        return checkSoapUrl(collabNetUrl);
     }
 
     /**
      * Check that a URL has the expected SOAP service.
      *
      * @param collabNetUrl for the CollabNet server
-     * @return returns true if we can get a wsdl from the url, which
-     *         indicates that it's a working CollabNet server.
+     * @return returns the validation result of the URL.
      */
-    private static boolean checkSoapUrl(String collabNetUrl) {
-        String soapURL = collabNetUrl + CollabNetApp.SOAP_SERVICE +
-            "CollabNet?wsdl";
+    private static FormValidation checkSoapUrl(String collabNetUrl) {
+        String soapURL = collabNetUrl + CollabNetApp.SOAP_SERVICE + "CollabNet?wsdl";
         return checkUrl(soapURL);
     }
 
