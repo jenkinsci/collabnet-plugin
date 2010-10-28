@@ -11,10 +11,7 @@ import hudson.plugins.collabnet.auth.CNAuthentication;
 import hudson.util.FormValidation;
 import org.apache.axis.utils.StringUtils;
 import org.apache.commons.httpclient.HttpClient;
-import org.apache.commons.httpclient.contrib.ssl.EasySSLProtocolSocketFactory;
 import org.apache.commons.httpclient.methods.GetMethod;
-import org.apache.commons.httpclient.protocol.Protocol;
-import org.apache.commons.httpclient.protocol.ProtocolSocketFactory;
 import org.kohsuke.stapler.StaplerRequest;
 
 import java.io.IOException;
@@ -25,13 +22,12 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
 public abstract class CNFormFieldValidator {
-    private static Logger log = Logger.getLogger("CNFormFieldValidator");
+//    private static Logger log = Logger.getLogger("CNFormFieldValidator");
 
         // no special permisssion is required for our checks
         // without proper rights, no data will be returned from 
@@ -155,12 +151,6 @@ public abstract class CNFormFieldValidator {
         if (CommonUtil.unset(hostUrl)) {
             return FormValidation.error("The Host URL is required.");
         }
-        Protocol acceptAllSsl =
-            new Protocol("https",
-                         (ProtocolSocketFactory)
-                         new EasySSLProtocolSocketFactory(),
-                         443);
-        Protocol.registerProtocol("https", acceptAllSsl);
         return checkUrl(hostUrl);
     }
 
