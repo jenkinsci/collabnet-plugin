@@ -23,8 +23,17 @@ import org.kohsuke.stapler.QueryParameter;
 
 import javax.activation.DataHandler;
 import javax.activation.FileDataSource;
+import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
 import java.io.File;
 import java.rmi.RemoteException;
+import java.security.KeyManagementException;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
+import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -94,6 +103,8 @@ public class CollabNetApp {
     public CollabNetApp(String url) {
         this.url = url;
         this.icns = this.getICollabNetSoap();
+        if (disableSSLCertificateCheck)
+            disableSSLCertificateCheck();
     }
 
     private <T> T createProxy(Class<T> type, String wsdlLoc) {
@@ -413,4 +424,31 @@ public class CollabNetApp {
         }
         return CNHudsonUtil.getCollabNetApp(url, username, password);
     }
+
+    public static void disableSSLCertificateCheck() {
+        TrustAllSocketFactory.install();
+        try {
+            SSLContext context = SSLContext.getInstance("TLS");
+            context.init(null, new TrustManager[] {
+                new X509TrustManager() {
+                    public void checkClientTrusted(X509Certificate[] x509Certificates, String s) throws CertificateException {
+                    }
+
+                    public void checkServerTrusted(X509Certificate[] x509Certificates, String s) throws CertificateException {
+                    }
+
+                    public X509Certificate[] getAcceptedIssuers() {
+                        return new X509Certificate[0];
+                    }
+                },
+            }, new SecureRandom());
+            HttpsURLConnection.setDefaultSSLSocketFactory(context.getSocketFactory());
+        } catch (NoSuchAlgorithmException e) {
+            throw new Error(e);
+        } catch (KeyManagementException e) {
+            throw new Error(e);
+        }
+    }
+
+    public static boolean disableSSLCertificateCheck = false;
 }

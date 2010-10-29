@@ -1,6 +1,7 @@
 package hudson.plugins.collabnet;
 
 import com.collabnet.ce.webservices.CollabNetApp;
+import com.collabnet.ce.webservices.TrustAllSocketFactory;
 import hudson.model.FreeStyleProject;
 import hudson.plugins.collabnet.share.TeamForgeShare;
 import hudson.tasks.Publisher;

@@ -1,4 +1,4 @@
-package hudson.plugins.collabnet;
+package com.collabnet.ce.webservices;
 
 import org.apache.axis.AxisProperties;
 import org.apache.axis.components.net.JSSESocketFactory;
@@ -21,6 +21,9 @@ import java.util.Hashtable;
  * @author Kohsuke Kawaguchi
  */
 public class TrustAllSocketFactory extends JSSESocketFactory {
+    /**
+     * Note that this method needs to be called for each thread that uses Axis.
+     */
     public static void install() {
         // TODO: figure out how to avoid VM-wide changes.
         AxisProperties.setProperty("axis.socketSecureFactory",TrustAllSocketFactory.class.getName());

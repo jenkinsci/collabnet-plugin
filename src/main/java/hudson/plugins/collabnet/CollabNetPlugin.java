@@ -1,5 +1,6 @@
 package hudson.plugins.collabnet;
 
+import com.collabnet.ce.webservices.CollabNetApp;
 import hudson.plugins.collabnet.auth.CNFilter;
 
 import hudson.Plugin;
@@ -29,7 +30,9 @@ public class CollabNetPlugin extends Plugin {
     }
 
     static {
-        if (!Boolean.getBoolean(CollabNetPlugin.class.getName()+".strictSSLCheck"))
+        if (!Boolean.getBoolean(CollabNetPlugin.class.getName()+".strictSSLCheck")) {
             allowSelfSignedCertificate();
+            CollabNetApp.disableSSLCertificateCheck = true;
+        }
     }
 }
