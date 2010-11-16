@@ -39,6 +39,8 @@ public class ProjectAuthTest extends AbstractSecurityTestCase {
     @Override
     protected void setUp() throws Exception {
         super.setUp();
+
+        verifyOnline();
         setGlobalConnectionFactory();
         installAuthorizationStrategy();
 
