@@ -110,6 +110,7 @@
       <plugin>
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
+          <forkMode>never</forkMode>
           <excludes>
             <exclude>**/PblUploadTest.java</exclude>
           </excludes>
