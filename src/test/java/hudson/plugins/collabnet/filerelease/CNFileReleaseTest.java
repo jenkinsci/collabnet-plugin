@@ -31,6 +31,7 @@ public class CNFileReleaseTest extends CNHudsonTestCase {
     private String FILE_CONTENT = "Test file from FileRelease";
 
     public void testConfigRoundtrip() throws Exception {
+        if (!verifyOnline())    return;
         setGlobalConnectionFactory();
 
         roundtripAndAssertIntegrity(new CNFileRelease(

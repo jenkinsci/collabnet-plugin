@@ -69,6 +69,7 @@ public class CNDocumentUploaderTest extends CNHudsonTestCase {
      * Verifies that the configuration round trip successfully.
      */
     public void testConfigRoundtrip() throws Exception {
+        if (!verifyOnline())    return;
         setGlobalConnectionFactory();
 
         roundtripAndAssertIntegrity(new CNDocumentUploader(

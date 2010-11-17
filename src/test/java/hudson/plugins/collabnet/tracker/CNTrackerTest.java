@@ -70,6 +70,7 @@ public class CNTrackerTest extends CNHudsonTestCase {
     }
 
     public void testConfigRoundtrip() throws Exception {
+        if (!verifyOnline())    return;
         setGlobalConnectionFactory();
 
         roundtripAndAssertIntegrity(new CNTracker(

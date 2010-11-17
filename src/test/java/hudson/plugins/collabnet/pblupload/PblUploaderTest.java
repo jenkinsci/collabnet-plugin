@@ -5,6 +5,8 @@ import hudson.plugins.collabnet.documentuploader.FilePattern;
 
 public class PblUploaderTest extends CNHudsonTestCase {
     public void testConfigRoundtrip() throws Exception {
+        if (!verifyOnline())    return;
+
         setGlobalConnectionFactory();
 
         roundtripAndAssertIntegrity(new PblUploader(

@@ -40,7 +40,7 @@ public class ProjectAuthTest extends AbstractSecurityTestCase {
     protected void setUp() throws Exception {
         super.setUp();
 
-        verifyOnline();
+        if (!verifyOnline())    return;
         setGlobalConnectionFactory();
         installAuthorizationStrategy();
 
@@ -82,6 +82,7 @@ public class ProjectAuthTest extends AbstractSecurityTestCase {
     }
 
     public void testConfigRoundtrip() throws Exception {
+        if (!verifyOnline())    return;
         SecurityContextHolder.getContext().setAuthentication(ACL.SYSTEM); // so that the test code can see everything
 
         assertRoundtrip(new CNAuthProjectProperty(teamforge_project, false, null, false));
@@ -97,6 +98,7 @@ public class ProjectAuthTest extends AbstractSecurityTestCase {
     }
 
     public void testReadUsersAccess() throws Exception {
+        if (!verifyOnline())    return;
         FreeStyleProject job = this.setupProjectForAuth();
         WebClient logIn = createWebClient().login(read_user, read_user);
         logIn.getPage(job);
@@ -108,6 +110,7 @@ public class ProjectAuthTest extends AbstractSecurityTestCase {
     }
     
     public void testBuildUsersAccess() throws Exception {
+        if (!verifyOnline())    return;
         FreeStyleProject job = this.setupProjectForAuth();
         WebClient logIn = new WebClient().login(build_user, build_user);
         logIn.goTo(job.getShortUrl());
@@ -119,6 +122,7 @@ public class ProjectAuthTest extends AbstractSecurityTestCase {
     }
     
     public void testPromoteUsersAccess() throws Exception {
+        if (!verifyOnline())    return;
         FreeStyleProject job = this.setupProjectForAuth();
         WebClient logIn = new WebClient().login(promote_user, promote_user);
         logIn.goTo(job.getShortUrl());
@@ -130,6 +134,7 @@ public class ProjectAuthTest extends AbstractSecurityTestCase {
     }
     
     public void testConfigureUsersAccess() throws Exception {
+        if (!verifyOnline())    return;
         FreeStyleProject job = this.setupProjectForAuth();
         WebClient logIn = new WebClient().login(config_user, config_user);
         logIn.goTo(job.getShortUrl());
@@ -141,6 +146,7 @@ public class ProjectAuthTest extends AbstractSecurityTestCase {
     }
 
     public void testDeleteUsersAccess() throws Exception {
+        if (!verifyOnline())    return;
         FreeStyleProject job = this.setupProjectForAuth();
         WebClient logIn = new WebClient().login(delete_user, delete_user);
         logIn.goTo(job.getShortUrl());
