@@ -1,1 +1,0 @@
-<st:redirect url="${it.getCollabNetUrl()}/sf/sfmain/do/createUser" xmlns:st="jelly:stapler"/>

@@ -1,8 +1,0 @@
-<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" 
- xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form"
- xmlns:c="/hudson/plugins/collabnet/tags">
-
-  <f:section title="Global CollabNet Configuration">
-    <f:optionalProperty field="connectionFactory" title="Allow Global CollabNet Configuration"/>
-  </f:section>
-</j:jelly>
