@@ -108,7 +108,7 @@ public abstract class CNFormFieldValidator {
 
     /**
      * Class for checking an unrequired value that may include
-     * interpreted strings (i.e. Hudson environmental values). Expects a 
+     * interpreted strings (i.e. Jenkins environmental values). Expects a 
      * StaplerRequest with value.  If it's a required value, expects a 
      * value name.
      */

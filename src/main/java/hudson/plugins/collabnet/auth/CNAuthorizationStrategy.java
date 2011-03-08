@@ -56,9 +56,9 @@ public class CNAuthorizationStrategy extends AuthorizationStrategy {
      * @param readGroups a list of groupnames (from CollabNet) whose members
      *                  have system-wide read.
      * @param adminUsers a list of usernames (from CollabNet) that have
-     *                  all permissions in Hudson.
+     *                  all permissions in Jenkins.
      * @param adminGroups a list of groupnames (from CollabNet) whose members
-     *                  have all permissions in Hudson.
+     *                  have all permissions in Jenkins.
      * @param permCacheTimeoutMin the cache timeout in min, after which the cache entries are cleared. -1 to disable.
      */
     public CNAuthorizationStrategy(List<String> readUsers, List<String> readGroups,
@@ -168,10 +168,6 @@ public class CNAuthorizationStrategy extends AuthorizationStrategy {
     @Override
     public ACL getACL(AbstractItem item) {
         return this.getRootACL();
-    }
-
-    public ACL getACL(AbstractProject<?, ?> project) {
-        return this.getACL((Job)project);
     }
 
     @Override

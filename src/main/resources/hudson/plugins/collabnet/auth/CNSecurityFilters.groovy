@@ -1,7 +1,7 @@
 /*
     Security Filters with changes for CollabNet.  
     Based on SecurityFilters.groovy.
-    Defines a part of the security configuration of Hudson.
+    Defines a part of the security configuration of Jenkins.
 
     This file must define a servlet Filter instance with the name 'filter'
 */
@@ -49,7 +49,7 @@ filter(ChainedServletFilter) {
             // since users of basic auth tends to be a program and won't see the redirection to the form
             // page as a failure
             authenticationEntryPoint = bean(BasicProcessingFilterEntryPoint) {
-                realmName = "Hudson"
+                realmName = "Jenkins"
             }
         },
         bean(AuthenticationProcessingFilter2) {
@@ -66,7 +66,7 @@ filter(ChainedServletFilter) {
     ] + commonProviders("/login?from={0}")
 }
 
-// this filter set up is used to emulate the legacy Hudson behavior
+// this filter set up is used to emulate the legacy Jenkins behavior
 // of container authentication before 1.160 
 legacy(ChainedServletFilter) {
     filters = [

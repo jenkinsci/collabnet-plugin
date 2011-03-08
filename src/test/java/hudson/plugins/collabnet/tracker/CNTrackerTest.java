@@ -30,7 +30,7 @@ public class CNTrackerTest extends CNHudsonTestCase {
     @TestParam
     private int priority = 1;
     @TestParam
-    private String title = "Test bug for Hudson! Build id #${BUILD_ID}";
+    private String title = "Test bug for Jenkins! Build id #${BUILD_ID}";
     @TestParam
     private String release = "test release";
 
@@ -41,7 +41,7 @@ public class CNTrackerTest extends CNHudsonTestCase {
             // make sure the tracker exists
             CTFProject p = connect().getProjectByTitle(teamforge_project);
             if (p.getTrackers().byTitle(tracker) ==null)
-                p.createTracker(tracker,tracker,"test tracker for Hudson");
+                p.createTracker(tracker,tracker,"test tracker for Jenkins");
 
             // make sure the admin user is a member of this project
             if (!p.hasMember(admin_user))
@@ -66,7 +66,7 @@ public class CNTrackerTest extends CNHudsonTestCase {
         if (pkgs.isEmpty())     pkg = p.createPackage("aPackage","a description",true);
         else                    pkg = pkgs.get(0);
 
-        pkg.createRelease(release,"a test release used by Hudson","active","Prototype");
+        pkg.createRelease(release,"a test release used by Jenkins","active","Prototype");
     }
 
     public void testConfigRoundtrip() throws Exception {

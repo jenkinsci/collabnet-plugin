@@ -248,9 +248,9 @@ public class PblUploader extends Notifier implements java.io.Serializable {
     }
 
     /**
-     * Upload the files to the PBL.  This is the hudson builds entry point into this plugin
+     * Upload the files to the PBL.  This is the Jenkins builds entry point into this plugin
      * 
-     * @param build the current Hudson build.
+     * @param build the current Jenkins build.
      * @param launcher unused.
      * @param listener for events.
      * @return true if uploading files succeeded.
@@ -297,7 +297,7 @@ public class PblUploader extends Notifier implements java.io.Serializable {
      * All patterns are processed by the method getFilePatterns, and any empty
      * strings (which can result after) processing are ignored.
      * 
-     * @param build the current hudson build
+     * @param build the current Jenkins build
      * @return List of file patterns, after being interpreted with empty strings
      * removed. 
      */
@@ -321,7 +321,7 @@ public class PblUploader extends Notifier implements java.io.Serializable {
     
     /**
      * This methods is calculates the success or fail of the pbl upload plugin
-     * and logs the state to Hudson build log.  Success occurs if any files
+     * and logs the state to Jenkins build log.  Success occurs if any files
      * are successfully uploaded.
      * 
      * @param num_files Total number of files processed during upload
@@ -355,7 +355,7 @@ public class PblUploader extends Notifier implements java.io.Serializable {
     /**
      * Upload the files.
      *
-     * @param build the current Hudson build.
+     * @param build the current Jenkins build.
      * @return true, if successful, false otherwise.
      * @throws IOException
      * @throws InterruptedException
@@ -425,7 +425,7 @@ public class PblUploader extends Notifier implements java.io.Serializable {
     /**
      * Figure out what the full path of the uploaded file should be.
      *
-     * @param build the current Hudson build.
+     * @param build the current Jenkins build.
      * @param workspace
      * @param uploadFilePath 
      * @return a string with the interpreted path plus possibly the local
@@ -459,7 +459,7 @@ public class PblUploader extends Notifier implements java.io.Serializable {
      * Translates a string that may contain  build vars like ${BUILD_VAR} to
      * a string with those vars interpreted.
      * 
-     * @param build the Hudson build.
+     * @param build the Jenkins build.
      * @param str the string to be interpreted.
      * @return the interpreted string.
      * @throws IllegalArgumentException if the env var is not found.
@@ -513,7 +513,7 @@ public class PblUploader extends Notifier implements java.io.Serializable {
     /**
      * Setup of the args needed for uploading files.
      * 
-     * @param build the current Hudson build.
+     * @param build the current Jenkins build.
      * @param uploadFilePath
      * @param workspace
      * @return a key, value map of the args.

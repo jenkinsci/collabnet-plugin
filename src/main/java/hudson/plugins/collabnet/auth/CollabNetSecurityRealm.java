@@ -27,10 +27,10 @@ import java.util.logging.Logger;
 public class CollabNetSecurityRealm extends SecurityRealm {
     private String collabNetUrl;
 
-    /* viewing hudson page from CTF linked app should login to hudson */
+    /* viewing Jenkins page from CTF linked app should login to Jenkins */
     private boolean mEnableSSOAuthFromCTF;
 
-    /* logging in to hudson should login to CTF */
+    /* logging in to Jenkins should login to CTF */
     private boolean mEnableSSOAuthToCTF;
 
     private boolean mEnableSSORedirect = true;
@@ -59,7 +59,7 @@ public class CollabNetSecurityRealm extends SecurityRealm {
     }
 
     /**
-     * Single sign on preference governing making hudson read CTF's SSO token
+     * Single sign on preference governing making Jenkins read CTF's SSO token
      * @return true to enable
      */
     public boolean getEnableSSOAuthFromCTF() {
@@ -67,7 +67,7 @@ public class CollabNetSecurityRealm extends SecurityRealm {
     }
 
     /**
-     * Single sign on preference governing making hudson login to CTF upon authenticating
+     * Single sign on preference governing making Jenkins login to CTF upon authenticating
      * @return true to enable
      */
     public boolean getEnableSSOAuthToCTF() {
@@ -75,7 +75,7 @@ public class CollabNetSecurityRealm extends SecurityRealm {
     }
 
     /**
-     * Whether after singole singon into CTF, we should automatically redirect back to Hudson.
+     * Whether after singole singon into CTF, we should automatically redirect back to Jenkins.
      * @return true to enable
      */
     public boolean getEnableSSORedirect() {
@@ -91,7 +91,7 @@ public class CollabNetSecurityRealm extends SecurityRealm {
     /**
      * Override the default createFilter.  We want to use one that does not
      * return a 403 on login redirect because that may cause problems when
-     * Hudson is run behind a proxy.
+     * Jenkins is run behind a proxy.
      */
     @Override
     public Filter createFilter(FilterConfig filterConfig) {

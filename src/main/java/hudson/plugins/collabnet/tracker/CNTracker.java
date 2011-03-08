@@ -65,7 +65,7 @@ public class CNTracker extends AbstractTeamForgeNotifier {
      *              existing tracker artifacts.
      * @param assignUser user to assign new tracker artifacts to.
      * @param priority of new tracker artifacts.
-     * @param attachLog if true, Hudson build logs will be uploaded and
+     * @param attachLog if true, Jenkins build logs will be uploaded and
      *                   attached when creating/updating tracker artifacts.
      * @param alwaysUpdate if true, always update the tracker artifacts (or
      *                      create one), even if build is successful and
@@ -73,7 +73,7 @@ public class CNTracker extends AbstractTeamForgeNotifier {
      *                      update when the tracker artifact is failing
      *                      or is open.
      * @param closeOnSuccess if true, the tracker artifact will be closed if the
-     *                    Hudson build is successful.  Otherwise, open issues
+     *                    Jenkins build is successful.  Otherwise, open issues
      *                    will be updated with a successful message, but
      *                    remain open.
      * @param release to report the tracker artifact in.
@@ -165,14 +165,14 @@ public class CNTracker extends AbstractTeamForgeNotifier {
     
     /**
      * @return true, if artifact creation/update should happen, even if
-     *         the Hudson build is successful and the artifact is not open.
+     *         the Jenkins build is successful and the artifact is not open.
      */
     public boolean getAlwaysUpdate() {
         return this.always_update;
     }
     
     /**
-     * @return true, if artifacts should be closed when the Hudson build
+     * @return true, if artifacts should be closed when the Jenkins build
      *         succeeds.
      */
     public boolean getCloseOnSuccess() {
@@ -193,10 +193,10 @@ public class CNTracker extends AbstractTeamForgeNotifier {
     }
     
     /**
-     * Create/Update/Close the tracker issue, according to the Hudson 
+     * Create/Update/Close the tracker issue, according to the Jenkins 
      * build status.
      * 
-     * @param build the current Hudson build.
+     * @param build the current Jenkins build.
      * @param launcher unused.
      * @param listener receives events that occur during a build; used for
      *                 logging.
@@ -318,7 +318,7 @@ public class CNTracker extends AbstractTeamForgeNotifier {
     /**
      * Return a tracker artifact with the matching title.
      *
-     * @param build the current Hudson build.
+     * @param build the current Jenkins build.
      * @return the artifact soap data object, if one exists which matches
      *         the title.  Otherwise, null.
      */
@@ -404,7 +404,7 @@ public class CNTracker extends AbstractTeamForgeNotifier {
      * Update the issue with failing build status.
      * 
      * @param issue the existing issue.
-     * @param build the current Hudson build.
+     * @param build the current Jenkins build.
      */
     public void updateFailingBuild(CTFArtifact issue,
             AbstractBuild<?, ?> build) throws IOException, InterruptedException {
@@ -450,7 +450,7 @@ public class CNTracker extends AbstractTeamForgeNotifier {
      * its status.
      * 
      * @param issue the existing issue.
-     * @param build the current Hudson build.
+     * @param build the current Jenkins build.
      */
     public void updateSucceedingBuild(CTFArtifact issue,
             AbstractBuild<?, ?> build) throws IOException, InterruptedException {
@@ -489,7 +489,7 @@ public class CNTracker extends AbstractTeamForgeNotifier {
      * Update the issue with a build that's successful,  and close it.
      *
      * @param issue the existing issue.
-     * @param build the current Hudson build.
+     * @param build the current Jenkins build.
      */
     public void closeSucceedingBuild(CTFArtifact issue,
             AbstractBuild<?, ?> build) throws IOException, InterruptedException {
@@ -527,7 +527,7 @@ public class CNTracker extends AbstractTeamForgeNotifier {
      * Returns the absolute URL to the build, if rootUrl has been configured.
      * If not, returns the build number.
      *
-     * @param build the current Hudson build.
+     * @param build the current Jenkins build.
      * @return the absolute URL for this build, or the a string containing the
      *         build number.
      */
@@ -535,7 +535,7 @@ public class CNTracker extends AbstractTeamForgeNotifier {
         Hudson hudson = Hudson.getInstance();
         String rootUrl = hudson.getRootUrl();
         if (rootUrl == null) {
-            return "Hudson Build #" + build.number;
+            return "Jenkins Build #" + build.number;
         } else {
             return hudson.getRootUrl() + build.getUrl();
         }
@@ -544,7 +544,7 @@ public class CNTracker extends AbstractTeamForgeNotifier {
     /**
      * Upload the build log to the collabnet server.
      *
-     * @param build the current Hudson build.
+     * @param build the current Jenkins build.
      * @return the id associated with the file upload.
      */
     private CTFFile uploadBuildLog(AbstractBuild <?, ?> build) {
@@ -564,7 +564,7 @@ public class CNTracker extends AbstractTeamForgeNotifier {
      * Translates a string that may contain  build vars like ${BUILD_VAR} to
      * a string with those vars interpreted.
      * 
-     * @param build the Hudson build.
+     * @param build the Jenkins build.
      * @param str the string to be interpreted.
      * @return the interpreted string.
      * @throws IllegalArgumentException if the env var is not found.

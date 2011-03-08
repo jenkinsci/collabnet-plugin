@@ -22,7 +22,7 @@ import java.util.logging.Logger;
 import org.acegisecurity.Authentication;
 
 /**
- * An ACL that uses project roles to determine what Hudson permissions to give.
+ * An ACL that uses project roles to determine what Jenkins permissions to give.
  */
 public class CNProjectACL extends ACL {
     private String projectId = null;
@@ -44,7 +44,7 @@ public class CNProjectACL extends ACL {
                        "CNAuthorizationStrategy!  CNAuthorization " +
                        "strategy cannot be used without " +
                        "CNAuthentication.  Please re-configure your " +
-                       "Hudson instance.");
+                       "Jenkins instance.");
             return false;
         }
 
@@ -68,7 +68,7 @@ public class CNProjectACL extends ACL {
         private static Collection<CollabNetRole> roles = Collections.emptyList();
 
         public static final CollabNetRole HUDSON_READ_ROLE = new CollabNetRole("Hudson Read", "Allows users " +
-                                    "read-access to Hudson jobs.",
+                                    "read-access to Jenkins jobs.",
                                     Hudson.READ, Item.READ);
         public static final CollabNetRole HUDSON_BUILD_ROLE = new CollabNetRole("Hudson Build/Cancel", "Allow " +
                                     "users to start a new build, or " +
@@ -82,10 +82,10 @@ public class CNProjectACL extends ACL {
                                     Item.DELETE);
 
         /**
-         * Get the applicable hudson roles matching a set of user role names
+         * Get the applicable Jenkins roles matching a set of user role names
          *
          * @param userRoleSet names of roles to match
-         * @return a collection of hudson roles with names that exist in user role set
+         * @return a collection of Jenkins roles with names that exist in user role set
          */
         public static Collection<CollabNetRole> getMatchingRoles(CTFList<CTFRole> userRoleSet) {
             Collection<CollabNetRole> matchRoles = new ArrayList<CollabNetRole>();

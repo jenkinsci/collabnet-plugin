@@ -32,7 +32,7 @@ import static java.util.Arrays.asList;
  * {@link SCM} for test that enables the caller to fake changelog entries programatically.
  * This {@link SCM} doesn't really touch any files.
  *
- * TODO: to be moved to Hudson's test harness.
+ * TODO: to be moved to Jenkins' test harness.
  * 
  * @author Kohsuke Kawaguchi
  */
@@ -58,7 +58,7 @@ public class FakeChangeLogSCM extends NullSCM {
     }
 
     /**
-     * Fakes a new commit, to be made available to Hudson in the next build.
+     * Fakes a new commit, to be made available to Jenkins in the next build.
      * The contents of the commit should be filled with the fluent API pattern.
      *
      * @param paths

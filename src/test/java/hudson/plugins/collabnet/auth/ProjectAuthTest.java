@@ -24,7 +24,7 @@ import org.acegisecurity.context.SecurityContextHolder;
 import java.rmi.RemoteException;
 
 /**
- * Test authorization for a Hudson job associated with a CN project.
+ * Test authorization for a Jenkins job associated with a CN project.
  */
 public class ProjectAuthTest extends AbstractSecurityTestCase {
     @TestParam
@@ -188,7 +188,7 @@ public class ProjectAuthTest extends AbstractSecurityTestCase {
     }
 
     /**
-     * Setup a new Hudson job to use authorization from the CN project.
+     * Setup a new Jenkins job to use authorization from the CN project.
      */
     public FreeStyleProject setupProjectForAuth() throws Exception {
         FreeStyleProject job = this.createFreeStyleProject();
@@ -197,7 +197,7 @@ public class ProjectAuthTest extends AbstractSecurityTestCase {
     }
 
     /**
-     * Setup the Hudson job with a promotion and run one build (so that 
+     * Setup the Jenkins job with a promotion and run one build (so that 
      * promotion pages will show up).
      */
     public void setupPromotionAndBuild(FreeStyleProject job) throws Exception {

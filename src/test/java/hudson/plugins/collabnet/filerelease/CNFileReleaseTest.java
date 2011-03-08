@@ -61,10 +61,10 @@ public class CNFileReleaseTest extends CNHudsonTestCase {
         CTFProject fr = connect().getProjectByTitle(teamforge_project);
         CTFPackage pkg = fr.getPackages().byTitle(fr_package);
         if (pkg==null)
-            pkg = fr.createPackage(fr_package,"test for Hudson",true);
+            pkg = fr.createPackage(fr_package,"test for Jenkins",true);
         CTFRelease r = pkg.getReleaseByTitle(fr_release);
         if (r==null)
-            r = pkg.createRelease(fr_release,"test for Hudson","active","Prototype");
+            r = pkg.createRelease(fr_release,"test for Jenkins","active","Prototype");
 
         FreeStyleProject job = this.createFreeStyleProject();
         job.getPublishersList().add(new CNFileRelease(

@@ -14,7 +14,7 @@ import java.util.regex.Pattern;
 import net.sf.json.JSONObject;
 
 /**
- * Class for methods that are useful across Hudson plugins.
+ * Class for methods that are useful across Jenkins plugins.
  */
 public class CommonUtil {
     
@@ -44,7 +44,7 @@ public class CommonUtil {
      * Translates a string that may contain  build vars like ${BUILD_VAR} to
      * a string with those vars interpreted.
      * 
-     * @param build the Hudson build.
+     * @param build the Jenkins build.
      * @param str the string to be interpreted.
      * @return the interpreted string.
      * @throws IllegalArgumentException if the env var is not found.

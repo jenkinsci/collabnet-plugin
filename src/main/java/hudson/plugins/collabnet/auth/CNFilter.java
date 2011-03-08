@@ -63,7 +63,7 @@ public class CNFilter implements Filter {
 
                 if (enableSSOFromCTF) {
                     HttpServletRequest httpRequest = (HttpServletRequest) request;
-                    // first detect if we are accessing hudson through CTF
+                    // first detect if we are accessing Jenkins through CTF
                     String username = request.getParameter("sfUsername");
                     if (username != null) {
                         // 'sfUsername' is used for CTF linked apps. if present make sure match the authenticated user
@@ -92,7 +92,7 @@ public class CNFilter implements Filter {
 
     /**
      * Catch SSO data from CollabNet if data is present, and 
-     * automatically login.  Used when the Hudson server is setup as a 
+     * automatically login.  Used when the Jenkins server is setup as a 
      * linked application in the CollabNet server.
      * The CollabNet server will sent 2 parameters: sfUsername and 
      * sfLoginToken.

@@ -29,7 +29,7 @@ import java.rmi.RemoteException;
 import java.util.logging.Logger;
 
 /**
- * Hudson plugin to upload the Hudson build log 
+ * Jenkins plugin to upload the Jenkins build log 
  * to the CollabNet Documents.
  */
 public class CNDocumentUploader extends AbstractTeamForgeNotifier {
@@ -162,7 +162,7 @@ public class CNDocumentUploader extends AbstractTeamForgeNotifier {
     /**
      * The function does the work of uploading the build log.
      *
-     * @param build current Hudson build.
+     * @param build current Jenkins build.
      * @param launcher unused.
      * @param listener receives events that happen during a build.  We use it 
      *                 for logging.
@@ -228,7 +228,7 @@ public class CNDocumentUploader extends AbstractTeamForgeNotifier {
      * Upload files matching the file patterns to the Document Service.
      *
      * @param folder folder where the files should be uploaded.
-     * @param build the current Hudson build.
+     * @param build the current Jenkins build.
      * @return the number of files successfully uploaded.
      */
     public int uploadFiles(CTFDocumentFolder folder, AbstractBuild<?, ?> build, BuildListener listener)
@@ -299,10 +299,10 @@ public class CNDocumentUploader extends AbstractTeamForgeNotifier {
     /**
      * Return the filepaths in the workspace which match the pattern.
      *
-     * @param build The hudson build.
+     * @param build The Jenkins build.
      * @param pattern An ant-style pattern.
      * @return an array of FilePaths which match this pattern in the 
-     *         hudson workspace.
+     *         Jenkins workspace.
      */
     private FilePath[] getFilePaths(AbstractBuild<?, ?> build, 
                                     String pattern) {
@@ -343,7 +343,7 @@ public class CNDocumentUploader extends AbstractTeamForgeNotifier {
      * @param file of the already upload build log.
      * @param fileName name of the uploaded file.
      * @param mimeType of the uploaded file.
-     * @param build the current Hudson build.
+     * @param build the current Jenkins build.
      * @return the docId associated with the new/updated document.
      * @throws RemoteException
      */
@@ -402,7 +402,7 @@ public class CNDocumentUploader extends AbstractTeamForgeNotifier {
     /**
      * Upload the build log to the collabnet server.
      *
-     * @param build the current Hudson build.
+     * @param build the current Jenkins build.
      * @return the id associated with the file upload.
      */
     private CTFFile uploadBuildLog(AbstractBuild <?, ?> build) {
@@ -486,7 +486,7 @@ public class CNDocumentUploader extends AbstractTeamForgeNotifier {
      * Translates a string that may contain  build vars like ${BUILD_VAR} to
      * a string with those vars interpreted.
      * 
-     * @param build the Hudson build.
+     * @param build the Jenkins build.
      * @param str the string to be interpreted.
      * @return the interpreted string.
      * @throws IllegalArgumentException if the env var is not found.

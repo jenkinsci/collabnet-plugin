@@ -13,7 +13,7 @@ import java.rmi.RemoteException;
 import java.util.logging.Logger;
 
 /**
- * Class for methods that are useful across Hudson plugins.
+ * Class for methods that are useful across Jenkins plugins.
  */
 public class CNHudsonUtil {
     private static Logger log = Logger.getLogger("CNHudsonUtil");

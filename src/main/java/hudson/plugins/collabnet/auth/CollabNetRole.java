@@ -10,7 +10,7 @@ import static java.util.Arrays.asList;
 
 /**
  * This class stores information about each CollabNet Role (name, description,
- * associated hudson permissions, etc.)
+ * associated Jenkins permissions, etc.)
  */
 public class CollabNetRole {
     private String name;
@@ -50,7 +50,7 @@ public class CollabNetRole {
     }
 
     /**
-     * @return the Hudson Permissions granted by this role.
+     * @return the Jenkins Permissions granted by this role.
      */
     public Collection<Permission> getPermissions() {
         return this.permissions;

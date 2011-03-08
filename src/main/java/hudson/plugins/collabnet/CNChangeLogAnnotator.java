@@ -29,7 +29,7 @@ public class CNChangeLogAnnotator extends ChangeLogAnnotator {
 
     /**
      * Obtains the TeamForge URL for the build.
-     * Just in case a single Hudson deployment serves multiple CTF instances,
+     * Just in case a single Jenkins deployment serves multiple CTF instances,
      * this method first tries to obtain the URL from the job setting. Failing that,
      * it resorts to the global configuration.
      *

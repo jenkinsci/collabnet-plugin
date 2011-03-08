@@ -15,7 +15,7 @@ import java.lang.annotation.Target;
 import org.jvnet.hudson.test.recipes.Recipe;
 
 /**
- * Installs a local plugin from the user's directory before launching Hudson.
+ * Installs a local plugin from the user's directory before launching Jenkins.
  */
 @Documented
 @Recipe(WithLocalPlugin.RunnerImpl.class)

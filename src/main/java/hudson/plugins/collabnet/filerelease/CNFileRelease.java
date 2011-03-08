@@ -34,7 +34,7 @@ import java.rmi.RemoteException;
 
 
 /**
- * Hudson plugin to update files from the Hudson workspace 
+ * Jenkins plugin to update files from the Jenkins workspace 
  * to the CollabNet File Release System.
  */
 public class CNFileRelease extends AbstractTeamForgeNotifier {
@@ -62,7 +62,7 @@ public class CNFileRelease extends AbstractTeamForgeNotifier {
      *                the release.
      * @param release where the files will be uploaded.
      * @param overwrite whether or not to overwrite existing files.
-     * @param filePatterns Any files in the Hudson workspace that match these 
+     * @param filePatterns Any files in the Jenkins workspace that match these 
      *                     ant-style patterns will be uploaded to the 
      *                     CollabNet server.
      */
@@ -150,7 +150,7 @@ public class CNFileRelease extends AbstractTeamForgeNotifier {
     /**
      * The function does the work of uploading files for the release.
      *
-     * @param build current Hudson build.
+     * @param build current Jenkins build.
      * @param launcher unused.
      * @param listener receives events that happen during a build.  We use it 
      *                 for logging.
@@ -203,7 +203,7 @@ public class CNFileRelease extends AbstractTeamForgeNotifier {
      * Upload the files which match the file patterns to the given
      * releaseId.
      *
-     * @param build current Hudson build.
+     * @param build current Jenkins build.
      * @param release where the files will be uploaded.
      * @return the number of files successfully uploaded.
      * @throws IOException
@@ -314,10 +314,10 @@ public class CNFileRelease extends AbstractTeamForgeNotifier {
     /**
      * Return the filepaths in the workspace which match the pattern.
      *
-     * @param build The hudson build.
+     * @param build The Jenkins build.
      * @param pattern An ant-style pattern.
      * @return an array of FilePaths which match this pattern in the 
-     *         hudson workspace.
+     *         Jenkins workspace.
      */
     private FilePath[] getFilePaths(AbstractBuild<?, ?> build, 
                                     String pattern) {

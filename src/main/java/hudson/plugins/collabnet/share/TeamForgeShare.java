@@ -16,7 +16,7 @@ import java.util.logging.Logger;
  * The TeamForgeShare descriptor holds global data to be shared with
  * other extension points.
  * It's not really a JobProperty, and it'd be neater to define it's own
- * ExtensionPoint class, but the Hudson configure page does not 
+ * ExtensionPoint class, but the Jenkins configure page does not 
  * show global.jelly for arbitrary extension types.
  */
 public class TeamForgeShare extends JobProperty<Job<?, ?>> {

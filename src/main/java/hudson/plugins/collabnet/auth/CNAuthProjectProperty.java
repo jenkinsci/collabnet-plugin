@@ -30,7 +30,7 @@ import java.util.logging.Logger;
 import static java.util.logging.Level.WARNING;
 
 /**
- * Job property to associate a Hudson job with a CollabNet Project for
+ * Job property to associate a Jenkins job with a CollabNet Project for
  * Authorization purposes (used with CollabNet Authorization).
  */
 public class CNAuthProjectProperty extends JobProperty<Job<?, ?>> {
@@ -49,7 +49,7 @@ public class CNAuthProjectProperty extends JobProperty<Job<?, ?>> {
     /**
      * Constructor
      * @param project name of project to tie the auth to
-     * @param createRoles true to create special hudson roles
+     * @param createRoles true to create special Jenkins roles
      * @param grantDefaultRoles true to grant default roles to project members
      */
     @DataBoundConstructor
@@ -289,8 +289,8 @@ public class CNAuthProjectProperty extends JobProperty<Job<?, ?>> {
             FormValidation ok = FormValidation.ok("Currently selected project: " + p.getId() + ":" + project);
             if (superUser) {
                 // all other errors should not be valid for a
-                // superuser, since superusers are Hudson Admins
-                // (so all-powerful in the Hudson realm) and also
+                // superuser, since superusers are Jenkins Admins
+                // (so all-powerful in the Jenkins realm) and also
                 // all-powerful in the CollabNet server.
                 return ok;
             }
@@ -300,7 +300,7 @@ public class CNAuthProjectProperty extends JobProperty<Job<?, ?>> {
                      "grant roles.");
             }
             if (hudsonAdmin) {
-                // no more errors apply to the Hudson Admin, since
+                // no more errors apply to the Jenkins Admin, since
                 // admins will never be locked out of this page.
                 return ok;
             }
@@ -316,7 +316,7 @@ public class CNAuthProjectProperty extends JobProperty<Job<?, ?>> {
                 return FormValidation.warning("The current user does not have the '" +
                      roleNeeded.getName() + "' role in the " +
                      "project, which is required to configure " +
-                     "this Hudson job.  If this project is chosen," +
+                     "this Jenkins job.  If this project is chosen," +
                      " the current user will not have the power " +
                      "to change the project later, unless he/she " +
                      "is given this role.");

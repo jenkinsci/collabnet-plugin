@@ -10,7 +10,7 @@ import java.util.logging.Logger;
 
 /**
  * Root ACL for the CollabNet Authorization.  It gives a set of users
- * Hudson admin privileges, another set read privileges, and if specified,
+ * Jenkins admin privileges, another set read privileges, and if specified,
  * will wrap another ACL and extend those permissions.
  */
 public class CNRootACL extends ACL {
@@ -76,7 +76,7 @@ public class CNRootACL extends ACL {
                            "CNAuthorizationStrategy!  CNAuthorization " +
                            "strategy cannot be used without " +
                            "CNAuthentication.  Please re-configure your " +
-                           "Hudson instance.");
+                           "Jenkins instance.");
                 return false;
             }
             if (auth.isSuperUser() ||

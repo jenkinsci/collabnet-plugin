@@ -38,7 +38,7 @@ public abstract class CNHudsonTestCase extends HudsonTestCase {
             }
             CollabNetApp app = connect();
             if (app.getProjectByTitle(teamforge_project)==null) {
-                app.createProject(teamforge_project, teamforge_project,"Test bed for the collab.net Hudson plugin");
+                app.createProject(teamforge_project, teamforge_project,"Test bed for the collab.net Jenkins plugin");
             }
         }
     }

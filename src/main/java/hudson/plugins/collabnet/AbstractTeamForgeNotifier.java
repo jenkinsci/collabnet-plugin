@@ -85,7 +85,7 @@ public abstract class AbstractTeamForgeNotifier extends Notifier {
      */
     public String getPassword() {
         if (this.overrideAuth()) {
-            return this.password==null ? null : this.password.toString();
+            return Secret.toString(this.password);
         } else {
             return getTeamForgeShareDescriptor().getPassword();
         }

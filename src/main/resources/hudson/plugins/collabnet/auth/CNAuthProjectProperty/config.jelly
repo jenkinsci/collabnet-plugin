@@ -7,7 +7,7 @@
       <legend>Authorization from CollabNet TeamForge</legend>
       <table width="100%">
         <f:block>
-          This Hudson instance has been configured to use the CollabNet
+          This Jenkins instance has been configured to use the CollabNet
           TeamForge site <a href="${descriptor.getCollabNetUrl()}">
             ${descriptor.getCollabNetUrl()}
           </a>
@@ -25,7 +25,7 @@
 
         <f:entry field="createRoles">
           <f:checkbox />
-          <label class="attach-previous">Create Hudson roles in CollabNet TeamForge for this project.</label>
+          <label class="attach-previous">Create Jenkins roles in CollabNet TeamForge for this project.</label>
         </f:entry>
 
         <f:entry field="grantDefaultRoles">

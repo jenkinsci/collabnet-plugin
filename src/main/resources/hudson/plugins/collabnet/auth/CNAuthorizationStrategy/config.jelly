@@ -42,19 +42,19 @@
     <f:textbox default="5" />
   </f:entry>
 
-  <f:entry title="Hudson Admin Users" field="adminUsersStr">
+  <f:entry title="Jenkins Admin Users" field="adminUsersStr">
     <f:textbox />
   </f:entry>
 
-  <f:entry title="Hudson Admin Groups" field="adminGroupsStr">
+  <f:entry title="Jenkins Admin Groups" field="adminGroupsStr">
     <f:textbox />
   </f:entry>
 
-  <f:entry title="Hudson Read-Only Users" field="readUsersStr">
+  <f:entry title="Jenkins Read-Only Users" field="readUsersStr">
     <f:textbox />
   </f:entry>
 
-  <f:entry title="Hudson Read-Only Groups" field="readGroupsStr">
+  <f:entry title="Jenkins Read-Only Groups" field="readGroupsStr">
     <f:textbox />
   </f:entry>
 
