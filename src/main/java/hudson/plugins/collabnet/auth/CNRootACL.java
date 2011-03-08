@@ -57,11 +57,6 @@ public class CNRootACL extends ACL {
             // This is especially important for triggered builds.
             return true;
         }
-        if (!(a instanceof CNAuthentication)) {
-            // This can happen when we switch to this Auth but haven't logged
-            // out yet.
-            return false;
-        }
         String username = (String)a.getPrincipal();
         if (!username.equals("anonymous")) {
             // allow all logged-in users to access the Hudson.READ
@@ -71,6 +66,10 @@ public class CNRootACL extends ACL {
 
             CNAuthentication auth = CNAuthentication.cast(a);
             if (auth == null) {
+                // try the inner ACL, if one exists
+                if (this.innerACL != null) {
+                    return this.innerACL.hasPermission(a, p);
+                }
                 // if the authentication is the wrong type, return true
                 log.severe("Improper Authentication type used with " +
                            "CNAuthorizationStrategy!  CNAuthorization " +
