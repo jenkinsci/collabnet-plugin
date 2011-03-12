@@ -211,4 +211,10 @@
       </plugin>
     </plugins>
   </build>
+
+  <scm>
+    <connection>scm:git:git://github.com/jenkinsci/collabnet-plugin.git</connection>
+    <developerConnection>scm:git:git@github.com:jenkinsci/collabnet-plugin.git</developerConnection>
+    <url>https://github.com/jenkinsci/collabnet-plugin</url>
+  </scm>
 </project>
