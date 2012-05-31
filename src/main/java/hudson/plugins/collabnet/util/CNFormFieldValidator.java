@@ -227,18 +227,23 @@ public abstract class CNFormFieldValidator {
             return FormValidation.error("The path is required.");
         }
         checkInterpretedString(path);
-
-        CTFProject p = app.getProjectByTitle(project);
-        if (p != null) {
-            String missing =  p.verifyPath(path);
-            if (missing != null) {
-                CNHudsonUtil.logoff(app);
-                return FormValidation.warning(String.format(
-                        "Folder '%s' could not be found in path '%s'.  It (and any subfolders) will be created dynamically.", missing, path));
+        if(app != null) {
+            CTFProject p = app.getProjectByTitle(project);
+            if (p != null) {
+                String missing =  p.verifyPath(path);
+                if (missing != null) {
+                    CNHudsonUtil.logoff(app);
+                    return FormValidation.warning(String.format(
+                            "Folder '%s' could not be found in path '%s'.  It (and any subfolders) will be created dynamically.", missing, path));
+                }
             }
+        } else {
+            return FormValidation.warning(String.format(
+                    "Unable to access TeamForge SOAP. Probably user/password credentials are incorrect."));
         }
         CNHudsonUtil.logoff(app);
         return FormValidation.ok();
+
     }
 
     /**

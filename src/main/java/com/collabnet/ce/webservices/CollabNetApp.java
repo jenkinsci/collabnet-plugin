@@ -17,6 +17,7 @@ import com.collabnet.ce.soap50.webservices.tracker.ITrackerAppSoap;
 import hudson.plugins.collabnet.share.TeamForgeShare;
 import hudson.plugins.collabnet.util.CNHudsonUtil;
 import hudson.plugins.collabnet.util.CommonUtil;
+import hudson.util.Secret;
 import org.apache.axis.AxisFault;
 import org.apache.log4j.Logger;
 import org.kohsuke.stapler.QueryParameter;
@@ -422,7 +423,7 @@ public class CollabNetApp {
         if (CommonUtil.unset(url) || CommonUtil.unset(username) || CommonUtil.unset(password)) {
             return null;
         }
-        return CNHudsonUtil.getCollabNetApp(url, username, password);
+        return CNHudsonUtil.getCollabNetApp(url, username, Secret.fromString(password).getPlainText());
     }
 
     public static void disableSSLCertificateCheck() {
