@@ -221,23 +221,28 @@ public abstract class CNFormFieldValidator {
      * password, project, and path.
      */
     public static FormValidation documentPathCheck(CollabNetApp app, String project, String path) throws IOException {
-        path = path.replaceAll("/+", "/");
-        path = CommonUtil.stripSlashes(path);
-        if (CommonUtil.unset(path)) {
-            return FormValidation.error("The path is required.");
-        }
-        checkInterpretedString(path);
-
-        CTFProject p = app.getProjectByTitle(project);
-        if (p != null) {
-            String missing =  p.verifyPath(path);
-            if (missing != null) {
-                CNHudsonUtil.logoff(app);
-                return FormValidation.warning(String.format(
-                        "Folder '%s' could not be found in path '%s'.  It (and any subfolders) will be created dynamically.", missing, path));
+        try {
+            path = path.replaceAll("/+", "/");
+            path = CommonUtil.stripSlashes(path);
+            if (CommonUtil.unset(path)) {
+                return FormValidation.error("The path is required.");
             }
+            checkInterpretedString(path);
+
+            if (app == null) {
+                return FormValidation.ok();
+            }
+            CTFProject p = app.getProjectByTitle(project);
+            if (p != null) {
+                String missing =  p.verifyPath(path);
+                if (missing != null) {
+                    return FormValidation.warning(String.format(
+                            "Folder '%s' could not be found in path '%s'.  It (and any subfolders) will be created dynamically.", missing, path));
+                }
+            }
+        } finally {
+            CNHudsonUtil.logoff(app);
         }
-        CNHudsonUtil.logoff(app);
         return FormValidation.ok();
     }
 
@@ -246,10 +251,13 @@ public abstract class CNFormFieldValidator {
      * a url, username, password, project, and package.
      */
     public static FormValidation packageCheck(CollabNetApp cna, String project, String rpackage) throws RemoteException {
-        if (CommonUtil.unset(rpackage)) {
-            return FormValidation.error("The package is required.");
-        }
         try {
+            if (CommonUtil.unset(rpackage)) {
+                return FormValidation.error("The package is required.");
+            }
+            if (cna == null) {
+                return FormValidation.ok();
+            }
             CTFProject p = cna.getProjectByTitle(project);
             if (p != null) {
                 CTFPackage pkg = p.getPackages().byTitle(rpackage);
@@ -275,6 +283,10 @@ public abstract class CNFormFieldValidator {
                 } else {
                     return FormValidation.ok();
                 }
+            }
+
+            if (cna == null) {
+                return FormValidation.ok();
             }
             CTFProject p = cna.getProjectByTitle(project);
             if (p==null)    return FormValidation.ok(); // not entered yet?
@@ -306,9 +318,9 @@ public abstract class CNFormFieldValidator {
         String project = request.getParameter("project");
         String repoName = request.getParameter("repo");
         CollabNetApp cna = CNHudsonUtil.getCollabNetApp(request);
-        if (cna==null)  return FormValidation.ok();
-
         try {
+            if (cna==null)  return FormValidation.ok();
+
             CTFProject p = cna.getProjectByTitle(project);
             if (CommonUtil.unset(repoName)) {
                 return FormValidation.error("The repository name is required.");
@@ -337,16 +349,22 @@ public abstract class CNFormFieldValidator {
             return FormValidation.error("The tracker is required.");
         }
         CollabNetApp cna = CNHudsonUtil.getCollabNetApp(request);
-        CTFProject p = cna.getProjectByTitle(project);
-        if (p!=null) {
-            CTFTracker t = p.getTrackers().byTitle(tracker);
-            if (t == null) {
-                CNHudsonUtil.logoff(cna);
-                return FormValidation.warning("Tracker could not be found.");
+        try {
+            if (cna == null) {
+                return FormValidation.ok();
             }
+
+            CTFProject p = cna.getProjectByTitle(project);
+            if (p!=null) {
+                CTFTracker t = p.getTrackers().byTitle(tracker);
+                if (t == null) {
+                    return FormValidation.warning("Tracker could not be found.");
+                }
+            }
+            return FormValidation.ok();
+        } finally {
+            CNHudsonUtil.logoff(cna);
         }
-        CNHudsonUtil.logoff(cna);
-        return FormValidation.ok();
     }
 
     /**
@@ -362,10 +380,10 @@ public abstract class CNFormFieldValidator {
         String project = request.getParameter("project");
 
         CollabNetApp cna = CNHudsonUtil.getCollabNetApp(request);
-        if (cna == null) {
-            return FormValidation.ok();
-        }
         try {
+            if (cna == null) {
+                return FormValidation.ok();
+            }
             CTFProject p = cna.getProjectById(project);
             if (p == null) {
                 return FormValidation.ok();
@@ -410,9 +428,11 @@ public abstract class CNFormFieldValidator {
      */
     private static Collection<String> getInvalidUsers(CollabNetApp cna, String userStr) throws RemoteException {
         Collection<String> invalidUsers = new ArrayList<String>();
-        for (String user: CommonUtil.splitCommaStr(userStr)) {
-            if (!cna.isUsernameValid(user)) {
-                invalidUsers.add(user);
+        if (cna != null) {
+            for (String user: CommonUtil.splitCommaStr(userStr)) {
+                if (!cna.isUsernameValid(user)) {
+                    invalidUsers.add(user);
+                }
             }
         }
         return invalidUsers;

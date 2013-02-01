@@ -332,10 +332,7 @@ public class CNAuthProjectProperty extends JobProperty<Job<?, ?>> {
          */
         public ComboBoxModel doFillProjectItems() throws RemoteException {
             CollabNetApp conn = CNConnection.getInstance();
-            if (conn == null) {
-                return new ComboBoxModel();
-            }
-            return ComboBoxUpdater.toModel(conn.getProjects());
+            return ComboBoxUpdater.getProjectList(conn);
         }
 
         /**

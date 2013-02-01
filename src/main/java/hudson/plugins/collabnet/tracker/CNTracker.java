@@ -637,7 +637,7 @@ public class CNTracker extends AbstractTeamForgeNotifier {
          * JSON string into the response data.
          */
         public ComboBoxModel doFillTrackerItems(CollabNetApp cna, @QueryParameter String project) throws RemoteException {
-            return ComboBoxUpdater.getTrackerList(cna.getProjectByTitle(project));
+            return ComboBoxUpdater.getTrackerList((cna == null) ? null : cna.getProjectByTitle(project));
         }
 
         /**

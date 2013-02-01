@@ -108,9 +108,12 @@ public abstract class ComboBoxUpdater {
     }
 
     public static ComboBoxModel getUsers(CollabNetApp cna, String project) throws RemoteException {
-        CTFProject p = cna.getProjectByTitle(project);
-        if (p==null)    return EMPTY_MODEL;
-        return toModel(p.getMembers());
+        if (cna!=null) {
+            CTFProject p = cna.getProjectByTitle(project);
+            if (p==null)    return EMPTY_MODEL;
+            return toModel(p.getMembers());
+        }
+        return EMPTY_MODEL;
     }
 
     /**

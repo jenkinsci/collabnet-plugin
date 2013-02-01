@@ -6,6 +6,7 @@ import hudson.model.AbstractDescribableImpl;
 import hudson.model.Descriptor;
 import hudson.plugins.collabnet.util.CNFormFieldValidator;
 import hudson.plugins.collabnet.util.CNHudsonUtil;
+import hudson.plugins.collabnet.util.CommonUtil;
 import hudson.util.FormValidation;
 import hudson.util.Secret;
 import org.kohsuke.stapler.DataBoundConstructor;
@@ -67,6 +68,20 @@ public class ConnectionFactory extends AbstractDescribableImpl<ConnectionFactory
         return result;
     }
 
+    /**
+     * A databinding method from Stapler.
+     */
+    public static ConnectionFactory fromStapler(@QueryParameter String url,
+            @QueryParameter String username, 
+            @QueryParameter String password) {
+        
+        if (CommonUtil.unset(url) || CommonUtil.unset(username) || CommonUtil.unset(password)) {
+            return null;
+        }
+        return new ConnectionFactory(url, username, password);
+    }
+
+    
     @Extension
     public static final class DescriptorImpl extends Descriptor<ConnectionFactory> {
         public String getDisplayName() { return ""; }
@@ -92,7 +107,9 @@ public class ConnectionFactory extends AbstractDescribableImpl<ConnectionFactory
         /**
          * Check that a password is present and allows login.
          */
-        public FormValidation doCheckPassword(CollabNetApp app, @QueryParameter String value) {
+        public FormValidation doCheckPassword(ConnectionFactory connectionFactory, @QueryParameter String value) {
+            CollabNetApp app = (connectionFactory == null) ? null : CNHudsonUtil.getCollabNetApp(
+                    connectionFactory.getUrl(), connectionFactory.getUsername(), connectionFactory.getPassword().getPlainText());
             return CNFormFieldValidator.loginCheck(app,value);
         }
     }
