@@ -169,6 +169,7 @@ public class CTFProject extends CTFObject implements ObjectWithTitle {
      * Gets to the folder from a path string like "foo/bar/zot", if necessary by creating intermediate directories.
      */
     public CTFDocumentFolder getOrCreateDocumentFolder(String documentPath) throws RemoteException {
+        documentPath = normalizePath(documentPath);
         String[] folderNames = documentPath.split("/");
         int i = 0;
         // find the root folder since the first document path may or may not
@@ -190,6 +191,16 @@ public class CTFProject extends CTFObject implements ObjectWithTitle {
         return cur;
     }
 
+    private String normalizePath(String documentPath) {
+        if (documentPath.startsWith("/")) {
+            documentPath = documentPath.substring(1);
+        }
+        if (documentPath.endsWith("/")) {
+            documentPath = documentPath.substring(0, documentPath.length() - 1);
+        }
+        return documentPath;
+    }
+
     /**
      * Verify a document folder path.  If at any point the folder
      * is missing, return the name of the first missing folder.
@@ -199,6 +210,7 @@ public class CTFProject extends CTFObject implements ObjectWithTitle {
      * @throws RemoteException
      */
      public String verifyPath(String documentPath) throws RemoteException {
+        documentPath = normalizePath(documentPath);
         String[] folderNames = documentPath.split("/");
         int i = 0;
         CTFDocumentFolder cur = getRootFolder();
