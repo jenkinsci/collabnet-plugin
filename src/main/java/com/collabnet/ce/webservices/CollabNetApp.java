@@ -14,9 +14,11 @@ import com.collabnet.ce.soap50.webservices.frs.IFrsAppSoap;
 import com.collabnet.ce.soap50.webservices.rbac.IRbacAppSoap;
 import com.collabnet.ce.soap50.webservices.scm.IScmAppSoap;
 import com.collabnet.ce.soap50.webservices.tracker.ITrackerAppSoap;
+import hudson.RelativePath;
 import hudson.plugins.collabnet.share.TeamForgeShare;
 import hudson.plugins.collabnet.util.CNHudsonUtil;
 import hudson.plugins.collabnet.util.CommonUtil;
+import hudson.util.Secret;
 import org.apache.axis.AxisFault;
 import org.apache.log4j.Logger;
 import org.kohsuke.stapler.QueryParameter;
@@ -37,6 +39,7 @@ import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+
 
 /***
  * This class represents the connection to the CollabNet webservice.
@@ -408,12 +411,19 @@ public class CollabNetApp {
 
     /**
      * A databinding method from Stapler.
+     * @param connectionFactory relates to the checkbox to override the global authentication parameters
      */
-    public static CollabNetApp fromStapler(@QueryParameter boolean overrideAuth, @QueryParameter String url,
-                                           @QueryParameter String username, @QueryParameter String password) {
+    public static CollabNetApp fromStapler(@QueryParameter boolean connectionFactory, 
+            @QueryParameter @RelativePath("connectionFactory") String url,
+            @QueryParameter @RelativePath("connectionFactory") String username, 
+            @QueryParameter @RelativePath("connectionFactory") String password) {
+        
+        // form may contain password either entered by user or the encrypted value
+        password = Secret.fromString(password).getPlainText();
+        
         TeamForgeShare.TeamForgeShareDescriptor descriptor =
             TeamForgeShare.getTeamForgeShareDescriptor();
-        if (descriptor != null && descriptor.useGlobal() && !overrideAuth) {
+        if (descriptor != null && descriptor.useGlobal() && !connectionFactory) {
             url = descriptor.getCollabNetUrl();
             username = descriptor.getUsername();
             password = descriptor.getPassword();

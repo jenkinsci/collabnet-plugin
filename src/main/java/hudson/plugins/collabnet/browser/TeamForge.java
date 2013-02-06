@@ -260,7 +260,9 @@ public class TeamForge extends SubversionRepositoryBrowser {
          * JSON string into the response data.
          */
         public ComboBoxModel doFillProjectItems(CollabNetApp cna) throws IOException {
-            return ComboBoxUpdater.getProjectList(cna);
+            ComboBoxModel projects = ComboBoxUpdater.getProjectList(cna);
+            CNHudsonUtil.logoff(cna);
+            return projects;
         }
 
         /**
@@ -268,7 +270,9 @@ public class TeamForge extends SubversionRepositoryBrowser {
          * JSON string into the response data.
          */
         public ComboBoxModel doFillRepoItems(CollabNetApp cna, @QueryParameter String project) throws RemoteException {
-            return ComboBoxUpdater.getRepos(cna,project);
+            ComboBoxModel repos = ComboBoxUpdater.getRepos(cna,project);
+            CNHudsonUtil.logoff(cna);
+            return repos;
         }
     }
 }
