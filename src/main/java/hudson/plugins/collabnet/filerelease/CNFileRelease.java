@@ -455,7 +455,7 @@ public class CNFileRelease extends AbstractTeamForgeNotifier {
          * JSON string into the response data.
          */
         public ComboBoxModel doFillReleaseItems(CollabNetApp cna,
-                @QueryParameter String project, @QueryParameter("package") String _package) throws RemoteException {
+                @QueryParameter String project, @QueryParameter("pkg") String _package) throws RemoteException {
             return ComboBoxUpdater.getReleases(cna,project,_package);
         }
     }
