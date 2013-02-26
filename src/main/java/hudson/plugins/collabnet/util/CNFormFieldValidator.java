@@ -342,13 +342,10 @@ public abstract class CNFormFieldValidator {
      * Class to check that a tracker exists.  Expects a StaplerRequest with 
      * a url, username, password, project, and tracker.
      */
-    public static FormValidation trackerCheck(StaplerRequest request) throws RemoteException {
-        String tracker = request.getParameter("tracker");
-        String project = request.getParameter("project");
+    public static FormValidation trackerCheck(CollabNetApp cna, String project, String tracker) throws RemoteException {
         if (CommonUtil.unset(tracker)) {
             return FormValidation.error("The tracker is required.");
         }
-        CollabNetApp cna = CNHudsonUtil.getCollabNetApp(request);
         try {
             if (cna == null) {
                 return FormValidation.ok();
@@ -372,19 +369,16 @@ public abstract class CNFormFieldValidator {
      * Expects a StaplerRequest with login info (url, username, password), 
      * project, and assign (which is the username).
      */
-    public static FormValidation assignCheck(StaplerRequest request) throws RemoteException {
-        String assign = StringUtils.strip(request.getParameter("assign"));
+    public static FormValidation assignCheck(CollabNetApp cna, String project, String assign) throws RemoteException {
+        assign = StringUtils.strip(assign);
         if (CommonUtil.unset(assign)) {
             return FormValidation.ok();
         }
-        String project = request.getParameter("project");
-
-        CollabNetApp cna = CNHudsonUtil.getCollabNetApp(request);
         try {
             if (cna == null) {
                 return FormValidation.ok();
             }
-            CTFProject p = cna.getProjectById(project);
+            CTFProject p = cna.getProjectByTitle(project);
             if (p == null) {
                 return FormValidation.ok();
             }
