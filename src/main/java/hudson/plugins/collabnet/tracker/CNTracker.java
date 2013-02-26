@@ -593,20 +593,18 @@ public class CNTracker extends AbstractTeamForgeNotifier {
 
         /**
          * Form validation for the tracker field.
-         *
-         * @param req StaplerRequest which contains parameters from the config.jelly.
          */
-        public FormValidation doCheckTracker(StaplerRequest req) throws RemoteException {
-            return CNFormFieldValidator.trackerCheck(req);
+        public FormValidation doCheckTracker(CollabNetApp cna, 
+                @QueryParameter String project, @QueryParameter String tracker) throws RemoteException {
+            return CNFormFieldValidator.trackerCheck(cna, project, tracker);
         }
         
         /**
          * Form validation for "assign issue to".
-         *
-         * @param req StaplerRequest which contains parameters from the config.jelly.
          */
-        public FormValidation doCheckAssign(StaplerRequest req) throws RemoteException {
-            return CNFormFieldValidator.assignCheck(req);
+        public FormValidation doCheckAssignUser(CollabNetApp cna, 
+                @QueryParameter String project, @QueryParameter String assignUser) throws RemoteException {
+            return CNFormFieldValidator.assignCheck(cna, project, assignUser);
         }
         
         /**
