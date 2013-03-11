@@ -10,6 +10,7 @@ import com.collabnet.ce.soap50.webservices.cemain.UserSoapList;
 import com.collabnet.ce.soap50.webservices.cemain.UserSoapRow;
 import com.collabnet.ce.soap50.webservices.docman.IDocumentAppSoap;
 import com.collabnet.ce.soap50.webservices.filestorage.IFileStorageAppSoap;
+import com.collabnet.ce.soap50.webservices.filestorage.ISimpleFileStorageAppSoap;
 import com.collabnet.ce.soap50.webservices.frs.IFrsAppSoap;
 import com.collabnet.ce.soap50.webservices.rbac.IRbacAppSoap;
 import com.collabnet.ce.soap50.webservices.scm.IScmAppSoap;
@@ -30,6 +31,8 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
 import java.rmi.RemoteException;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
@@ -50,12 +53,15 @@ import java.util.List;
 public class CollabNetApp {
     private static Logger logger = Logger.getLogger(CollabNetApp.class);
     public static String SOAP_SERVICE = "/ce-soap50/services/";
+    public static final int UPLOAD_FILE_CHUNK_SIZE = 780000;
+    public static final long MAX_FILE_STORAGE_APP_UPLOAD_SIZE = 130023424;
     private String sessionId;
     private String username;
     private String url;
     protected final ICollabNetSoap icns;
     private volatile IFrsAppSoap ifrs;
     private volatile IFileStorageAppSoap ifsa;
+    private volatile ISimpleFileStorageAppSoap isfsa;
     private volatile ITrackerAppSoap itas;
     private volatile IDocumentAppSoap idas;
     private volatile IScmAppSoap isas;
@@ -151,6 +157,12 @@ public class CollabNetApp {
         return ifsa;
     }
 
+    protected ISimpleFileStorageAppSoap getSimpleFileStorageAppSoap() {
+        if (isfsa==null)
+            isfsa = createProxy(ISimpleFileStorageAppSoap.class, "SimpleFileStorageAppSoap");
+        return isfsa;
+    }
+
     /**
      * Returns the user name that this connection is set up with.
      */
@@ -229,12 +241,36 @@ public class CollabNetApp {
         return new CTFFile(this,this.getFileStorageAppSoap().uploadFile(getSessionId(),src));
     }
 
+    public CTFFile uploadLargeFile(File src) throws RemoteException {
+        String fieldId = this.getSimpleFileStorageAppSoap().startFileUpload(getSessionId());
+        byte[] buffer = new byte[UPLOAD_FILE_CHUNK_SIZE];
+        try {
+            InputStream fileInputStream = new FileDataSource(src).getInputStream();
+            while (true) {
+                int count = fileInputStream.read(buffer);
+                if (count==-1) {
+                    break;
+                }
+                this.getSimpleFileStorageAppSoap().write(getSessionId(), fieldId, buffer);
+            }
+            this.getSimpleFileStorageAppSoap().endFileUpload(getSessionId(), fieldId);
+            fileInputStream.close();
+        } catch (IOException e) {
+            throw new Error(e);
+        }
+        return new CTFFile(this, fieldId);
+    }
+
     /**
      * Uploads a file. The returned file object can be then used as an input
      * to methods like {@link CTFRelease#addFile(String, String, CTFFile)}.
      */
     public CTFFile upload(File src) throws RemoteException {
-        return upload(new DataHandler(new FileDataSource(src)));
+        if (src.length() > MAX_FILE_STORAGE_APP_UPLOAD_SIZE) {
+            return uploadLargeFile(src);
+        } else {
+            return upload(new DataHandler(new FileDataSource(src)));
+        }
     }
 
     /**
