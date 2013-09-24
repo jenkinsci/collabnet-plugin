@@ -40,6 +40,7 @@ import java.security.SecureRandom;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
@@ -214,7 +215,21 @@ public class CollabNetApp {
         return sessionId;
     }
 
-    /**
+  /**
+   * Return N bytes from provided buffer
+   * @param buffer to be read
+   * @param n no.of bytes to be read from buffer
+   * @return resulting buffer
+   */
+    private byte[] getFirstNBytesOfBuffer(byte[] buffer, int n) {
+      if (buffer.length == n) {
+        return buffer;
+      } else {
+        return Arrays.copyOfRange(buffer, 0, n);
+      }
+    }
+
+  /**
      * Login with a token.
      *
      * @param token one-time token
@@ -248,10 +263,10 @@ public class CollabNetApp {
             InputStream fileInputStream = new FileDataSource(src).getInputStream();
             while (true) {
                 int count = fileInputStream.read(buffer);
-                if (count==-1) {
+                if (count == -1) {
                     break;
                 }
-                this.getSimpleFileStorageAppSoap().write(getSessionId(), fieldId, buffer);
+                this.getSimpleFileStorageAppSoap().write(getSessionId(), fieldId, getFirstNBytesOfBuffer(buffer, count));
             }
             this.getSimpleFileStorageAppSoap().endFileUpload(getSessionId(), fieldId);
             fileInputStream.close();
