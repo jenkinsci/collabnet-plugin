@@ -55,11 +55,13 @@ public class CNAuthentication implements Authentication {
         }
 
         if (isSuper) {
-            this.authorities = new GrantedAuthority[1];
+            this.authorities = new GrantedAuthority[2];
             this.authorities[0] = 
                 new GrantedAuthorityImpl(CNAuthentication.SUPER_USER);
+            this.authorities[1] = new GrantedAuthorityImpl("authenticated");
         } else {
-            this.authorities = new GrantedAuthority[0];
+            this.authorities = new GrantedAuthority[1];
+            this.authorities[0] = new GrantedAuthorityImpl("authenticated");
         }
     }
 
