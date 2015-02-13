@@ -3,6 +3,7 @@ package hudson.plugins.collabnet.auth;
 import java.io.IOException;
 import java.rmi.RemoteException;
 import java.util.logging.Logger;
+import java.nio.charset.Charset;
 
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
@@ -25,6 +26,7 @@ import org.acegisecurity.context.SecurityContextHolder;
 
 import org.acegisecurity.providers.anonymous.AnonymousAuthenticationToken;
 import org.apache.commons.lang.StringUtils;
+import org.apache.commons.codec.binary.Base64;
 
 import com.collabnet.ce.webservices.CollabNetApp;
 
@@ -73,7 +75,11 @@ public class CNFilter implements Filter {
                     }
 
                     if (!auth.isAuthenticated() || auth.getPrincipal().equals("anonymous")) {
-                        loginHudsonUsingCTFSSO((CollabNetSecurityRealm)securityRealm, httpRequest);
+                        if (isLinkedAppRequest(httpRequest)) {
+                            loginHudsonUsingCTFSSO((CollabNetSecurityRealm)securityRealm, httpRequest);
+                        } else {
+                            loginUsingBasicAuthToCTF((CollabNetSecurityRealm)securityRealm, httpRequest);
+                        }
                     }
                 }
 
@@ -88,6 +94,12 @@ public class CNFilter implements Filter {
             }
         }
         chain.doFilter(request, response);
+    }
+
+    private boolean isLinkedAppRequest(HttpServletRequest request) {
+        String username = request.getParameter("sfUsername");
+        String token = request.getParameter("sfLoginToken");
+        return(username != null && token != null);
     }
 
     /**
@@ -133,7 +145,48 @@ public class CNFilter implements Filter {
         request.getSession(true);
         SecurityContextHolder.getContext().setAuthentication(auth);
     }
-    
+
+    private void loginUsingBasicAuthToCTF(CollabNetSecurityRealm securityRealm, HttpServletRequest request) {
+        String url = securityRealm.getCollabNetUrl();
+        Authentication auth = null;
+        boolean logoff = false;
+
+        // get the username/password from the Authorization header
+        final String authorization = request.getHeader("Authorization");
+        if (authorization != null && authorization.startsWith("Basic")) {
+            // Authorization: Basic base64credentials
+            String base64Credentials = authorization.substring("Basic".length()).trim();
+            Base64 b = new Base64();
+            String credentials = new String(b.decode(base64Credentials), Charset.forName("UTF-8"));
+            // credentials = username:password
+            final String[] values = credentials.split(":",2);
+            String username = values[0];
+            String password = values[1];
+
+            try {
+                CollabNetApp ca = new CollabNetApp(url, username, password);
+                auth = new CNAuthentication(username, ca);
+            } catch (RemoteException re) {
+                // login failed, but continue
+                log.severe("Login failed with RemoteException: " +
+                           re.getMessage());
+                logoff = true;
+            }
+        } else {
+            logoff = true;
+        }
+
+        if (logoff) {
+            auth = new AnonymousAuthenticationToken("anonymous","anonymous",
+                new GrantedAuthority[]{new GrantedAuthorityImpl("anonymous")});
+        }
+
+        // ensure that a session exists before we set context in it
+        // see artf42298
+        request.getSession(true);
+        SecurityContextHolder.getContext().setAuthentication(auth);
+    }
+
     /**
      * Redirect to the CollabNet Server to login there, and then 
      * redirect back to our original location.
