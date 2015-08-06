@@ -18,7 +18,6 @@ import hudson.tasks.Publisher;
 import hudson.util.FormValidation;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
-import org.jenkinsci.remoting.RoleChecker;
 
 import java.io.File;
 import java.io.IOException;
@@ -623,10 +622,6 @@ public class PblUploader extends Notifier implements java.io.Serializable {
                                                 args, 
                                                 file,
                                                 true);
-            }
-            @Override
-            public void checkRoles(RoleChecker arg0) throws SecurityException {
-                // TODO Auto-generated method stub
             }
         });
         logPblCallResults(result, args, uploadFilePath, workspace);
