@@ -26,6 +26,7 @@ import hudson.util.ComboBoxModel;
 import hudson.util.FormValidation;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
+import org.jenkinsci.remoting.RoleChecker;
 
 import javax.activation.MimetypesFileTypeMap;
 import java.io.File;
@@ -312,6 +313,10 @@ public class CNFileRelease extends AbstractTeamForgeNotifier {
         public String invoke(File f, VirtualChannel channel) throws IOException {
             CollabNetApp cnApp = CNHudsonUtil.recreateCollabNetApp(mServerUrl, mUsername, mSessionId);
             return cnApp.upload(f).getId();
+        }
+        @Override
+        public void checkRoles(RoleChecker arg0) throws SecurityException {
+            // TODO Auto-generated method stub
         }
     }
 
