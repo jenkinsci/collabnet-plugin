@@ -358,7 +358,7 @@ public class CNDocumentUploader extends AbstractTeamForgeNotifier {
         } else {
             return folder.createDocument(fileName,
                                this.getInterpreted(build, this.getDescription()),
-                               null, "final", false, fileName, 
+                               "", "final", false, fileName,
                                mimeType, file, null, null);
         }
     }
