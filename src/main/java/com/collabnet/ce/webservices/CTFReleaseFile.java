@@ -1,8 +1,8 @@
 package com.collabnet.ce.webservices;
 
-import com.collabnet.ce.soap50.webservices.cemain.ItemSoapDO;
-import com.collabnet.ce.soap50.webservices.frs.FrsFileSoapDO;
-import com.collabnet.ce.soap50.webservices.frs.FrsFileSoapRow;
+import com.collabnet.ce.soap60.webservices.cemain.ItemSoapDO;
+import com.collabnet.ce.soap60.webservices.frs.FrsFileSoapDO;
+import com.collabnet.ce.soap60.webservices.frs.FrsFileSoapRow;
 
 import java.rmi.RemoteException;
 

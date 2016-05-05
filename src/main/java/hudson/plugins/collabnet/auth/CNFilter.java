@@ -24,7 +24,7 @@ import org.acegisecurity.GrantedAuthorityImpl;
 import org.acegisecurity.context.SecurityContextHolder;
 
 import org.acegisecurity.providers.anonymous.AnonymousAuthenticationToken;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import com.collabnet.ce.webservices.CollabNetApp;
 

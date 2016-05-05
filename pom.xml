@@ -6,7 +6,7 @@
     <version>1.399</version>
   </parent>
   <artifactId>collabnet</artifactId>
-  <version>1.1.11-SNAPSHOT</version>
+  <version>1.2</version>
   <name>CollabNet Plugins</name>
   <description>CollabNet packages</description>
   <url>http://wiki.jenkins-ci.org/display/JENKINS/CollabNet+Plugin</url>
@@ -32,6 +32,16 @@
   </repositories>
 
   <dependencies>
+   <dependency>
+		<groupId>org.apache.maven</groupId>
+		<artifactId>maven-embedder</artifactId>
+		<version>2.0.3</version>
+   </dependency>
+   <dependency>
+		<groupId>org.apache.commons</groupId>
+		<artifactId>commons-lang3</artifactId>
+    	<version>3.0</version>
+ 	</dependency>
     <dependency>
       <groupId>org.apache.axis</groupId>    
       <artifactId>axis</artifactId>
@@ -69,9 +79,9 @@
       <version>1.0</version>
     </dependency>
     <dependency>
-      <groupId>com.collabnet.ce.soap50.webservices</groupId>
-      <artifactId>sf_soap50_sdk</artifactId>
-      <version>1.2</version>
+      <groupId>com.collabnet.ce.soap60.webservices</groupId>
+      <artifactId>sf_soap60_sdk</artifactId>
+      <version>1.1</version>
     </dependency>
     <dependency>
       <groupId>org.jvnet.hudson.plugins</groupId>

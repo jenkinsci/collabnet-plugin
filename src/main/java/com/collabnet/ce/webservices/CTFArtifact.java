@@ -1,8 +1,8 @@
 package com.collabnet.ce.webservices;
 
-import com.collabnet.ce.soap50.types.SoapFieldValues;
-import com.collabnet.ce.soap50.webservices.tracker.ArtifactSoapDO;
-import com.collabnet.ce.soap50.webservices.tracker.ArtifactSoapRow;
+import com.collabnet.ce.soap60.types.SoapFieldValues;
+import com.collabnet.ce.soap60.webservices.tracker.ArtifactSoapDO;
+import com.collabnet.ce.soap60.webservices.tracker.ArtifactSoapRow;
 
 import java.rmi.RemoteException;
 import java.util.Date;
@@ -21,7 +21,7 @@ public class CTFArtifact extends CTFObject {
         super(parent, src.getId());
         needsRefill = true;
         this.data = new ArtifactSoapDO();
-        data.setActualHours(src.getActualHours());
+        data.setActualEffort(src.getActualEffort());
         data.setAssignedTo(src.getAssignedToUsername());
         data.setCategory(src.getCategory());
         data.setCloseDate(src.getCloseDate());
@@ -29,7 +29,7 @@ public class CTFArtifact extends CTFObject {
         data.setCreatedDate(src.getSubmittedDate());
         data.setCustomer(src.getCustomer());
         data.setDescription(src.getDescription());
-        data.setEstimatedHours(src.getEstimatedHours());
+        data.setEstimatedEffort(src.getEstimatedEffort());
         data.setFolderId(src.getFolderId());
         data.setGroup(src.getArtifactGroup());
         data.setId(src.getId());
@@ -124,19 +124,19 @@ public class CTFArtifact extends CTFObject {
     }
 
     public int getEstimatedHours() {
-        return data.getEstimatedHours();
+        return data.getEstimatedEffort();
     }
 
     public void setEstimatedHours(int estimatedHours) {
-        data.setEstimatedHours(estimatedHours);
+        data.setEstimatedEffort(estimatedHours);
     }
 
     public int getActualHours() {
-        return data.getActualHours();
+        return data.getActualEffort();
     }
 
     public void setActualHours(int actualHours) {
-        data.setActualHours(actualHours);
+        data.setActualEffort(actualHours);
     }
 
     public Date getCloseDate() {

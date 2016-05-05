@@ -1,10 +1,10 @@
 package com.collabnet.ce.webservices;
 
-import com.collabnet.ce.soap50.types.SoapFieldValues;
-import com.collabnet.ce.soap50.types.SoapFilter;
-import com.collabnet.ce.soap50.webservices.tracker.ArtifactSoapRow;
-import com.collabnet.ce.soap50.webservices.tracker.TrackerSoapDO;
-import com.collabnet.ce.soap50.webservices.tracker.TrackerSoapRow;
+import com.collabnet.ce.soap60.types.SoapFieldValues;
+import com.collabnet.ce.soap60.types.SoapFilter;
+import com.collabnet.ce.soap60.webservices.tracker.ArtifactSoapRow;
+import com.collabnet.ce.soap60.webservices.tracker.TrackerSoapDO;
+import com.collabnet.ce.soap60.webservices.tracker.TrackerSoapRow;
 
 import java.rmi.RemoteException;
 import java.util.ArrayList;
@@ -74,10 +74,14 @@ public class CTFTracker extends CTFFolder {
                                                    String fileMimeType,
                                                    CTFFile file)
     throws RemoteException {
+    	int remainingEffort = 0;
+    	boolean autosumming = false;
+    	int points = 0;
+    	String planningFolderId = null;
         return new CTFArtifact(this,app.getTrackerSoap().createArtifact(app.getSessionId(), getId(), title,
                                         description, group, category,  status,
-                                        customer, priority, estimatedHours,
-                                        assignTo, releaseId, flexFields,
+                                        customer, priority, estimatedHours,remainingEffort,autosumming,points,
+                                        assignTo, releaseId, planningFolderId, flexFields,
                                         fileName, fileMimeType, file!=null?file.getId():null));
     }
 }

@@ -1,7 +1,7 @@
 package com.collabnet.ce.webservices;
 
-import com.collabnet.ce.soap50.webservices.scm.RepositorySoapDO;
-import com.collabnet.ce.soap50.webservices.scm.RepositorySoapRow;
+import com.collabnet.ce.soap60.webservices.scm.RepositorySoapDO;
+import com.collabnet.ce.soap60.webservices.scm.RepositorySoapRow;
 
 import java.rmi.RemoteException;
 
@@ -26,7 +26,7 @@ public class CTFScmRepository extends CTFFolder {
 
     private RepositorySoapDO data() throws RemoteException {
         if (data==null)
-            data = app.getScmAppSoap().getRepositoryData(app.getSessionId(),getId());
+            data = app.getScmAppSoap().getRepositoryDataById(app.getSessionId(),getId());
         return data;
     }
     public String getSystemId() throws RemoteException {
