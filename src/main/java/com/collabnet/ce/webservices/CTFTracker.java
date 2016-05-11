@@ -80,7 +80,7 @@ public class CTFTracker extends CTFFolder {
     	String planningFolderId = null;
         return new CTFArtifact(this,app.getTrackerSoap().createArtifact(app.getSessionId(), getId(), title,
                                         description, group, category,  status,
-                                        customer, priority, estimatedHours,remainingEffort,autosumming,points,
+                                        customer, priority, estimatedHours, remainingEffort, autosumming, points,
                                         assignTo, releaseId, planningFolderId, flexFields,
                                         fileName, fileMimeType, file!=null?file.getId():null));
     }
