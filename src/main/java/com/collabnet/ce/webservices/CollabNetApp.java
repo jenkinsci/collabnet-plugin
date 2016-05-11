@@ -1,20 +1,20 @@
 package com.collabnet.ce.webservices;
 
-import com.collabnet.ce.soap50.fault.NoSuchObjectFault;
-import com.collabnet.ce.soap50.webservices.ClientSoapStubFactory;
-import com.collabnet.ce.soap50.webservices.cemain.Group2SoapList;
-import com.collabnet.ce.soap50.webservices.cemain.Group2SoapRow;
-import com.collabnet.ce.soap50.webservices.cemain.ICollabNetSoap;
-import com.collabnet.ce.soap50.webservices.cemain.ProjectSoapRow;
-import com.collabnet.ce.soap50.webservices.cemain.UserSoapList;
-import com.collabnet.ce.soap50.webservices.cemain.UserSoapRow;
-import com.collabnet.ce.soap50.webservices.docman.IDocumentAppSoap;
-import com.collabnet.ce.soap50.webservices.filestorage.IFileStorageAppSoap;
-import com.collabnet.ce.soap50.webservices.filestorage.ISimpleFileStorageAppSoap;
-import com.collabnet.ce.soap50.webservices.frs.IFrsAppSoap;
-import com.collabnet.ce.soap50.webservices.rbac.IRbacAppSoap;
-import com.collabnet.ce.soap50.webservices.scm.IScmAppSoap;
-import com.collabnet.ce.soap50.webservices.tracker.ITrackerAppSoap;
+import com.collabnet.ce.soap60.fault.NoSuchObjectFault;
+import com.collabnet.ce.soap60.webservices.ClientSoapStubFactory;
+import com.collabnet.ce.soap60.webservices.cemain.UserGroupSoapList;
+import com.collabnet.ce.soap60.webservices.cemain.UserGroupSoapRow;
+import com.collabnet.ce.soap60.webservices.cemain.ICollabNetSoap;
+import com.collabnet.ce.soap60.webservices.cemain.ProjectSoapRow;
+import com.collabnet.ce.soap60.webservices.cemain.UserSoapList;
+import com.collabnet.ce.soap60.webservices.cemain.UserSoapRow;
+import com.collabnet.ce.soap60.webservices.docman.IDocumentAppSoap;
+import com.collabnet.ce.soap60.webservices.filestorage.IFileStorageAppSoap;
+import com.collabnet.ce.soap60.webservices.filestorage.ISimpleFileStorageAppSoap;
+import com.collabnet.ce.soap60.webservices.frs.IFrsAppSoap;
+import com.collabnet.ce.soap60.webservices.rbac.IRbacAppSoap;
+import com.collabnet.ce.soap60.webservices.scm.IScmAppSoap;
+import com.collabnet.ce.soap60.webservices.tracker.ITrackerAppSoap;
 import hudson.RelativePath;
 import hudson.plugins.collabnet.share.TeamForgeShare;
 import hudson.plugins.collabnet.util.CNHudsonUtil;
@@ -52,8 +52,7 @@ import java.util.List;
  * This is written based on the 5.0 version of the soap services.
  */
 public class CollabNetApp {
-    private static Logger logger = Logger.getLogger(CollabNetApp.class);
-    public static String SOAP_SERVICE = "/ce-soap50/services/";
+    public static String SOAP_SERVICE = "/ce-soap60/services/";
     public static final int UPLOAD_FILE_CHUNK_SIZE = 780000;
     public static final long MAX_FILE_STORAGE_APP_UPLOAD_SIZE = 130023424;
     private String sessionId;
@@ -340,8 +339,8 @@ public class CollabNetApp {
     public CTFList<CTFGroup> getGroups() throws RemoteException {
         this.checkValidSessionId();
         CTFList<CTFGroup> r = new CTFList<CTFGroup>();
-        Group2SoapList gsList = this.icns.getGroupList2(this.sessionId, null);
-        for (Group2SoapRow row: gsList.getDataRows()) {
+        UserGroupSoapList gsList = this.icns.getUserGroupList(this.sessionId);
+        for (UserGroupSoapRow row: gsList.getDataRows()) {
             r.add(new CTFGroup(this,row));
         }
         return r;
@@ -352,7 +351,7 @@ public class CollabNetApp {
     }
 
     public CTFGroup createGroup(String fullName, String description) throws RemoteException {
-        return new CTFGroup(this,icns.createGroup(getSessionId(),fullName,description));
+        return new CTFGroup(this,icns.createUserGroup(getSessionId(),fullName,description));
     }
 
     /**
@@ -381,7 +380,7 @@ public class CollabNetApp {
         throws RemoteException {
         this.checkValidSessionId();
         Collection<String> users = new ArrayList<String>();
-        UserSoapList usList = this.icns.getActiveGroupMembers(this.sessionId, 
+        UserSoapList usList = this.icns.getUserGroupMembers(this.sessionId, 
                                                               groupId);
         for (UserSoapRow row: usList.getDataRows()) {
             users.add(row.getUserName());
@@ -405,7 +404,8 @@ public class CollabNetApp {
 
     public List<CTFProject> getProjects() throws RemoteException {
         List<CTFProject> r = new ArrayList<CTFProject>();
-        for (ProjectSoapRow row : icns.getProjectList(getSessionId()).getDataRows()) {
+        boolean fetchHierarchyPath = false;
+        for (ProjectSoapRow row : icns.getProjectList(getSessionId(), fetchHierarchyPath).getDataRows()) {
             r.add(new CTFProject(this,row));
         }
         return r;
@@ -448,7 +448,9 @@ public class CollabNetApp {
      *      User's time zone. The ID for a TimeZone, either an abbreviation such as "PST", a full name such as "America/Los_Angeles", or a custom ID such as "GMT-8:00".
      */
     public CTFUser createUser(String username, String email, String fullName, String locale, String timeZone, boolean isSuperUser, boolean isRestrictedUser, String password) throws RemoteException {
-        return new CTFUser(this,this.icns.createUser(getSessionId(),username,email,fullName,locale,timeZone,isSuperUser,isRestrictedUser,password));
+    	String organization = null;
+    	String licenseType = "ALM";
+    	return new CTFUser(this,this.icns.createUser(getSessionId(),username,email,fullName,organization,locale,timeZone,licenseType,isSuperUser,isRestrictedUser,password));
     }
 
     /**

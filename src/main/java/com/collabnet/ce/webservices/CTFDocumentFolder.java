@@ -1,14 +1,12 @@
 package com.collabnet.ce.webservices;
 
-import com.collabnet.ce.soap50.webservices.docman.DocumentFolderSoapDO;
-import com.collabnet.ce.soap50.webservices.docman.DocumentFolderSoapList;
-import com.collabnet.ce.soap50.webservices.docman.DocumentFolderSoapRow;
-import com.collabnet.ce.soap50.webservices.docman.DocumentSoapList;
-import com.collabnet.ce.soap50.webservices.docman.DocumentSoapRow;
+import com.collabnet.ce.soap60.webservices.docman.DocumentFolderSoapDO;
+import com.collabnet.ce.soap60.webservices.docman.DocumentFolderSoapList;
+import com.collabnet.ce.soap60.webservices.docman.DocumentFolderSoapRow;
+import com.collabnet.ce.soap60.webservices.docman.DocumentSoapList;
+import com.collabnet.ce.soap60.webservices.docman.DocumentSoapRow;
 
 import java.rmi.RemoteException;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * A folder in the documents section.

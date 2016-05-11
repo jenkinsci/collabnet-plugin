@@ -1,9 +1,9 @@
 package com.collabnet.ce.webservices;
 
-import com.collabnet.ce.soap50.webservices.cemain.ItemSoapDO;
-import com.collabnet.ce.soap50.webservices.docman.DocumentSoapDO;
-import com.collabnet.ce.soap50.webservices.docman.DocumentSoapRow;
-import com.collabnet.ce.soap50.webservices.docman.IDocumentAppSoap;
+import com.collabnet.ce.soap60.webservices.cemain.ItemSoapDO;
+import com.collabnet.ce.soap60.webservices.docman.DocumentSoapDO;
+import com.collabnet.ce.soap60.webservices.docman.DocumentSoapRow;
+import com.collabnet.ce.soap60.webservices.docman.IDocumentAppSoap;
 
 import java.rmi.RemoteException;
 

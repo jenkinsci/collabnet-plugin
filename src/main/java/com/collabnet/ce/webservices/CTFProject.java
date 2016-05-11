@@ -1,16 +1,16 @@
 package com.collabnet.ce.webservices;
 
-import com.collabnet.ce.soap50.webservices.cemain.ProjectMemberSoapRow;
-import com.collabnet.ce.soap50.webservices.cemain.ProjectSoapDO;
-import com.collabnet.ce.soap50.webservices.cemain.ProjectSoapRow;
-import com.collabnet.ce.soap50.webservices.cemain.UserSoapRow;
-import com.collabnet.ce.soap50.webservices.docman.DocumentFolderSoapList;
-import com.collabnet.ce.soap50.webservices.docman.DocumentFolderSoapRow;
-import com.collabnet.ce.soap50.webservices.frs.PackageSoapRow;
-import com.collabnet.ce.soap50.webservices.rbac.RoleSoapList;
-import com.collabnet.ce.soap50.webservices.rbac.RoleSoapRow;
-import com.collabnet.ce.soap50.webservices.scm.RepositorySoapRow;
-import com.collabnet.ce.soap50.webservices.tracker.TrackerSoapRow;
+import com.collabnet.ce.soap60.webservices.cemain.ProjectMemberSoapRow;
+import com.collabnet.ce.soap60.webservices.cemain.ProjectSoapDO;
+import com.collabnet.ce.soap60.webservices.cemain.ProjectSoapRow;
+import com.collabnet.ce.soap60.webservices.cemain.UserSoapRow;
+import com.collabnet.ce.soap60.webservices.docman.DocumentFolderSoapList;
+import com.collabnet.ce.soap60.webservices.docman.DocumentFolderSoapRow;
+import com.collabnet.ce.soap60.webservices.frs.PackageSoapRow;
+import com.collabnet.ce.soap60.webservices.rbac.RoleSoapList;
+import com.collabnet.ce.soap60.webservices.rbac.RoleSoapRow;
+import com.collabnet.ce.soap60.webservices.scm.RepositorySoapRow;
+import com.collabnet.ce.soap60.webservices.tracker.TrackerSoapRow;
 
 import java.rmi.RemoteException;
 import java.util.ArrayList;
@@ -68,7 +68,7 @@ public class CTFProject extends CTFObject implements ObjectWithTitle {
 
     public CTFTracker createTracker(String name, String title, String description) throws RemoteException {
         return new CTFTracker(this,
-            app.getTrackerSoap().createTracker(app.getSessionId(), getId(), name, title, description));
+            app.getTrackerSoap().createTracker(app.getSessionId(), getId(), name, title, description, null));
     }
 
     public CTFList<CTFScmRepository> getScmRepositories() throws RemoteException {
@@ -120,7 +120,7 @@ public class CTFProject extends CTFObject implements ObjectWithTitle {
     }
 
     public CTFRole createRole(String title, String description) throws RemoteException {
-        return new CTFRole(this,app.getRbacAppSoap().createRole(app.getSessionId(),getId(),title,description));
+        return new CTFRole(this,app.getRbacAppSoap().createRole(app.getSessionId(),getId(),title,description, false, false, false));
     }
 
     public CTFList<CTFRole> getUserRoles(CTFUser u) throws RemoteException {

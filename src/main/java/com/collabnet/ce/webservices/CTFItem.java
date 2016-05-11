@@ -1,6 +1,6 @@
 package com.collabnet.ce.webservices;
 
-import com.collabnet.ce.soap50.webservices.cemain.ItemSoapDO;
+import com.collabnet.ce.soap60.webservices.cemain.ItemSoapDO;
 
 /**
  * @author Kohsuke Kawaguchi

@@ -1,10 +1,10 @@
 package com.collabnet.ce.webservices;
 
-import com.collabnet.ce.soap50.webservices.cemain.GroupSoapList;
-import com.collabnet.ce.soap50.webservices.cemain.GroupSoapRow;
-import com.collabnet.ce.soap50.webservices.cemain.ProjectMemberSoapRow;
-import com.collabnet.ce.soap50.webservices.cemain.UserSoapDO;
-import com.collabnet.ce.soap50.webservices.cemain.UserSoapRow;
+import com.collabnet.ce.soap60.webservices.cemain.UserGroupSoapList;
+import com.collabnet.ce.soap60.webservices.cemain.UserGroupSoapRow;
+import com.collabnet.ce.soap60.webservices.cemain.ProjectMemberSoapRow;
+import com.collabnet.ce.soap60.webservices.cemain.UserSoapDO;
+import com.collabnet.ce.soap60.webservices.cemain.UserSoapRow;
 
 import java.rmi.RemoteException;
 import java.util.HashSet;
@@ -104,8 +104,8 @@ public class CTFUser extends CTFObject implements ObjectWithTitle {
      */
     public Set<String> getGroupNames() throws RemoteException {
         Set<String> groups = new HashSet<String>();
-        GroupSoapList gList = app.icns.getUserGroupList(app.getSessionId(),userName);
-        for (GroupSoapRow row: gList.getDataRows()) {
+        UserGroupSoapList gList = app.icns.getUserGroupListForUser(app.getSessionId(),userName);
+        for (UserGroupSoapRow row: gList.getDataRows()) {
             groups.add(row.getFullName());
         }
         return groups;
@@ -113,8 +113,8 @@ public class CTFUser extends CTFObject implements ObjectWithTitle {
 
     public CTFList<CTFGroup> getGroups() throws RemoteException {
         CTFList<CTFGroup> groups = new CTFList<CTFGroup>();
-        GroupSoapList gList = app.icns.getUserGroupList(app.getSessionId(),userName);
-        for (GroupSoapRow row: gList.getDataRows()) {
+        UserGroupSoapList gList = app.icns.getUserGroupListForUser(app.getSessionId(),userName);
+        for (UserGroupSoapRow row: gList.getDataRows()) {
             groups.add(app.getGroupByTitle(row.getFullName()));
         }
         return groups;

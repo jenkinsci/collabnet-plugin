@@ -1,13 +1,10 @@
 package com.collabnet.ce.webservices;
 
-import com.collabnet.ce.soap50.webservices.cemain.UserSoapList;
-import com.collabnet.ce.soap50.webservices.cemain.UserSoapRow;
-import com.collabnet.ce.soap50.webservices.rbac.RoleSoapDO;
-import com.collabnet.ce.soap50.webservices.rbac.RoleSoapRow;
+import com.collabnet.ce.soap60.webservices.cemain.UserSoapRow;
+import com.collabnet.ce.soap60.webservices.rbac.RoleSoapDO;
+import com.collabnet.ce.soap60.webservices.rbac.RoleSoapRow;
 
 import java.rmi.RemoteException;
-import java.util.ArrayList;
-import java.util.Collection;
 
 /**
  * A role in CTF belongs to a project.
