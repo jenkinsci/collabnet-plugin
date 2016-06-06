@@ -26,6 +26,7 @@ import hudson.util.ComboBoxModel;
 import hudson.util.FormValidation;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
+import org.jenkinsci.remoting.RoleChecker;
 
 import javax.activation.MimetypesFileTypeMap;
 import java.io.File;
@@ -53,6 +54,10 @@ public class CNFileRelease extends AbstractTeamForgeNotifier {
     private boolean overwrite;
     private FilePattern[] file_patterns;
 
+    private String description = "";
+    private static final String RELEASE_STATUS_ACTIVE = "active";
+    private static final String MATURITY_NONE = "";
+    
     /**
      * Creates a new CNFileRelease object.
      *
@@ -309,6 +314,10 @@ public class CNFileRelease extends AbstractTeamForgeNotifier {
             CollabNetApp cnApp = CNHudsonUtil.recreateCollabNetApp(mServerUrl, mUsername, mSessionId);
             return cnApp.upload(f).getId();
         }
+        @Override
+        public void checkRoles(RoleChecker arg0) throws SecurityException {
+            // TODO Auto-generated method stub
+        }
     }
 
     /**
@@ -388,10 +397,11 @@ public class CNFileRelease extends AbstractTeamForgeNotifier {
         }
         CTFRelease release = pkg.getReleaseByTitle(getRelease());
         if (release == null) {
-            this.logConsole("Critical Error: releaseId cannot be found for " +
+            release = pkg.createRelease(getRelease(), description, RELEASE_STATUS_ACTIVE, MATURITY_NONE);
+            this.logConsole("Note: releaseId cannot be found for " +
                      this.getRelease() + ".  " +
-                     "Setting build status to UNSTABLE (or worse).");
-            return null;
+                     "Creating a new release with specified releaseId. Setting build status to STABLE.");
+            return release;
         }
         return release;
     }

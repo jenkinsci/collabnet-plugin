@@ -1,6 +1,7 @@
 package hudson.plugins.collabnet.auth;
 
 import com.collabnet.ce.webservices.CollabNetApp;
+
 import hudson.Extension;
 import hudson.Util;
 import hudson.model.AbstractItem;
@@ -16,6 +17,7 @@ import hudson.security.AuthorizationStrategy;
 import hudson.util.FormValidation;
 import hudson.util.VersionNumber;
 import net.sf.json.JSONObject;
+
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
@@ -38,6 +40,58 @@ import static java.lang.Math.max;
  * Class for the CollabNet Authorization.
  */
 public class CNAuthorizationStrategy extends AuthorizationStrategy {
+    @Override
+    public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + ((adminGroups == null) ? 0 : adminGroups.hashCode());
+        result = prime * result + ((adminUsers == null) ? 0 : adminUsers.hashCode());
+        result = prime * result + mAuthCacheTimeoutMin;
+        result = prime * result + ((readGroups == null) ? 0 : readGroups.hashCode());
+        result = prime * result + ((readUsers == null) ? 0 : readUsers.hashCode());
+        result = prime * result + ((rootACL == null) ? 0 : rootACL.hashCode());
+        return result;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (obj == null)
+            return false;
+        if (getClass() != obj.getClass())
+            return false;
+        CNAuthorizationStrategy other = (CNAuthorizationStrategy) obj;
+        if (adminGroups == null) {
+            if (other.adminGroups != null)
+                return false;
+        } else if (!adminGroups.equals(other.adminGroups))
+            return false;
+        if (adminUsers == null) {
+            if (other.adminUsers != null)
+                return false;
+        } else if (!adminUsers.equals(other.adminUsers))
+            return false;
+        if (mAuthCacheTimeoutMin != other.mAuthCacheTimeoutMin)
+            return false;
+        if (readGroups == null) {
+            if (other.readGroups != null)
+                return false;
+        } else if (!readGroups.equals(other.readGroups))
+            return false;
+        if (readUsers == null) {
+            if (other.readUsers != null)
+                return false;
+        } else if (!readUsers.equals(other.readUsers))
+            return false;
+        if (rootACL == null) {
+            if (other.rootACL != null)
+                return false;
+        } else if (!rootACL.equals(other.rootACL))
+            return false;
+        return true;
+    }
+
     private Collection<String> readUsers;
     private Collection<String> readGroups;
     private Collection<String> adminUsers;

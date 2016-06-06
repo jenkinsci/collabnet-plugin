@@ -295,14 +295,14 @@ public abstract class CNFormFieldValidator {
             if (pkg != null) {
                 CTFRelease r = pkg.getReleaseByTitle(release);
                 if (r == null)
-                    return FormValidation.warning("Release could not be found.");
+                    return FormValidation.warning("Release could not be found. Do you want to make a new release?");
             } else {
                 // locate the release from all the packages
                 for (CTFPackage x : p.getPackages()) {
                     if (x.getReleaseByTitle(release)!=null)
                         return FormValidation.ok();
                 }
-                return FormValidation.warning("Release could not be found.");
+                return FormValidation.warning("Release could not be found. Do you want to make a new release?");
             }
             return FormValidation.ok();
         } finally {

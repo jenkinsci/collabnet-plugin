@@ -6,12 +6,15 @@ import hudson.model.AbstractBuild;
 import hudson.model.BuildListener;
 import hudson.model.User;
 import hudson.scm.ChangeLogParser;
+import hudson.scm.RepositoryBrowser;
 import hudson.scm.ChangeLogSet;
+import hudson.scm.SCMDescriptor;
 import hudson.scm.ChangeLogSet.Entry;
 import hudson.scm.NullSCM;
 import hudson.scm.SCM;
 import hudson.util.AdaptedIterator;
 import hudson.util.IOException2;
+
 import org.xml.sax.SAXException;
 
 import java.io.File;
@@ -21,11 +24,13 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 
+import jenkins.model.Jenkins;
 import static java.util.Arrays.asList;
 
 /**
@@ -78,6 +83,15 @@ public class FakeChangeLogSCM extends NullSCM {
         oos.close();
         commits.clear();
         return true;
+    }
+
+    @Override
+    public RepositoryBrowser<?> getBrowser() {
+        return new RepositoryBrowser<ChangeLogSet.Entry>() {
+            @Override public URL getChangeSetLink(ChangeLogSet.Entry changeSet) throws IOException {
+                return null;
+            }
+        };
     }
 
     @Override

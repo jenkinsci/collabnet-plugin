@@ -21,6 +21,7 @@ import hudson.tasks.BuildStepMonitor;
 import hudson.util.FormValidation;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
+import org.jenkinsci.remoting.RoleChecker;
 
 import javax.activation.MimetypesFileTypeMap;
 import java.io.File;
@@ -380,6 +381,10 @@ public class CNDocumentUploader extends AbstractTeamForgeNotifier {
                         return "text/plain";
                     }
                     return new MimetypesFileTypeMap().getContentType(f);
+                }
+                @Override
+                public void checkRoles(RoleChecker arg0) throws SecurityException {
+                    // TODO Auto-generated method stub
                 }});
         } catch (IOException ioe) { // ignore exceptions
         } catch (InterruptedException ie) {}
@@ -471,6 +476,10 @@ public class CNDocumentUploader extends AbstractTeamForgeNotifier {
         public String invoke(File f, VirtualChannel channel) throws IOException {
             CollabNetApp cnApp = CNHudsonUtil.recreateCollabNetApp(mUrl, mUsername, mSessionId);
             return cnApp.upload(f).getId();
+        }
+        @Override
+        public void checkRoles(RoleChecker arg0) throws SecurityException {
+            // TODO Auto-generated method stub
         }
     }
 
