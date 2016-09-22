@@ -1,0 +1,12 @@
+path.link {
+  fill: none;
+  stroke: #3dade0;
+  stroke-width: 1px;
+}
+
+path.link:hover{
+    stroke: #140EF7;
+}
+
+
+

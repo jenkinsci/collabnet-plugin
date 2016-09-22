@@ -1,0 +1,99 @@
+/*
+ * Copyright 2013 CollabNet, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+.config {
+  margin-left: 20px;
+  margin-bottom: 10px;
+}
+
+table.config tr {
+  line-height: 24px;
+}
+
+tr:nth-child(odd) {
+  background-color: #dfdfdf;
+}
+
+tr:nth-child(even) {
+  background-color: #f6f6f6;
+}
+
+table.config th {
+  padding-left: 10px;
+  text-align: left;
+}
+
+table.config td {
+  padding-left: 10px;
+  padding-right: 10px;
+}
+
+table.config thead tr {
+  background-color: #cad3de;
+}
+
+form input[type=text], input[type=password] {
+  border: 1px solid #9b9b9b;
+  font-size: 14px;
+  width: 350px;
+  padding: 3px;
+  margin-top: 8px;
+}
+
+.example {
+  font-family: "Courier New", monospace;
+  white-space: pre;
+}
+
+.title {
+  margin-left: 30px;
+  margin-bottom: 10px;
+  font-size: 24px;
+  font-weight: bold;
+}
+
+.save-button {
+  margin-left: 20px;
+  margin-bottom: 10px;
+  margin-right: 20px;
+}
+
+.help {
+  margin-left: 40px;
+  margin-bottom: 20px;
+  font-family: Arial, sans-serif;
+  font-size: 12px;
+  line-height: 14px;
+}
+
+.help-bottom {
+  margin-bottom: 15px;
+}
+
+.error {
+  color: red;
+  line-height: 12px;
+  padding-bottom: 5px;
+  padding-top: 3px;
+}
+
+.success {
+  padding-top: 2px;
+  font-weight: bold;
+}
+
+.bottom {
+  margin-left: 20px;
+}
