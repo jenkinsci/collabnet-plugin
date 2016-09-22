@@ -4,9 +4,16 @@ import com.collabnet.ce.webservices.CollabNetApp;
 import hudson.Extension;
 import hudson.model.AbstractDescribableImpl;
 import hudson.model.Descriptor;
+import hudson.model.Hudson;
+import hudson.plugins.collabnet.auth.CollabNetSecurityRealm;
+import hudson.plugins.collabnet.orchestrate.BuildNotifier;
+import hudson.plugins.collabnet.orchestrate.BuildNotifierDescriptor;
+import hudson.plugins.collabnet.share.TeamForgeShare;
 import hudson.plugins.collabnet.util.CNFormFieldValidator;
 import hudson.plugins.collabnet.util.CNHudsonUtil;
 import hudson.plugins.collabnet.util.CommonUtil;
+import hudson.security.SecurityRealm;
+import hudson.util.DescribableList;
 import hudson.util.FormValidation;
 import hudson.util.Secret;
 import org.kohsuke.stapler.DataBoundConstructor;
@@ -84,7 +91,22 @@ public class ConnectionFactory extends AbstractDescribableImpl<ConnectionFactory
     
     @Extension
     public static final class DescriptorImpl extends Descriptor<ConnectionFactory> {
-        public String getDisplayName() { return ""; }
+    	public static String url;
+        public static boolean isSiteConfigured = false;       
+    	
+    	public String getDisplayName() { return ""; }     
+                
+        public static String getUrl() {
+        	if(isSiteConfigured){
+        		return url;
+        	}else{
+        		return getTeamForgeShareDescriptor().getCollabNetUrl();
+        	}
+    	}
+        
+        public boolean useGlobal(){
+        	return getTeamForgeShareDescriptor().useGlobal();
+        }
 
         /**
          * Form validation for the CollabNet URL.
@@ -94,6 +116,26 @@ public class ConnectionFactory extends AbstractDescribableImpl<ConnectionFactory
         public FormValidation doCheckUrl(@QueryParameter String value) {
             return CNFormFieldValidator.soapUrlCheck(value);
         }
+        
+        public boolean isSiteConfigured(){        	
+        	try{
+        		SecurityRealm securityRealm = Hudson.getInstance().getSecurityRealm();
+        		CollabNetSecurityRealm cnRealm = (CollabNetSecurityRealm) securityRealm;
+        		url = cnRealm.getCollabNetUrl();
+            	isSiteConfigured = true;
+               return true;
+            }catch(ClassCastException e){
+            	return false;
+            }   	
+        }
+        
+        /**
+         * @return the TeamForge share descriptor.
+         */
+        public static TeamForgeShare.TeamForgeShareDescriptor getTeamForgeShareDescriptor() {
+            return TeamForgeShare.getTeamForgeShareDescriptor();
+        }
+        
 
         /**
          * Form validation for username.

@@ -1,6 +1,7 @@
 package hudson.plugins.collabnet.pblupload;
 
 import com.collabnet.cubit.api.CubitConnector;
+
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.FilePath.FileCallable;
@@ -16,6 +17,8 @@ import hudson.tasks.BuildStepMonitor;
 import hudson.tasks.Notifier;
 import hudson.tasks.Publisher;
 import hudson.util.FormValidation;
+
+import org.jenkinsci.remoting.RoleChecker;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 
@@ -623,6 +626,12 @@ public class PblUploader extends Notifier implements java.io.Serializable {
                                                 file,
                                                 true);
             }
+						@Override
+						public void checkRoles(RoleChecker arg0)
+								throws SecurityException {
+							// TODO Auto-generated method stub
+							
+						}
         });
         logPblCallResults(result, args, uploadFilePath, workspace);
         return(result.getStatus() == 200);
