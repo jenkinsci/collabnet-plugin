@@ -21,10 +21,10 @@ import hudson.remoting.VirtualChannel;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-
 import java.util.Iterator;
 import java.util.List;
 
+import org.jenkinsci.remoting.RoleChecker;
 import org.jvnet.hudson.test.HudsonTestCase.WebClient;
 
 /**
@@ -262,6 +262,12 @@ public class Util {
                 fw.close();
                 return null;
             }
+
+			@Override
+			public void checkRoles(RoleChecker arg0) throws SecurityException {
+				// TODO Auto-generated method stub
+				
+			}
         });
     }
 }

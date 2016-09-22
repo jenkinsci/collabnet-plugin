@@ -7,6 +7,7 @@ import com.collabnet.ce.webservices.CTFProject;
 import com.collabnet.ce.webservices.CTFRelease;
 import com.collabnet.ce.webservices.CTFReleaseFile;
 import com.collabnet.ce.webservices.CollabNetApp;
+
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.FilePath.FileCallable;
@@ -24,10 +25,13 @@ import hudson.remoting.VirtualChannel;
 import hudson.tasks.BuildStepMonitor;
 import hudson.util.ComboBoxModel;
 import hudson.util.FormValidation;
+
+import org.jenkinsci.remoting.RoleChecker;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 
 import javax.activation.MimetypesFileTypeMap;
+
 import java.io.File;
 import java.io.IOException;
 import java.rmi.RemoteException;
@@ -309,6 +313,12 @@ public class CNFileRelease extends AbstractTeamForgeNotifier {
             CollabNetApp cnApp = CNHudsonUtil.recreateCollabNetApp(mServerUrl, mUsername, mSessionId);
             return cnApp.upload(f).getId();
         }
+
+		@Override
+		public void checkRoles(RoleChecker arg0) throws SecurityException {
+			// TODO Auto-generated method stub
+			
+		}
     }
 
     /**

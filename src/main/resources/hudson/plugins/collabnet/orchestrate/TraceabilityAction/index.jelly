@@ -1,0 +1,91 @@
+<?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout"
+         xmlns:t="/lib/hudson" xmlns:f="/lib/form">
+    <l:layout norefresh="true">
+    <st:include it="${it.build}" page="sidepanel.jelly" />
+    <l:main-panel>
+        <h2>TeamForge Associations</h2>
+        <j:choose>
+        <j:when test="${it.validation}">
+       		 <div class="alert alert-danger">
+       		 		<i class="fa fa-times-circle">
+   						&amp;nbsp;<strong> ${it.errorMsg} </strong>
+   					 </i>
+   			 </div>
+        </j:when>
+        <j:otherwise>
+        <div ng-app="tfApp" id="teamForgeIssuePanel">
+        <div class="modal fade tf-associations-modal" id="exploreModal" role="dialog">
+            <div class="modal-dialog">
+              <div class="modal-content">
+                <div class="modal-body" id="explore">
+                  <button type="button" class="close" data-dismiss="modal">X</button>
+                  <h4 class="modal-title">Trace Associations</h4>
+                  <div id="angularroot">
+                    <tf-traceability-exploration endpoint="${it.reqUrl}"
+                                                 token="${it.soapSessionId}"
+                                                 sourcetype="build"
+                                                 remotesource="sak:${it.sourceKey}"
+                                                 remoteid="${it.build.number}"
+                                                 imagelocation="/images"
+                                                 svgwidth="100%"
+                                                 svgheight="1000px"
+                                                 ctfurl="${it.ctfUrl}">
+                    </tf-traceability-exploration>
+                  </div>
+                </div>
+              </div>
+            </div>
+        </div>
+        <button type="button" id="btn-explore" class="aui-button" data-toggle="modal" data-target="#exploreModal" style="float: right">Trace</button>
+            <tf-traceability-summary endpoint="${it.reqUrl}"
+                                     token="${it.soapSessionId}"
+                                     sourcetype="build"
+                                     remotesource="sak:${it.sourceKey}"
+                                     remoteid="${it.build.number}"
+                                     imagelocation="/images"
+                                     dateformat="DD/MMM/YYYY"
+                                     timeformat="h:mm a"
+                                     timezone="Asia/Kolkata"
+                                     svgwidth="100%"
+                                     svgheight="110px"
+                                     ctfurl="${it.ctfUrl}">
+            </tf-traceability-summary>
+        </div>
+        </j:otherwise>
+        </j:choose>
+        <link rel="stylesheet" type="text/css" href="${rootURL}/plugin/collabnet/scripts/config.css" />
+        <link rel="stylesheet" type="text/css" href="${rootURL}/plugin/collabnet/scripts/font-awesome.min.css" />
+        <link rel="stylesheet" type="text/css" href="${rootURL}/plugin/collabnet/scripts/bootstrap.min.css" />
+        <link rel="stylesheet" type="text/css" href="${rootURL}/plugin/collabnet/scripts/loading-bar.min.css" />
+        <link rel="stylesheet" type="text/css" href="${rootURL}/plugin/collabnet/scripts/tf.css" />
+        <link rel="stylesheet" type="text/css" href="${rootURL}/plugin/collabnet/scripts/tf-traceability.css" />
+        <script type="text/javascript" src="${rootURL}/plugin/collabnet/scripts/angular.min.js" />
+        <script type="text/javascript" src="${rootURL}/plugin/collabnet/scripts/d3.min.js" />
+        <script type="text/javascript" src="${rootURL}/plugin/collabnet/scripts/moment.js" />
+        <script type="text/javascript" src="${rootURL}/plugin/collabnet/scripts/moment-timezone-with-data.js" />
+        <script type="text/javascript" src="${rootURL}/plugin/collabnet/scripts/tf-traceability.min.js" />
+        <script type="text/javascript" src="${rootURL}/plugin/collabnet/scripts/jquery-1.7.2.min.js" />
+        <script type="text/javascript" src="${rootURL}/plugin/collabnet/scripts/bootstrap.min.js" />
+        <script type="text/javascript">
+            /*
+            *  The below lines defining the prototypes __trim and overriding the trim functions in the String
+            *  String class are done because the trim function has already been hudson-behavior.js, which is needed
+            *  by Jenkins, and returns an object instead of a string in case the word boundary is a non word character.
+            */
+            String.prototype.__trim = String.prototype.trim;
+            String.prototype.trim = function () {
+                return this.__trim().toString();
+            };
+            jQuery.noConflict();
+            angular.module('tfApp', ['tfTraceability']);
+            function onNoDataError() {
+                $("btn-explore").hide();
+                var summaryErrorElement = jQuery("#tf-associations-summary-error").find("i");
+                errorMsg = summaryErrorElement.text(); 
+                summaryErrorElement.text(errorMsg + " Please check your TeamForge Notification configuration.");
+            }
+        </script>
+    </l:main-panel>
+    </l:layout>
+</j:jelly>
