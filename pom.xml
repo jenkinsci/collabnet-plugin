@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.jenkins-ci.plugins</groupId>
     <artifactId>plugin</artifactId>
-    <version>1.399</version>
+    <version>1.645</version>
   </parent>
   <artifactId>collabnet</artifactId>
   <version>1.2.1-SNAPSHOT</version>
@@ -20,7 +20,7 @@
   </developers>
 
   <properties>
-    <compile.java.version>1.6</compile.java.version>
+    <compile.java.version>1.8</compile.java.version>
     <hudson.plugin.version>1.23</hudson.plugin.version>
   </properties>
 
@@ -32,11 +32,86 @@
   </repositories>
 
   <dependencies>
+	  <dependency>
+	    <groupId>org.eclipse.aether</groupId>
+	    <artifactId>aether-api</artifactId>
+	    <version>1.1.0</version>
+	</dependency>
+  	 <dependency>
+     <groupId>org.jenkins-ci.lib</groupId>
+     <artifactId>lib-jenkins-maven-embedder</artifactId>
+     <version>3.9</version>
+     <exclusions>
+       <exclusion>
+         <groupId>org.sonatype.sisu</groupId>
+         <artifactId>sisu-guice</artifactId>
+       </exclusion>
+     </exclusions>
+    </dependency>  
     <dependency>
-      <groupId>org.apache.maven</groupId>
-      <artifactId>maven-embedder</artifactId>
-      <version>2.0.3</version>
+          <groupId>com.google.guava</groupId>
+          <artifactId>guava</artifactId>
+          <version>13.0.1</version>
     </dependency>
+	<dependency>
+	    <groupId>com.rabbitmq</groupId>
+	    <artifactId>amqp-client</artifactId>
+	    <version>3.6.1</version>
+	</dependency>
+    <dependency>
+         <groupId>org.easymock</groupId>
+         <artifactId>easymock</artifactId>
+         <version>3.4</version>
+         <scope>test</scope>
+    </dependency>
+    <dependency>
+         <groupId>joda-time</groupId>
+         <artifactId>joda-time</artifactId>
+         <version>1.5.2</version>
+    </dependency>
+    <dependency>
+         <groupId>org.jenkins-ci.plugins</groupId>
+         <artifactId>junit</artifactId>
+         <version>1.4</version>
+    </dependency>
+    <dependency>
+         <groupId>org.apache.httpcomponents</groupId>
+         <artifactId>httpclient</artifactId>
+         <version>4.5.2</version>
+    </dependency>
+    <dependency>
+          <groupId>commons-validator</groupId>
+          <artifactId>commons-validator</artifactId>
+          <version>1.4.0</version>
+    </dependency>
+    <dependency>
+          <groupId>axis</groupId>
+          <artifactId>axis-jaxrpc</artifactId>
+          <version>1.4</version>
+          <scope>runtime</scope>
+    </dependency>
+    <dependency>
+          <groupId>axis</groupId>
+          <artifactId>axis</artifactId>
+          <version>1.4</version>
+          <scope>runtime</scope>
+    </dependency>
+  	<dependency>
+	   <groupId>com.google.code.findbugs</groupId>
+	   <artifactId>annotations</artifactId>
+	   <version>2.0.1</version>
+	</dependency>
+	<dependency>
+	    <groupId>org.apache.maven</groupId>
+	    <artifactId>maven-embedder</artifactId>
+	    <version>3.1.1</version>
+		<exclusions>
+        <exclusion>
+          <groupId>org.sonatype.sisu</groupId>
+          <artifactId>sisu-guice</artifactId>
+        </exclusion>
+        </exclusions>
+	</dependency>
     <dependency>
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-lang3</artifactId>

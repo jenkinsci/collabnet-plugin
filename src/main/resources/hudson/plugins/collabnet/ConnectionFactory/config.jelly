@@ -1,3 +1,4 @@
+<?jelly escape-by-default='true'?>
 <!--
       <%@attribute name="prefix" required="true" %>  
       <%@attribute name="checkUrlRoot" required="true" %>  
@@ -8,10 +9,26 @@
       <%@attribute name="onchange" required="false" %>  
 -->
 <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form" xmlns:c="/com/collabnet/cubit/hudson/tags">
-
- <f:entry title="CollabNet TeamForge URL" field="url" description="For example, https://forge.collab.net">
-    <f:textbox />
-  </f:entry>
+  
+  <j:choose>
+   <j:when test="${descriptor.isSiteConfigured()}">
+   		<f:entry title="CollabNet TeamForge URL" field="url" description="For example, https://forge.collab.net">
+	   		 <f:textbox readonly="readonly" value="${descriptor.getUrl()}"/>
+	    </f:entry>	 		
+   </j:when>
+  <j:otherwise>
+  		<f:entry title="CollabNet TeamForge URL" field="url" description="For example, https://forge.collab.net">
+  		<j:choose>
+  		<j:when test="${descriptor.useGlobal()}">
+	   		<f:textbox readonly="readonly" value="${descriptor.getUrl()}"/>
+	   	</j:when>
+	   	<j:otherwise>
+	   		<f:textbox value="${descriptor.getUrl()}"/>
+	   	</j:otherwise>
+	   	</j:choose>
+	  	</f:entry>
+  </j:otherwise>
+  </j:choose>      
 
   <f:entry title="Username" field="username">
     <f:textbox />
