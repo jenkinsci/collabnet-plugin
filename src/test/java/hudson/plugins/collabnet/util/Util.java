@@ -2,8 +2,8 @@ package hudson.plugins.collabnet.util;
 
 import com.gargoylesoftware.htmlunit.Page;
 import com.gargoylesoftware.htmlunit.WebAssert;
+import com.gargoylesoftware.htmlunit.html.DomElement;
 import com.gargoylesoftware.htmlunit.html.DomNode;
-import com.gargoylesoftware.htmlunit.html.HtmlElement;
 import com.gargoylesoftware.htmlunit.html.HtmlForm;
 import com.gargoylesoftware.htmlunit.html.HtmlInput;
 import com.gargoylesoftware.htmlunit.html.HtmlLabel;
@@ -21,10 +21,10 @@ import hudson.remoting.VirtualChannel;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-
 import java.util.Iterator;
 import java.util.List;
 
+import org.jenkinsci.remoting.RoleChecker;
 import org.jvnet.hudson.test.HudsonTestCase.WebClient;
 
 /**
@@ -38,9 +38,9 @@ public class Util {
      * Get the first HtmlElement by name.  Returns null if no HtmlElements
      * with that name are found.
      */
-    public static HtmlElement getFirstHtmlElementByName(HtmlPage page, 
+    public static DomElement getFirstHtmlElementByName(HtmlPage page, 
                                                         String name) {
-        List<HtmlElement> elements = page.getElementsByName(name);
+        List<DomElement> elements = page.getElementsByName(name);
         if (elements.isEmpty()) {
             return null;
         } else {
@@ -53,11 +53,11 @@ public class Util {
      * In the case of multiple matches, it will return only the first.
      * Returns null if no match is found.
      */
-    public static HtmlElement getElementWithLabel(HtmlPage page, String name, 
+    public static DomElement getElementWithLabel(HtmlPage page, String name, 
                                                   String label) {
-        List<HtmlElement> elems = page.getElementsByName(name);
-        HtmlElement match = null;
-        for (HtmlElement elem: elems) {
+        List<DomElement> elems = page.getElementsByName(name);
+        DomElement match = null;
+        for (DomElement elem: elems) {
             String elemLabel = Util.findLabel(elem);
             if (label.matches(elemLabel)) {
                 match = elem;
@@ -105,7 +105,7 @@ public class Util {
      */
     public static Page setPassword(HtmlPage page, String id, String text) {
         WebAssert.assertElementPresent(page, id);
-        HtmlElement elem = page.getElementById(id);
+        DomElement elem = page.getElementById(id);
         assert(elem instanceof HtmlPasswordInput);
         return ((HtmlPasswordInput) elem).setValueAttribute(text);
     }
@@ -115,7 +115,7 @@ public class Util {
      */
     public static void checkPassword(HtmlPage page, String id, String text) {
         WebAssert.assertElementPresent(page, id);
-        HtmlElement elem = page.getElementById(id);
+        DomElement elem = page.getElementById(id);
         assert(elem instanceof HtmlPasswordInput);
         assert(text.equals(((HtmlPasswordInput) elem).getValueAttribute()));
     }
@@ -125,7 +125,7 @@ public class Util {
      */
     public static Page setText(HtmlPage page, String id, String text) {
         WebAssert.assertElementPresent(page, id);
-        HtmlElement elem = page.getElementById(id);
+        DomElement elem = page.getElementById(id);
         assert(elem instanceof HtmlTextInput);
         return ((HtmlTextInput) elem).setValueAttribute(text);
     }
@@ -135,7 +135,7 @@ public class Util {
      */
     public static void checkText(HtmlPage page, String id, String text) {
         WebAssert.assertElementPresent(page, id);
-        HtmlElement elem = page.getElementById(id);
+        DomElement elem = page.getElementById(id);
         assert(elem instanceof HtmlTextInput);
         assert(text.equals(((HtmlTextInput) elem).getValueAttribute()));
     }
@@ -145,7 +145,7 @@ public class Util {
      * with the given name.
      */
     public static Page setTextByName(HtmlPage page, String name, String text) {
-        HtmlElement elem = getFirstHtmlElementByName(page, name);
+        DomElement elem = getFirstHtmlElementByName(page, name);
         assert(elem instanceof HtmlTextInput);
         return ((HtmlTextInput) elem).setValueAttribute(text);
     }
@@ -155,7 +155,7 @@ public class Util {
      * element with the given name.
      */
     public static void checkTextByName(HtmlPage page, String name, String text) {
-        HtmlElement elem = getFirstHtmlElementByName(page, name);
+        DomElement elem = getFirstHtmlElementByName(page, name);
         assert(elem instanceof HtmlTextInput);
         assert(text.equals(((HtmlTextInput) elem).getValueAttribute()));
     }
@@ -167,9 +167,9 @@ public class Util {
      */
     public static void clickRadio(HtmlPage page, String name, String value) 
         throws Exception {
-        List<HtmlElement> radios = page.getElementsByName(name);
+        List<DomElement> radios = page.getElementsByName(name);
         HtmlInput radioToClick = null;
-        for(HtmlElement radio: radios) {
+        for(DomElement radio: radios) {
             assert(radio instanceof HtmlInput);
             if (((HtmlInput)radio).getValueAttribute().equals(value)) {
                 radioToClick = (HtmlInput) radio;
@@ -186,9 +186,9 @@ public class Util {
      */
     public static void checkRadioSelected(HtmlPage page, String name, 
                                           String value) {
-        List<HtmlElement> radios = page.getElementsByName(name);
+        List<DomElement> radios = page.getElementsByName(name);
         HtmlInput radioWithValue = null;
-        for(HtmlElement radio: radios) {
+        for(DomElement radio: radios) {
             assert(radio instanceof HtmlInput);
             if (((HtmlInput)radio).getValueAttribute().equals(value)) {
                 radioWithValue = (HtmlInput) radio;
@@ -204,7 +204,7 @@ public class Util {
      */
     public static void chooseSelection(HtmlPage page, String name, 
                                        String value) {
-        HtmlElement elem = Util.getFirstHtmlElementByName(page, name);
+        DomElement elem = Util.getFirstHtmlElementByName(page, name);
         assert(elem instanceof HtmlSelect);
         HtmlSelect select = (HtmlSelect) elem;
         HtmlOption match = select.getOptionByValue(value);
@@ -217,7 +217,7 @@ public class Util {
      */
     public static void checkSelection(HtmlPage page, String name, 
                                       String value) {
-        HtmlElement elem = Util.getFirstHtmlElementByName(page, name);
+        DomElement elem = Util.getFirstHtmlElementByName(page, name);
         assert(elem instanceof HtmlSelect);
         HtmlSelect select = (HtmlSelect) elem;
         HtmlOption match = select.getOptionByValue(value);
@@ -262,6 +262,12 @@ public class Util {
                 fw.close();
                 return null;
             }
+
+			@Override
+			public void checkRoles(RoleChecker arg0) throws SecurityException {
+				// TODO Auto-generated method stub
+				
+			}
         });
     }
 }

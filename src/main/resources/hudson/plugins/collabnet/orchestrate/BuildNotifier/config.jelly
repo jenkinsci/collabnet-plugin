@@ -1,0 +1,31 @@
+<?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form" xmlns:c="/hudson/plugins/collabnet/tags">
+
+  <f:optionalBlock name="associationView" title="Optional TeamForge Association view" checked="${instance.getUseAssociationView()}">
+    <j:choose>
+      <j:when test="${descriptor.canInheritAuth()}">
+        <f:nested>
+          <table style="width:100%">
+            <f:optionalProperty title="Override the Global CollabNet Configuration" field="connectionFactory" />
+     	  </table>
+        </f:nested>
+	  </j:when>
+      <j:otherwise>
+        <f:property field="connectionFactory" />
+      </j:otherwise>
+    </j:choose>
+  </f:optionalBlock>
+   
+  <f:entry title="MQ URI" field="serverUrl">
+    <f:textbox value="${(instance == null) ? descriptor.getServerUrl() : instance.getServerUrl()}" id="orchestrate-serverUrl" />
+  </f:entry>
+  <f:entry title="Server Username" field="serverUsername">
+    <f:textbox value="${(instance == null) ? descriptor.getServerUsername() : instance.getServerUsername()}" id="orchestrate-serverUsername"/>
+  </f:entry>
+  <f:entry title="Server Password" field="serverPassword">
+    <f:password value="${(instance == null) ? descriptor.getServerPassword() : instance.getServerPassword()}" id="orchestrate-serverPassword"/>
+  </f:entry>
+  <f:entry title="Build source association key" field="sourceKey">
+    <f:textbox id="orchestrate-sourceKey"/>
+  </f:entry>
+</j:jelly>
