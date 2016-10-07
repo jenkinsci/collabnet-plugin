@@ -9,6 +9,7 @@ import com.collabnet.ce.webservices.CollabNetApp;
 import com.collabnet.cubit.api.CubitConnector;
 import hudson.plugins.collabnet.auth.CNAuthentication;
 import hudson.util.FormValidation;
+import hudson.util.Secret;
 import org.apache.axis.utils.StringUtils;
 import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.methods.GetMethod;
@@ -529,6 +530,10 @@ public abstract class CNFormFieldValidator {
      * set.
      */
     public static FormValidation cubitKeyCheck(String hostUrl, String user, String key) {
+        Secret decryptkey = Secret.decrypt(key);
+        if (decryptkey != null) {
+            key = Secret.toString(decryptkey);
+        }
         if (CommonUtil.unset(key)) {
             return FormValidation.error("The user API key is required.");
         }
