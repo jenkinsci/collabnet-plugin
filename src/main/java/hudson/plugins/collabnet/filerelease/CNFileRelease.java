@@ -194,7 +194,7 @@ public class CNFileRelease extends AbstractTeamForgeNotifier {
     public CnfrResultAction createAction(int numUploaded, CTFRelease release) {
         String displaymsg = "Download from CollabNet File Release System";
         return new CnfrResultAction(displaymsg,
-                                    IMAGE_URL + "cn-icon.gif", 
+                                    IMAGE_URL + "cloud.png", 
                                     "console",
                                     release.getUrl(),
                                     numUploaded);
