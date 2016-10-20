@@ -6,4 +6,34 @@
   <f:section title="Global CollabNet Configuration">
     <f:optionalProperty field="connectionFactory" title="Allow Global CollabNet Configuration"/>
   </f:section>
+
+  <f:section title="CollabNet ActionHub Connectivity Settings">
+    <f:entry title="RabbitMQ Host" field="actionHubMqHost">
+      <f:textbox />
+    </f:entry>
+
+    <f:entry title="RabbitMQ Port" field="actionHubMqPort">
+      <f:textbox />
+    </f:entry>
+
+    <f:entry title="RabbitMQ Username" field="actionHubMqUsername">
+      <f:textbox />
+    </f:entry>
+
+    <f:entry title="RabbitMQ Password" field="actionHubMqPassword">
+      <f:textbox />
+    </f:entry>
+
+    <f:entry title="RabbitMQ Exchange" field="actionHubMqExchange" description="Which Exchange to listen on">
+      <f:textbox />
+    </f:entry>
+
+    <f:entry title="Workflow Queue" field="actionHubMqWorkflowQueue" description="Queue on which to listen for workflow messages.">
+      <f:textbox />
+    </f:entry>
+
+    <f:entry title="Actions Queue" field="actionHubMqActionsQueue" description="Queue on which to listen for get actions requests.">
+      <f:textbox />
+    </f:entry>
+  </f:section>
 </j:jelly>
