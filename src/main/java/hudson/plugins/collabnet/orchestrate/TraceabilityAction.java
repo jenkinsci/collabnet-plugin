@@ -41,7 +41,7 @@ public class TraceabilityAction implements Action {
     @Override
     public String getIconFileName() {
         if (getNotifier() != null) {
-            return "/plugin/collabnet/images/48x48/cloud.png";
+            return "/plugin/collabnet/images/48x48/TeamForgeAssociations.png";
         } else {
             return null;
         }
