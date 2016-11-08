@@ -280,7 +280,7 @@ public class PblUploader extends Notifier implements java.io.Serializable {
         build.
             addAction(new 
                       PblUploadResultAction(LEFT_NAV_DISPLAY_MESSAGE, 
-                                            IMAGE_URL + "cubit-icon.gif", 
+                                            IMAGE_URL + "CollabNetPbl.png", 
                                             "console", 
                                             addTrailSlash(this.
                                                           getRemoteURL(build)),

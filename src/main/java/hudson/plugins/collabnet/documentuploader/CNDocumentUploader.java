@@ -220,7 +220,7 @@ public class CNDocumentUploader extends AbstractTeamForgeNotifier {
     private Action createAction(int numUploaded, CTFDocumentFolder folder) {
         String displaymsg = "Download from CollabNet Documents";
         return new CnduResultAction(displaymsg, 
-                                    IMAGE_URL + "cn-icon.gif", 
+                                    IMAGE_URL + "CollabNetDocuments.png", 
                                     "console",
                                     folder.getURL(),
                                     numUploaded);
