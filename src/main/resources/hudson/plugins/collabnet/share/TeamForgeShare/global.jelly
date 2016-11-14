@@ -6,4 +6,70 @@
   <f:section title="Global CollabNet Configuration">
     <f:optionalProperty field="connectionFactory" title="Allow Global CollabNet Configuration"/>
   </f:section>
+
+  <f:section title="CollabNet ActionHub Connectivity Settings">
+
+    <f:entry title="RabbitMQ Host" field="actionHubMqHost">
+      <f:textbox />
+    </f:entry>
+
+    <f:entry title="RabbitMQ Port" field="actionHubMqPort">
+      <f:textbox />
+    </f:entry>
+
+    <f:entry title="RabbitMQ Username" field="actionHubMqUsername">
+      <f:textbox />
+    </f:entry>
+
+    <f:entry title="RabbitMQ Password" field="actionHubMqPassword">
+      <f:password />
+    </f:entry>
+
+    <f:entry title="RabbitMQ Exchange" field="actionHubMqExchange" description="Which Exchange to listen on">
+      <f:textbox />
+    </f:entry>
+
+    <f:entry title="Workflow Queue" field="actionHubMqWorkflowQueue" description="Queue on which to listen for workflow messages.">
+      <f:textbox />
+    </f:entry>
+
+    <f:entry title="Actions Queue" field="actionHubMqActionsQueue" description="Queue on which to listen for get actions requests.">
+      <f:textbox />
+    </f:entry>
+
+    <f:entry title="How to respond to get actions requests:" field="actionHubMsgIncludeRadio">
+      <f:entry>
+        <f:radio name="actionHubMsgIncludeRadio" title="Respond to all message types." value="allinclude"  checked="${instance.actionHubMsgIncludeRadio == 'allinclude'}" />
+      </f:entry>
+      <f:entry>
+        <f:radio name="actionHubMsgIncludeRadio" title="Do not respond to actions requests." value="noinclude"  checked="${instance.actionHubMsgIncludeRadio == 'noinclude'}" />
+      </f:entry>
+      <f:entry>
+        <f:radio name="actionHubMsgIncludeRadio" title="Custom. Respond only to the following message types." value="custominclude"  checked="${instance.actionHubMsgIncludeRadio == 'custominclude'}" />
+      </f:entry>
+    </f:entry>
+
+    <f:entry title="Manual:" field="actionHubMsgManual" >
+      <f:checkbox  />
+    </f:entry>
+    <f:entry title="Commit:" field="actionHubMsgCommit" >
+      <f:checkbox  />
+    </f:entry>
+    <f:entry title="Work Item:" field="actionHubMsgWorkitem" >
+      <f:checkbox  />
+    </f:entry>
+    <f:entry title="Build:" field="actionHubMsgBuild" >
+      <f:checkbox  />
+    </f:entry>
+    <f:entry title="Review:" field="actionHubMsgReview" >
+      <f:checkbox  />
+    </f:entry>
+    <f:entry title="Custom:" field="actionHubMsgCustom" >
+      <f:checkbox  />
+    </f:entry>
+    <f:entry field="actionHubMsgCustomTxt" description="A comma separated list of Custom (XDS) sources.">
+      <f:textbox />
+    </f:entry>
+
+  </f:section>
 </j:jelly>

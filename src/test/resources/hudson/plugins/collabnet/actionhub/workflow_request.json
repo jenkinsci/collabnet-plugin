@@ -1,0 +1,27 @@
+{
+   "workflowId":"TestProject1",
+   "workflowName":"TestProject1",
+   "workflowArguments":[
+      {
+         "name":"TestParameter2",
+         "value":"two"
+      },
+      {
+         "name":"TestParameter1",
+         "value":"value1"
+      }
+   ],
+   "originalMessage":"{}",
+   "senderInformation":{
+      "port":8187,
+      "hostName":"nshah-p50",
+      "senderType":"Manual"
+   },
+   "ruleInformation":{
+      "ruleId":14,
+      "ruleUUID":"52c9ed4c-af42-490d-90d6-752e43c09dc1",
+      "ruleName":"jenkinsTest",
+      "userName":"admin",
+      "processedTime":"Tue Oct 11 08:31:44 UTC 2016"
+   }
+}
