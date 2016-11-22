@@ -292,18 +292,19 @@ public abstract class CNFormFieldValidator {
             CTFProject p = cna.getProjectByTitle(project);
             if (p==null)    return FormValidation.ok(); // not entered yet?
 
+            String releaseMsg = "Release could not be found. A new release will be created.";
             CTFPackage pkg = p.getPackages().byTitle(rpackage);
             if (pkg != null) {
                 CTFRelease r = pkg.getReleaseByTitle(release);
                 if (r == null)
-                    return FormValidation.warning("Release could not be found.");
+                    return FormValidation.warning(releaseMsg);
             } else {
                 // locate the release from all the packages
                 for (CTFPackage x : p.getPackages()) {
                     if (x.getReleaseByTitle(release)!=null)
                         return FormValidation.ok();
                 }
-                return FormValidation.warning("Release could not be found.");
+                return FormValidation.warning(releaseMsg);
             }
             return FormValidation.ok();
         } finally {
