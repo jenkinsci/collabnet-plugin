@@ -29,6 +29,10 @@
       <id>collabnet-libs</id>
       <url>file:${project.basedir}/lib</url>
     </repository>
+    <repository>
+      <id>repo.jenkins-ci.org</id>
+      <url>https://repo.jenkins-ci.org/public/</url>
+    </repository>
   </repositories>
 
   <dependencies>
@@ -341,13 +345,6 @@
     <url>https://github.com/jenkinsci/collabnet-plugin</url>
     <tag>HEAD</tag>
   </scm>
-
-  <repositories>
-    <repository>
-      <id>repo.jenkins-ci.org</id>
-      <url>https://repo.jenkins-ci.org/public/</url>
-    </repository>
-  </repositories>
 
     <pluginRepositories>
         <pluginRepository>
