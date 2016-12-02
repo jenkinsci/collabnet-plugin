@@ -10,6 +10,8 @@ public class Constants {
     public static final String RABBIT_CONNECTION_NAME = "CollabNetActionHub";
     static final int[] RABBIT_CONNECTION_RETRY_INTERVALS = {0, 1, 1, 2, 3, 5, 8, 13};
 
+    public static final String REQUEST_JSON_REQUEST_TYPE = "requestType";
+    public static final String REQUEST_JSON_MESSAGE_TYPE = "messageType";
     public static final String REQUEST_JSON_WORKFLOW_ID = "workflowId";
     public static final String REQUEST_JSON_WORKFLOW_ARGUMENTS = "workflowArguments";
     public static final String REQUEST_JSON_WORKFLOW_ARGUMENTS_NAME = "name";
@@ -17,6 +19,8 @@ public class Constants {
     public static final String REQUEST_JSON_RULE_INFO = "ruleInformation";
     public static final String REQUEST_JSON_RULE_INFO_NAME = "ruleName";
     public static final String REQUEST_JSON_USER_NAME = "userName";
+
+    public static final String RESPONSE_JSON_OK = "{\"OK\"}";
 
     public static final String JENKINS_CONFIG_ERROR_MSG_HOST = "Please set a host name for where the rabbit mq instance is running.";
     public static final String JENKINS_CONFIG_ERROR_MSG_PORT = "Please set a port for where the rabbit mq instance is running.";
@@ -26,6 +30,11 @@ public class Constants {
     public static final String JENKINS_CONFIG_ERROR_MSG_ROUTING_KEY_WF = "Please input the workflow routing key.";
     public static final String JENKINS_CONFIG_ERROR_MSG_ROUTING_KEY_ACTIONS = "Please input the actions routing key.";
 
+
+    public static class RequestType {
+        public static final String HEARTBEAT = "Heartbeat";
+        public static final String GET_ACTIONS = "GetActions";
+    }
 
     public static class ActionMessageType {
         public static final String MANUAL = "MANUAL";

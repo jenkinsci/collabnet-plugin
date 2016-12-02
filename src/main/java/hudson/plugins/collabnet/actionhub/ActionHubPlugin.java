@@ -237,6 +237,8 @@ public class ActionHubPlugin extends Builder {
             @Override
             public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties, byte[] body) {
                 String message = "";
+                String jsonResponse = "";
+
                 try {
                     message = new String(body, Constants.CONTENT_TYPE_UTF_8);
                     log.info("Received : " + message + " on " + envelope.getRoutingKey());
@@ -248,80 +250,89 @@ public class ActionHubPlugin extends Builder {
                 // Parse the received message
                 JSONReader jsonParser = new JSONReader();
                 Map<String, Object> request = (Map<String, Object>) jsonParser.read(message);
-                String messageType = (String) request.get("messageType");
-                log.info("messageType : " + messageType);
+                String requestType = (String) request.get(Constants.REQUEST_JSON_REQUEST_TYPE);
 
-                Set<Job> itemList = prepareJobList(messageType);
+                if (requestType.equals(Constants.RequestType.HEARTBEAT)) {
+                    jsonResponse = Constants.RESPONSE_JSON_OK;
+                } else if (requestType.equals(Constants.RequestType.GET_ACTIONS)) {
+                    String messageType = (String) request.get(Constants.REQUEST_JSON_MESSAGE_TYPE);
 
-                List<Workflow> workflows = new ArrayList<Workflow>();
+                    Set<Job> itemList = prepareJobList(messageType);
 
-                for (Job item : itemList) {
-                    String buildId = item.getFullName();
-                    String buildName = item.getName();
-                    String buildDescription = null;
+                    List<Workflow> workflows = new ArrayList<Workflow>();
 
-                    Map<String, WorkflowParameter> buildParametersMap = new HashMap<String, WorkflowParameter>();
+                    for (Job item : itemList) {
+                        String buildId = item.getFullName();
+                        String buildName = item.getName();
+                        String buildDescription = null;
+
+                        Map<String, WorkflowParameter> buildParametersMap = new HashMap<String, WorkflowParameter>();
 
 
-                    if (item instanceof AbstractProject) {
+                        if (item instanceof AbstractProject) {
 
-                        // this is a regular project.
-                        AbstractProject project = (AbstractProject) item;
-                        buildDescription = project.getDescription();
+                            // this is a regular project.
+                            AbstractProject project = (AbstractProject) item;
+                            buildDescription = project.getDescription();
 
-                        List<Action> actions = project.getActions();
-                        for (Action action : actions) {
-                            if (action instanceof ParametersDefinitionProperty) {
-                                ParametersDefinitionProperty definitions = (ParametersDefinitionProperty) action;
+                            List<Action> actions = project.getActions();
+                            for (Action action : actions) {
+                                if (action instanceof ParametersDefinitionProperty) {
+                                    ParametersDefinitionProperty definitions = (ParametersDefinitionProperty) action;
 
-                                List<ParameterDefinition> parameters = definitions.getParameterDefinitions();
+                                    List<ParameterDefinition> parameters = definitions.getParameterDefinitions();
 
-                                for (ParameterDefinition parameter : parameters) {
-                                    String paramName = parameter.getName();
-                                    String paramDescription = parameter.getDescription();
-                                    String paramType = "";
-                                    String[] paramChoices = new String[0];
-                                    if (parameter instanceof StringParameterDefinition) {
-                                        paramType = Constants.ParamDataTypes.STRING;
-                                    } else if (parameter instanceof ChoiceParameterDefinition) {
-                                        paramType = Constants.ParamDataTypes.ENUM;
-                                        List<String> choiceList = ((ChoiceParameterDefinition) parameter).getChoices();
-                                        paramChoices = choiceList.toArray(new String[choiceList.size()]);
-                                    }
-
-                                    String paramDefaultValue = "";
-
-                                    ParameterValue defaultVal = parameter.getDefaultParameterValue();
-                                    if (defaultVal != null) {
-                                        Object defaultValObj = defaultVal.getValue();
-                                        if (defaultValObj != null) {
-                                            paramDefaultValue = defaultValObj.toString();
+                                    for (ParameterDefinition parameter : parameters) {
+                                        String paramName = parameter.getName();
+                                        String paramDescription = parameter.getDescription();
+                                        String paramType = "";
+                                        String[] paramChoices = new String[0];
+                                        if (parameter instanceof StringParameterDefinition) {
+                                            paramType = Constants.ParamDataTypes.STRING;
+                                        } else if (parameter instanceof ChoiceParameterDefinition) {
+                                            paramType = Constants.ParamDataTypes.ENUM;
+                                            List<String> choiceList = ((ChoiceParameterDefinition) parameter).getChoices();
+                                            paramChoices = choiceList.toArray(new String[choiceList.size()]);
                                         }
-                                    }
 
-                                    WorkflowParameter paramAttributes = new WorkflowParameter(paramDescription, paramType, paramDefaultValue, paramChoices);
-                                    buildParametersMap.put(paramName, paramAttributes);
+                                        String paramDefaultValue = "";
+
+                                        ParameterValue defaultVal = parameter.getDefaultParameterValue();
+                                        if (defaultVal != null) {
+                                            Object defaultValObj = defaultVal.getValue();
+                                            if (defaultValObj != null) {
+                                                paramDefaultValue = defaultValObj.toString();
+                                            }
+                                        }
+
+                                        WorkflowParameter paramAttributes = new WorkflowParameter(paramDescription, paramType, paramDefaultValue, paramChoices);
+                                        buildParametersMap.put(paramName, paramAttributes);
+                                    }
                                 }
                             }
+
+                        } else {
+                            // This is merely a buildable item.
+                            buildDescription = item.getDisplayName();
                         }
 
-                    } else {
-                        // This is merely a buildable item.
-                        buildDescription = item.getDisplayName();
+                        Workflow workflow = new Workflow(buildName, buildId, buildDescription, buildParametersMap);
+                        workflows.add(workflow);
                     }
 
-                    Workflow workflow = new Workflow(buildName, buildId, buildDescription, buildParametersMap);
-                    workflows.add(workflow);
+                    try {
+                        ObjectMapper mapper = new ObjectMapper();
+                        mapper.setSerializationInclusion(JsonInclude.Include.NON_EMPTY);
+                        jsonResponse = mapper.writeValueAsString(workflows);
+                    } catch (JsonProcessingException e) {
+                        log.info("Could not make json response: " + e.getMessage());
+                    }
                 }
 
-
                 // Send the response back to ActionHub
-                ObjectMapper mapper = new ObjectMapper();
-                mapper.setSerializationInclusion(JsonInclude.Include.NON_EMPTY);
                 String replyto = properties.getReplyTo();
                 AMQP.BasicProperties props = new AMQP.BasicProperties();
                 try {
-                    String jsonResponse = mapper.writeValueAsString(workflows);
                     log.info("Replying on " + replyto + " with response: " + jsonResponse);
                     channel.basicPublish("", replyto, props, jsonResponse.getBytes(Constants.CONTENT_TYPE_UTF_8));
                 } catch (Exception e) {
