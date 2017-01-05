@@ -19,8 +19,11 @@ public class Constants {
     public static final String REQUEST_JSON_RULE_INFO = "ruleInformation";
     public static final String REQUEST_JSON_RULE_INFO_NAME = "ruleName";
     public static final String REQUEST_JSON_USER_NAME = "userName";
+    public static final String REQUEST_JSON_PROJECT_NAME = "projectName";
+    public static final String REQUEST_JSON_PROJECT_ID = "projectId";
 
     public static final String RESPONSE_JSON_OK = "{\"OK\"}";
+    public static final String RESPONSE_JSON_JENKINS_CONFIG_URL_PATH = "configure";
 
     public static final String JENKINS_CONFIG_ERROR_MSG_HOST = "Please set a host name for where the rabbit mq instance is running.";
     public static final String JENKINS_CONFIG_ERROR_MSG_PORT = "Please set a port for where the rabbit mq instance is running.";

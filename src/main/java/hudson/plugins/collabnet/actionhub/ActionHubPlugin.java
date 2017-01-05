@@ -168,9 +168,7 @@ public class ActionHubPlugin extends Builder {
                                 found = true;
                                 boolean buildKickoff = false;
                                 HashMap<String, String> ruleInformation = (HashMap) request.get(Constants.REQUEST_JSON_RULE_INFO);
-                                String ruleName = ruleInformation.get(Constants.REQUEST_JSON_RULE_INFO_NAME);
-                                String userName = ruleInformation.get(Constants.REQUEST_JSON_USER_NAME);
-                                Cause cause = new BuildCause(envelope.getRoutingKey(), ruleName, userName);
+                                Cause cause = new BuildCause(envelope.getRoutingKey(), ruleInformation);
 
                                 if (buildItem instanceof AbstractProject) {
                                     // This is a regular project. Can pass params.
@@ -265,6 +263,7 @@ public class ActionHubPlugin extends Builder {
                         String buildId = item.getFullName();
                         String buildName = item.getName();
                         String buildDescription = null;
+                        String configurationUrl = null;
 
                         Map<String, WorkflowParameter> buildParametersMap = new HashMap<String, WorkflowParameter>();
 
@@ -274,6 +273,7 @@ public class ActionHubPlugin extends Builder {
                             // this is a regular project.
                             AbstractProject project = (AbstractProject) item;
                             buildDescription = project.getDescription();
+                            configurationUrl = project.getAbsoluteUrl() + Constants.RESPONSE_JSON_JENKINS_CONFIG_URL_PATH;
 
                             List<Action> actions = project.getActions();
                             for (Action action : actions) {
@@ -316,7 +316,7 @@ public class ActionHubPlugin extends Builder {
                             buildDescription = item.getDisplayName();
                         }
 
-                        Workflow workflow = new Workflow(buildName, buildId, buildDescription, buildParametersMap);
+                        Workflow workflow = new Workflow(buildName, buildId, buildDescription, configurationUrl, buildParametersMap);
                         workflows.add(workflow);
                     }
 

@@ -22,6 +22,8 @@
       "ruleUUID":"52c9ed4c-af42-490d-90d6-752e43c09dc1",
       "ruleName":"jenkinsTest",
       "userName":"admin",
-      "processedTime":"Tue Oct 11 08:31:44 UTC 2016"
+      "processedTime":"Tue Oct 11 08:31:44 UTC 2016",
+      "projectId":"proj1010",
+      "projectName":"cnertest"
    }
 }

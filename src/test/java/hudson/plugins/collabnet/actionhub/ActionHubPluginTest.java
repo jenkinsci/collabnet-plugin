@@ -29,10 +29,7 @@ import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 
@@ -153,8 +150,13 @@ public class ActionHubPluginTest {
             String actualGetActionsJsonResponse = new String(argument.getValue(), Constants.CONTENT_TYPE_UTF_8);
 
             JSONReader jsonParser = new JSONReader();
-            ArrayList expectedJobs =  (ArrayList)jsonParser.read(expectedGetActionsJsonResponse);
-            ArrayList actualJobs =  (ArrayList)jsonParser.read(actualGetActionsJsonResponse);
+            ArrayList<HashMap> expectedJobs =  (ArrayList<HashMap>)jsonParser.read(expectedGetActionsJsonResponse);
+            ArrayList<HashMap> actualJobs =  (ArrayList<HashMap>)jsonParser.read(actualGetActionsJsonResponse);
+
+            for (HashMap actualJob:actualJobs) {
+                assertTrue(actualJob.containsKey("configurationUrl"));
+                actualJob.remove("configurationUrl");
+            }
 
             for (Object expectedJob:expectedJobs) {
                 assertTrue(actualJobs.contains(expectedJob));
@@ -164,6 +166,8 @@ public class ActionHubPluginTest {
             e1.printStackTrace();
         }
     }
+
+
 
     private String readtestJson(String fileName) {
         String retval = "";
