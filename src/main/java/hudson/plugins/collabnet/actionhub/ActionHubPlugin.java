@@ -167,7 +167,7 @@ public class ActionHubPlugin extends Builder {
                             if (buildItem.getFullName().equals(passedInWorkFlowId)) {
                                 found = true;
                                 boolean buildKickoff = false;
-                                HashMap<String, String> ruleInformation = (HashMap) request.get(Constants.REQUEST_JSON_RULE_INFO);
+                                HashMap<String, Object> ruleInformation = (HashMap) request.get(Constants.REQUEST_JSON_RULE_INFO);
                                 Cause cause = new BuildCause(envelope.getRoutingKey(), ruleInformation);
 
                                 if (buildItem instanceof AbstractProject) {

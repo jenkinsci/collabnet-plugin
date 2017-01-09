@@ -5,6 +5,7 @@ public class Constants {
 
     public static final String RABBIT_EXCHANGE_TYPE = "topic";
     public static final String CONTENT_TYPE_UTF_8 = "UTF-8";
+    public static final String NOT_AVAILABLE = "N/A";
     public static final String RABBIT_TIME_TO_LIVE_KEY = "x-message-ttl";
     public static final int RABBIT_TIME_TO_LIVE_VALUE = 60000;
     public static final String RABBIT_CONNECTION_NAME = "CollabNetActionHub";
@@ -21,6 +22,7 @@ public class Constants {
     public static final String REQUEST_JSON_USER_NAME = "userName";
     public static final String REQUEST_JSON_PROJECT_NAME = "projectName";
     public static final String REQUEST_JSON_PROJECT_ID = "projectId";
+    public static final String REQUEST_JSON_MATCH_COUNT = "matchCount";
 
     public static final String RESPONSE_JSON_OK = "{\"OK\"}";
     public static final String RESPONSE_JSON_JENKINS_CONFIG_URL_PATH = "configure";
