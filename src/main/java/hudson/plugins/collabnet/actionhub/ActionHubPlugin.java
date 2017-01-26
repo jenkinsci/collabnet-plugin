@@ -17,6 +17,7 @@ import org.acegisecurity.Authentication;
 import org.acegisecurity.GrantedAuthority;
 import org.acegisecurity.context.SecurityContextHolder;
 import org.acegisecurity.providers.UsernamePasswordAuthenticationToken;
+import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.StaplerRequest;
 
@@ -170,21 +171,22 @@ public class ActionHubPlugin extends Builder {
                                 HashMap<String, Object> ruleInformation = (HashMap) request.get(Constants.REQUEST_JSON_RULE_INFO);
                                 Cause cause = new BuildCause(envelope.getRoutingKey(), ruleInformation);
 
-                                if (buildItem instanceof AbstractProject) {
-                                    // This is a regular project. Can pass params.
-                                    List<HashMap> passedInParameters = (ArrayList<HashMap>) request.get(Constants.REQUEST_JSON_WORKFLOW_ARGUMENTS);
-                                    List<ParameterValue> parameters = new ArrayList<ParameterValue>();
+                                List<HashMap> passedInParameters = (ArrayList<HashMap>) request.get(Constants.REQUEST_JSON_WORKFLOW_ARGUMENTS);
+                                List<ParameterValue> parameters = new ArrayList<ParameterValue>();
 
-                                    if (passedInParameters != null) {
-                                        for (HashMap passedInParameter : passedInParameters) {
-                                            String name = (String) passedInParameter.get(Constants.REQUEST_JSON_WORKFLOW_ARGUMENTS_NAME);
-                                            String value = (String) passedInParameter.get(Constants.REQUEST_JSON_WORKFLOW_ARGUMENTS_VALUE);
-                                            parameters.add(new StringParameterValue(name, value));
-                                        }
+                                if (passedInParameters != null) {
+                                    for (HashMap passedInParameter : passedInParameters) {
+                                        String name = (String) passedInParameter.get(Constants.REQUEST_JSON_WORKFLOW_ARGUMENTS_NAME);
+                                        String value = (String) passedInParameter.get(Constants.REQUEST_JSON_WORKFLOW_ARGUMENTS_VALUE);
+                                        parameters.add(new StringParameterValue(name, value));
                                     }
-                                    
+                                }
+
+                                ParametersAction paramAction = new ParametersAction(parameters);
+
+                                if (buildItem instanceof AbstractProject) {
+                                    // This is a freestyle project. Can pass params.
                                     AbstractProject project = (AbstractProject)buildItem;
-                                    ParametersAction paramAction = new ParametersAction(parameters);
                                     buildKickoff = project.scheduleBuild(0, cause, paramAction);
                                     //Schedule a build, and return a Future object to wait for the completion of the build.
                                     //Works only with objects of type AbstractProject, not with BuildableItem.
@@ -193,8 +195,16 @@ public class ActionHubPlugin extends Builder {
                                     //AbstractBuild buildInfo = statusListener.get();
                                     //Result result = buildInfo.getResult();
                                     //LOG.info("Result: " + result.toString());
+                                } else if (buildItem instanceof WorkflowJob) {
+                                    // This is a Pipeline. Can pass params.
+                                    log.info("This is a Pipeline job");
+
+                                    WorkflowJob project = (WorkflowJob)buildItem;
+                                    CauseAction causeAction = new CauseAction(cause);
+                                    project.scheduleBuild2(0, paramAction, causeAction);
+                                    buildKickoff = true;
                                 } else {
-                                    // This is a buildable item but not a regular project. Cannot pass params.
+                                    // This is a buildable item but not a freestyle project or workflow project (pipeline). Cannot pass params.
                                     buildKickoff = buildItem.scheduleBuild(0, cause);
                                 }
     
@@ -260,64 +270,50 @@ public class ActionHubPlugin extends Builder {
                     List<Workflow> workflows = new ArrayList<Workflow>();
 
                     for (Job item : itemList) {
-                        String buildId = item.getFullName();
-                        String buildName = item.getName();
-                        String buildDescription = null;
-                        String configurationUrl = null;
+                        if (item instanceof BuildableItem) {
+                            String buildId = item.getFullName();
+                            String buildName = item.getName();
+                            String buildDescription = item.getDescription();
+                            String configurationUrl = item.getAbsoluteUrl() + Constants.RESPONSE_JSON_JENKINS_CONFIG_URL_PATH;
 
-                        Map<String, WorkflowParameter> buildParametersMap = new HashMap<String, WorkflowParameter>();
+                            Map<String, WorkflowParameter> buildParametersMap = new HashMap<String, WorkflowParameter>();
 
+                            ParametersDefinitionProperty definitions = (ParametersDefinitionProperty) item.getProperty(ParametersDefinitionProperty.class);
+                            if (definitions != null) {
+                                // this is a parametrized job
+                                List<ParameterDefinition> parameters = definitions.getParameterDefinitions();
 
-                        if (item instanceof AbstractProject) {
-
-                            // this is a regular project.
-                            AbstractProject project = (AbstractProject) item;
-                            buildDescription = project.getDescription();
-                            configurationUrl = project.getAbsoluteUrl() + Constants.RESPONSE_JSON_JENKINS_CONFIG_URL_PATH;
-
-                            List<Action> actions = project.getActions();
-                            for (Action action : actions) {
-                                if (action instanceof ParametersDefinitionProperty) {
-                                    ParametersDefinitionProperty definitions = (ParametersDefinitionProperty) action;
-
-                                    List<ParameterDefinition> parameters = definitions.getParameterDefinitions();
-
-                                    for (ParameterDefinition parameter : parameters) {
-                                        String paramName = parameter.getName();
-                                        String paramDescription = parameter.getDescription();
-                                        String paramType = "";
-                                        String[] paramChoices = new String[0];
-                                        if (parameter instanceof StringParameterDefinition) {
-                                            paramType = Constants.ParamDataTypes.STRING;
-                                        } else if (parameter instanceof ChoiceParameterDefinition) {
-                                            paramType = Constants.ParamDataTypes.ENUM;
-                                            List<String> choiceList = ((ChoiceParameterDefinition) parameter).getChoices();
-                                            paramChoices = choiceList.toArray(new String[choiceList.size()]);
-                                        }
-
-                                        String paramDefaultValue = "";
-
-                                        ParameterValue defaultVal = parameter.getDefaultParameterValue();
-                                        if (defaultVal != null) {
-                                            Object defaultValObj = defaultVal.getValue();
-                                            if (defaultValObj != null) {
-                                                paramDefaultValue = defaultValObj.toString();
-                                            }
-                                        }
-
-                                        WorkflowParameter paramAttributes = new WorkflowParameter(paramDescription, paramType, paramDefaultValue, paramChoices);
-                                        buildParametersMap.put(paramName, paramAttributes);
+                                for (ParameterDefinition parameter : parameters) {
+                                    String paramName = parameter.getName();
+                                    String paramDescription = parameter.getDescription();
+                                    String paramType = "";
+                                    String[] paramChoices = new String[0];
+                                    if (parameter instanceof StringParameterDefinition) {
+                                        paramType = Constants.ParamDataTypes.STRING;
+                                    } else if (parameter instanceof ChoiceParameterDefinition) {
+                                        paramType = Constants.ParamDataTypes.ENUM;
+                                        List<String> choiceList = ((ChoiceParameterDefinition) parameter).getChoices();
+                                        paramChoices = choiceList.toArray(new String[choiceList.size()]);
                                     }
+
+                                    String paramDefaultValue = "";
+
+                                    ParameterValue defaultVal = parameter.getDefaultParameterValue();
+                                    if (defaultVal != null) {
+                                        Object defaultValObj = defaultVal.getValue();
+                                        if (defaultValObj != null) {
+                                            paramDefaultValue = defaultValObj.toString();
+                                        }
+                                    }
+
+                                    WorkflowParameter paramAttributes = new WorkflowParameter(paramDescription, paramType, paramDefaultValue, paramChoices);
+                                    buildParametersMap.put(paramName, paramAttributes);
                                 }
                             }
 
-                        } else {
-                            // This is merely a buildable item.
-                            buildDescription = item.getDisplayName();
+                            Workflow workflow = new Workflow(buildName, buildId, buildDescription, configurationUrl, buildParametersMap);
+                            workflows.add(workflow);
                         }
-
-                        Workflow workflow = new Workflow(buildName, buildId, buildDescription, configurationUrl, buildParametersMap);
-                        workflows.add(workflow);
                     }
 
                     try {
