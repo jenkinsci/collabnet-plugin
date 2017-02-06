@@ -114,18 +114,18 @@ public class ActionHubPlugin extends Builder {
         TeamForgeShare.TeamForgeShareDescriptor descriptor = TeamForgeShare.getTeamForgeShareDescriptor();
         if (descriptor.areActionHubSettingsValid() == true) {
             ConnectionFactory factory = new ConnectionFactory();
-            factory.setHost(descriptor.getActionHubMqHost());
+            factory.setHost(descriptor.getActionHubMqHost().trim());
             factory.setPort(descriptor.getActionHubMqPort());
-            factory.setUsername(descriptor.getActionHubMqUsername());
-            factory.setPassword(descriptor.getActionHubMqPassword());
+            factory.setUsername(descriptor.getActionHubMqUsername().trim());
+            factory.setPassword(descriptor.getActionHubMqPassword().trim());
             connection = factory.newConnection(Constants.RABBIT_CONNECTION_NAME);
             shutDownListener = new MQConnectionHandler();
             connection.addShutdownListener(shutDownListener);
             channel = connection.createChannel();
             log.info("Opening a new connection with " + descriptor.getActionHubMqHost() + ":" + descriptor.getActionHubMqPort() + " on exchange " + descriptor.getActionHubMqExchange() + ". Actions Routing key is " + descriptor.getActionHubMqActionsQueue() + ". Workflow Routing key is " + descriptor.getActionHubMqWorkflowQueue());
 
-            initWorkflowQueueListener(descriptor.getActionHubMqExchange(), descriptor.getActionHubMqWorkflowQueue());
-            initActionsQueueListener(descriptor.getActionHubMqExchange(), descriptor.getActionHubMqActionsQueue());
+            initWorkflowQueueListener(descriptor.getActionHubMqExchange().trim(), descriptor.getActionHubMqWorkflowQueue().trim());
+            initActionsQueueListener(descriptor.getActionHubMqExchange().trim(), descriptor.getActionHubMqActionsQueue().trim());
         } else {
             log.info("Error: Unable to listen on queue. Check ActionHub connection settings.");
         }
