@@ -17,6 +17,7 @@ import org.acegisecurity.Authentication;
 import org.acegisecurity.GrantedAuthority;
 import org.acegisecurity.context.SecurityContextHolder;
 import org.acegisecurity.providers.UsernamePasswordAuthenticationToken;
+import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.StaplerRequest;
 
@@ -113,18 +114,18 @@ public class ActionHubPlugin extends Builder {
         TeamForgeShare.TeamForgeShareDescriptor descriptor = TeamForgeShare.getTeamForgeShareDescriptor();
         if (descriptor.areActionHubSettingsValid() == true) {
             ConnectionFactory factory = new ConnectionFactory();
-            factory.setHost(descriptor.getActionHubMqHost());
+            factory.setHost(descriptor.getActionHubMqHost().trim());
             factory.setPort(descriptor.getActionHubMqPort());
-            factory.setUsername(descriptor.getActionHubMqUsername());
-            factory.setPassword(descriptor.getActionHubMqPassword());
+            factory.setUsername(descriptor.getActionHubMqUsername().trim());
+            factory.setPassword(descriptor.getActionHubMqPassword().trim());
             connection = factory.newConnection(Constants.RABBIT_CONNECTION_NAME);
             shutDownListener = new MQConnectionHandler();
             connection.addShutdownListener(shutDownListener);
             channel = connection.createChannel();
             log.info("Opening a new connection with " + descriptor.getActionHubMqHost() + ":" + descriptor.getActionHubMqPort() + " on exchange " + descriptor.getActionHubMqExchange() + ". Actions Routing key is " + descriptor.getActionHubMqActionsQueue() + ". Workflow Routing key is " + descriptor.getActionHubMqWorkflowQueue());
 
-            initWorkflowQueueListener(descriptor.getActionHubMqExchange(), descriptor.getActionHubMqWorkflowQueue());
-            initActionsQueueListener(descriptor.getActionHubMqExchange(), descriptor.getActionHubMqActionsQueue());
+            initWorkflowQueueListener(descriptor.getActionHubMqExchange().trim(), descriptor.getActionHubMqWorkflowQueue().trim());
+            initActionsQueueListener(descriptor.getActionHubMqExchange().trim(), descriptor.getActionHubMqActionsQueue().trim());
         } else {
             log.info("Error: Unable to listen on queue. Check ActionHub connection settings.");
         }
@@ -167,26 +168,25 @@ public class ActionHubPlugin extends Builder {
                             if (buildItem.getFullName().equals(passedInWorkFlowId)) {
                                 found = true;
                                 boolean buildKickoff = false;
-                                HashMap<String, String> ruleInformation = (HashMap) request.get(Constants.REQUEST_JSON_RULE_INFO);
-                                String ruleName = ruleInformation.get(Constants.REQUEST_JSON_RULE_INFO_NAME);
-                                String userName = ruleInformation.get(Constants.REQUEST_JSON_USER_NAME);
-                                Cause cause = new BuildCause(envelope.getRoutingKey(), ruleName, userName);
+                                HashMap<String, Object> ruleInformation = (HashMap) request.get(Constants.REQUEST_JSON_RULE_INFO);
+                                Cause cause = new BuildCause(envelope.getRoutingKey(), ruleInformation);
+
+                                List<HashMap> passedInParameters = (ArrayList<HashMap>) request.get(Constants.REQUEST_JSON_WORKFLOW_ARGUMENTS);
+                                List<ParameterValue> parameters = new ArrayList<ParameterValue>();
+
+                                if (passedInParameters != null) {
+                                    for (HashMap passedInParameter : passedInParameters) {
+                                        String name = (String) passedInParameter.get(Constants.REQUEST_JSON_WORKFLOW_ARGUMENTS_NAME);
+                                        String value = (String) passedInParameter.get(Constants.REQUEST_JSON_WORKFLOW_ARGUMENTS_VALUE);
+                                        parameters.add(new StringParameterValue(name, value));
+                                    }
+                                }
+
+                                ParametersAction paramAction = new ParametersAction(parameters);
 
                                 if (buildItem instanceof AbstractProject) {
-                                    // This is a regular project. Can pass params.
-                                    List<HashMap> passedInParameters = (ArrayList<HashMap>) request.get(Constants.REQUEST_JSON_WORKFLOW_ARGUMENTS);
-                                    List<ParameterValue> parameters = new ArrayList<ParameterValue>();
-
-                                    if (passedInParameters != null) {
-                                        for (HashMap passedInParameter : passedInParameters) {
-                                            String name = (String) passedInParameter.get(Constants.REQUEST_JSON_WORKFLOW_ARGUMENTS_NAME);
-                                            String value = (String) passedInParameter.get(Constants.REQUEST_JSON_WORKFLOW_ARGUMENTS_VALUE);
-                                            parameters.add(new StringParameterValue(name, value));
-                                        }
-                                    }
-                                    
+                                    // This is a freestyle project. Can pass params.
                                     AbstractProject project = (AbstractProject)buildItem;
-                                    ParametersAction paramAction = new ParametersAction(parameters);
                                     buildKickoff = project.scheduleBuild(0, cause, paramAction);
                                     //Schedule a build, and return a Future object to wait for the completion of the build.
                                     //Works only with objects of type AbstractProject, not with BuildableItem.
@@ -195,8 +195,16 @@ public class ActionHubPlugin extends Builder {
                                     //AbstractBuild buildInfo = statusListener.get();
                                     //Result result = buildInfo.getResult();
                                     //LOG.info("Result: " + result.toString());
+                                } else if (buildItem instanceof WorkflowJob) {
+                                    // This is a Pipeline. Can pass params.
+                                    log.info("This is a Pipeline job");
+
+                                    WorkflowJob project = (WorkflowJob)buildItem;
+                                    CauseAction causeAction = new CauseAction(cause);
+                                    project.scheduleBuild2(0, paramAction, causeAction);
+                                    buildKickoff = true;
                                 } else {
-                                    // This is a buildable item but not a regular project. Cannot pass params.
+                                    // This is a buildable item but not a freestyle project or workflow project (pipeline). Cannot pass params.
                                     buildKickoff = buildItem.scheduleBuild(0, cause);
                                 }
     
@@ -237,6 +245,8 @@ public class ActionHubPlugin extends Builder {
             @Override
             public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties, byte[] body) {
                 String message = "";
+                String jsonResponse = "";
+
                 try {
                     message = new String(body, Constants.CONTENT_TYPE_UTF_8);
                     log.info("Received : " + message + " on " + envelope.getRoutingKey());
@@ -248,32 +258,29 @@ public class ActionHubPlugin extends Builder {
                 // Parse the received message
                 JSONReader jsonParser = new JSONReader();
                 Map<String, Object> request = (Map<String, Object>) jsonParser.read(message);
-                String messageType = (String) request.get("messageType");
-                log.info("messageType : " + messageType);
+                String requestType = (String) request.get(Constants.REQUEST_JSON_REQUEST_TYPE);
 
-                Set<Job> itemList = prepareJobList(messageType);
+                if (requestType.equals(Constants.RequestType.HEARTBEAT)) {
+                    jsonResponse = Constants.RESPONSE_JSON_OK;
+                } else if (requestType.equals(Constants.RequestType.GET_ACTIONS)) {
+                    String messageType = (String) request.get(Constants.REQUEST_JSON_MESSAGE_TYPE);
 
-                List<Workflow> workflows = new ArrayList<Workflow>();
+                    Set<Job> itemList = prepareJobList(messageType);
 
-                for (Job item : itemList) {
-                    String buildId = item.getFullName();
-                    String buildName = item.getName();
-                    String buildDescription = null;
+                    List<Workflow> workflows = new ArrayList<Workflow>();
 
-                    Map<String, WorkflowParameter> buildParametersMap = new HashMap<String, WorkflowParameter>();
+                    for (Job item : itemList) {
+                        if (item instanceof BuildableItem) {
+                            String buildId = item.getFullName();
+                            String buildName = item.getName();
+                            String buildDescription = item.getDescription();
+                            String configurationUrl = item.getAbsoluteUrl() + Constants.RESPONSE_JSON_JENKINS_CONFIG_URL_PATH;
 
+                            Map<String, WorkflowParameter> buildParametersMap = new HashMap<String, WorkflowParameter>();
 
-                    if (item instanceof AbstractProject) {
-
-                        // this is a regular project.
-                        AbstractProject project = (AbstractProject) item;
-                        buildDescription = project.getDescription();
-
-                        List<Action> actions = project.getActions();
-                        for (Action action : actions) {
-                            if (action instanceof ParametersDefinitionProperty) {
-                                ParametersDefinitionProperty definitions = (ParametersDefinitionProperty) action;
-
+                            ParametersDefinitionProperty definitions = (ParametersDefinitionProperty) item.getProperty(ParametersDefinitionProperty.class);
+                            if (definitions != null) {
+                                // this is a parametrized job
                                 List<ParameterDefinition> parameters = definitions.getParameterDefinitions();
 
                                 for (ParameterDefinition parameter : parameters) {
@@ -303,25 +310,25 @@ public class ActionHubPlugin extends Builder {
                                     buildParametersMap.put(paramName, paramAttributes);
                                 }
                             }
-                        }
 
-                    } else {
-                        // This is merely a buildable item.
-                        buildDescription = item.getDisplayName();
+                            Workflow workflow = new Workflow(buildName, buildId, buildDescription, configurationUrl, buildParametersMap);
+                            workflows.add(workflow);
+                        }
                     }
 
-                    Workflow workflow = new Workflow(buildName, buildId, buildDescription, buildParametersMap);
-                    workflows.add(workflow);
+                    try {
+                        ObjectMapper mapper = new ObjectMapper();
+                        mapper.setSerializationInclusion(JsonInclude.Include.NON_EMPTY);
+                        jsonResponse = mapper.writeValueAsString(workflows);
+                    } catch (JsonProcessingException e) {
+                        log.info("Could not make json response: " + e.getMessage());
+                    }
                 }
 
-
                 // Send the response back to ActionHub
-                ObjectMapper mapper = new ObjectMapper();
-                mapper.setSerializationInclusion(JsonInclude.Include.NON_EMPTY);
                 String replyto = properties.getReplyTo();
                 AMQP.BasicProperties props = new AMQP.BasicProperties();
                 try {
-                    String jsonResponse = mapper.writeValueAsString(workflows);
                     log.info("Replying on " + replyto + " with response: " + jsonResponse);
                     channel.basicPublish("", replyto, props, jsonResponse.getBytes(Constants.CONTENT_TYPE_UTF_8));
                 } catch (Exception e) {

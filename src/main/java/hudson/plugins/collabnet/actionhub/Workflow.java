@@ -6,12 +6,14 @@ public class Workflow {
     String name;
     String id;
     String description;
+    String configurationUrl;
     Map<String, WorkflowParameter> parameters;
     
-    public Workflow(String name, String id, String description, Map<String, WorkflowParameter> parameters) {
+    public Workflow(String name, String id, String description, String configurationUrl, Map<String, WorkflowParameter> parameters) {
         this.name = name;
         this.id = id;
         this.description = description;
+        this.configurationUrl = configurationUrl;
         this.parameters = parameters;
     }
 
@@ -35,8 +37,16 @@ public class Workflow {
         return description;
     }
 
+    public String getConfigurationUrl() {
+        return configurationUrl;
+    }
+
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    public void setConfigurationUrl(String configurationUrl) {
+        this.configurationUrl = configurationUrl;
     }
 
     public Map<String, WorkflowParameter> getParameters() {
