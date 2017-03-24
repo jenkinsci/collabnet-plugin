@@ -68,9 +68,8 @@ public class DefaultBuildToJSON implements BuildToJSON {
     public JSONObject getBuildData(AbstractBuild build) throws IOException {
         JSONObject buildData;
 
-        String remote_id = build.getProject().getName()+"-"+build.getNumber();
         buildData = new JSONObject()
-                .element("remote_id", remote_id)
+                .element("remote_id", String.valueOf(build.getNumber()))
                 .element("event_time", convertTime(build.getTime()))
                 .element("build_url", getBuildURL(build))
                 .element("status", getStatus(build))
