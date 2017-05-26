@@ -62,10 +62,43 @@ public class Constants {
     }
 
 
-    public static class TestJsonFiles {
-        public static final String WORKFLOW = "workflow_request.json";
-        public static final String ACTIONS_REQUEST = "actions_request.json";
-        public static final String ACTIONS_RESPONSE = "actions_response.json";
+    public static class TestJson {
+        public static final String WORKFLOW = "{\n" +
+                "   \"workflowId\":\"TestProject1\",\n" +
+                "   \"workflowName\":\"TestProject1\",\n" +
+                "   \"workflowArguments\":[\n" +
+                "      {\n" +
+                "         \"name\":\"TestParameter2\",\n" +
+                "         \"value\":\"two\"\n" +
+                "      },\n" +
+                "      {\n" +
+                "         \"name\":\"TestParameter1\",\n" +
+                "         \"value\":\"value1\"\n" +
+                "      }\n" +
+                "   ],\n" +
+                "   \"originalMessage\":\"{}\",\n" +
+                "   \"senderInformation\":{\n" +
+                "      \"port\":8187,\n" +
+                "      \"hostName\":\"nshah-p50\",\n" +
+                "      \"senderType\":\"Manual\"\n" +
+                "   },\n" +
+                "   \"ruleInformation\":{\n" +
+                "      \"ruleId\":14,\n" +
+                "      \"ruleUUID\":\"52c9ed4c-af42-490d-90d6-752e43c09dc1\",\n" +
+                "      \"ruleName\":\"jenkinsTest\",\n" +
+                "      \"userName\":\"admin\",\n" +
+                "      \"processedTime\":\"Tue Oct 11 08:31:44 UTC 2016\",\n" +
+                "      \"projectId\":\"proj1010\",\n" +
+                "      \"projectName\":\"cnertest\",\n" +
+                "      \"matchCount\":1\n" +
+                "   }\n" +
+                "}";
+
+
+        public static final String ACTIONS_REQUEST = "{\"requestType\":\"GetActions\",\"messageType\":\"Manual\"}";
+        public static final String ACTIONS_RESPONSE = "[{\"name\":\"TestProject1\",\"id\":\"TestProject1\"},{\"name\":\"TestProject2\",\"id\":\"TestProject2\"}]";
+
+
     }
 
     public static class TestProject {
