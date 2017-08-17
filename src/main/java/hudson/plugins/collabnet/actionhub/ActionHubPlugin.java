@@ -112,7 +112,8 @@ public class ActionHubPlugin extends Builder {
         }
 
         TeamForgeShare.TeamForgeShareDescriptor descriptor = TeamForgeShare.getTeamForgeShareDescriptor();
-        if (descriptor.areActionHubSettingsValid() == true) {
+        if (descriptor != null // possible when plugin is first installed 
+                && descriptor.areActionHubSettingsValid() == true) {
             ConnectionFactory factory = new ConnectionFactory();
             factory.setHost(descriptor.getActionHubMqHost().trim());
             factory.setPort(descriptor.getActionHubMqPort());
