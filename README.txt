@@ -7,6 +7,10 @@ Maven with the "-Doffline" option.
 Otherwise, you need the "~/.teamforge" property file that contains
 information about how to access the CTF instance.
 
+Added this to readme 
+
+
+
 This file has to contain the following 4 information:
 
 ---------------
