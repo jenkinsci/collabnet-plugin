@@ -258,7 +258,7 @@ public class TestDefaultBuildToJSON {
     public void resultsMathIsCorrect() throws URISyntaxException {
         // Setup
         AbstractTestResultAction results = mocks.createMock("results", AbstractTestResultAction.class);
-        converter = mocks.createMock("converter", converterBuilder.addMockedMethod("getBuildURI", AbstractBuild.class));
+        converter = mocks.createMock("converter", converterBuilder.addMockedMethod("getBuildURI", Run.class));
 
         expect(converter.getBuildURI(build)).andReturn(serverUri.resolve("/blah/"));
         expect(build.getAction(AbstractTestResultAction.class)).andReturn(results);
@@ -287,7 +287,7 @@ public class TestDefaultBuildToJSON {
     public void testURLIsCorrect() throws URISyntaxException {
         // Setup
         AbstractTestResultAction results = mocks.createMock("results", AbstractTestResultAction.class);
-        converter = mocks.createMock("converter", converterBuilder.addMockedMethod("getBuildURI", AbstractBuild.class));
+        converter = mocks.createMock("converter", converterBuilder.addMockedMethod("getBuildURI", Run.class));
 
         expect(converter.getBuildURI(build)).andReturn(serverUri.resolve("/blah/"));
 
@@ -317,7 +317,7 @@ public class TestDefaultBuildToJSON {
     public void noRevisionsReturnsEmptyArray() throws IOException {
         //Setup
         converter = mocks.createMock("converter",
-                converterBuilder.addMockedMethod("getRepositoryInfo", AbstractBuild.class));
+                converterBuilder.addMockedMethod("getRepositoryInfo", Run.class));
         expect(converter.getRepositoryInfo(build)).andReturn(repositoryInfo);
 
         ChangeLogSet changeLogSet = new FakeChangeLogSet(build);
@@ -342,7 +342,7 @@ public class TestDefaultBuildToJSON {
     public void revisionReturnsCorrectData() throws IOException {
         //Setup
         converter = mocks.createMock("converter",
-                converterBuilder.addMockedMethod("getRepositoryInfo", AbstractBuild.class));
+                converterBuilder.addMockedMethod("getRepositoryInfo", Run.class));
         expect(converter.getRepositoryInfo(build)).andReturn(repositoryInfo);
 
         ChangeLogSet changeLogSet = new FakeChangeLogSet(build, new FakeChangeLogEntry("12345"));
@@ -371,13 +371,14 @@ public class TestDefaultBuildToJSON {
         //Setup
         AbstractBuild build2 = mocks.createMock("build2", AbstractBuild.class);
         converter = mocks.createMock("converter",
-                converterBuilder.addMockedMethod("getRepositoryInfo", AbstractBuild.class));
+                converterBuilder.addMockedMethod("getRepositoryInfo", Run.class));
         expect(converter.getRepositoryInfo(build)).andReturn(repositoryInfo);
 
         ChangeLogSet changeLogSet = new FakeChangeLogSet(build);
         ChangeLogSet changeLogSet2 = new FakeChangeLogSet(build, new FakeChangeLogEntry("252525"));
         expect(build.getChangeSet()).andReturn(changeLogSet).atLeastOnce();
-        expect(build.getPreviousBuild()).andReturn(build2);
+        AbstractBuild previousBuild = build.getPreviousBuild();
+        expect(previousBuild).andReturn(build2);
         expect(build2.getChangeSet()).andReturn(changeLogSet2).atLeastOnce();
 
         mocks.replayAll();

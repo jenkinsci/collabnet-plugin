@@ -16,7 +16,7 @@
 
 package hudson.plugins.collabnet.orchestrate;
 
-import hudson.model.AbstractBuild;
+import hudson.model.Run;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 
@@ -46,7 +46,17 @@ public interface BuildToJSON {
      * @return JSONObject representing the 'buildData' element in the message JSON
      * @throws IOException
      */
-    public JSONObject getBuildData(AbstractBuild build) throws IOException;
+    public JSONObject getBuildData(Run build) throws IOException;
+
+    /**
+     * Construct the payload of the JSON Message.
+     *
+     * @param build the build being reported
+     * @param eventqStatus the EventQ status to use
+     * @return JSONObject representing the 'buildData' element in the message JSON
+     * @throws IOException
+     */
+    public JSONObject getBuildData(Run run, String eventqStatus, boolean excludeCommitInfo) throws IOException;     
 
     /**
      * Convert the SCM URL to something without credentials.
@@ -60,7 +70,7 @@ public interface BuildToJSON {
      * @param build AbstractBuild
      * @return JSONObject or null if there are no results
      */
-    JSONObject getTestResults(AbstractBuild build);
+    JSONObject getTestResults(Run build);
 
     /**
      * Build a status JSON object from the given build
@@ -68,17 +78,17 @@ public interface BuildToJSON {
      * @param build AbstractBuild
      * @return JSONObject containing the type and name
      */
-    JSONObject getStatus(AbstractBuild build);
+    JSONObject getStatus(Run build);
 
     /**
      * Because Jenkins is a pain in the ass to mock...
      *
      *
-     * @param build AbstractBuild we're grabbing the URI for
+     * @param run Run we're grabbing the URI for
      * @return URI for the build HTML page
      * @throws java.net.URISyntaxException
      */
-    URI getBuildURI(AbstractBuild build) throws URISyntaxException;
+    URI getBuildURI(Run run) throws URISyntaxException;
 
     /**
      * Generate the JSON for the revision information.
@@ -88,7 +98,7 @@ public interface BuildToJSON {
      * @return
      * @throws IOException
      */
-    JSONArray getRevisions(AbstractBuild build) throws IOException;
+    JSONArray getRevisions(Run build) throws IOException;
 
     /**
      * Generate a partial JSON for the revision information.
@@ -98,7 +108,7 @@ public interface BuildToJSON {
      * @return
      * @throws IOException
      */
-    JSONObject getRepositoryInfo(AbstractBuild build) throws IOException;
+    JSONObject getRepositoryInfo(Run build) throws IOException;
 
     /**
      * Converts the standard timestamp from Java format to EventQ's format.

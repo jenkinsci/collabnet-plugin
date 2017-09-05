@@ -17,14 +17,19 @@
 package hudson.plugins.collabnet.orchestrate;
 
 import hudson.model.AbstractBuild;
+import hudson.model.AbstractProject;
 import hudson.model.Action;
 import hudson.model.Result;
+import hudson.model.Run;
 import hudson.scm.ChangeLogSet;
 import hudson.scm.ChangeLogSet.Entry;
 import hudson.scm.SCM;
 import hudson.tasks.test.AbstractTestResultAction;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
+
+import org.jenkinsci.plugins.workflow.job.WorkflowJob;
+import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.joda.time.DateTimeZone;
 import org.joda.time.format.DateTimeFormatter;
 import org.joda.time.format.ISODateTimeFormat;
@@ -38,6 +43,7 @@ import java.io.Writer;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Date;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -65,19 +71,41 @@ public class DefaultBuildToJSON implements BuildToJSON {
      * @return JSONObject representing the 'buildData' element in the message JSON
      * @throws IOException
      */
-    public JSONObject getBuildData(AbstractBuild build) throws IOException {
-        JSONObject buildData;
+    public JSONObject getBuildData(Run run) throws IOException {
+        return getBuildData(run, null, false);
+    }
 
+    /**
+     * Construct the payload of the JSON Message.
+     *
+     * @param build the build being reported
+     * @param eventqStatus explicit status to use
+     * @param excludeCommitInfo whether to exclude commit info
+     * @return JSONObject representing the 'buildData' element in the message JSON
+     * @throws IOException
+     */
+    public JSONObject getBuildData(Run run, String eventqStatus, boolean excludeCommitInfo) throws IOException {
+        Run useRun = run;
+        if (!(useRun instanceof AbstractBuild)) {
+            Run rawBuild = getRawBuild(useRun);
+            if (rawBuild != null) {
+                useRun = rawBuild;
+            }
+        }
+        JSONObject buildData;
         buildData = new JSONObject()
-                .element("remote_id", String.valueOf(build.getNumber()))
-                .element("event_time", convertTime(build.getTime()))
-                .element("build_url", getBuildURL(build))
-                .element("status", getStatus(build))
-                .element("test_results", (Object) getTestResults(build)) // only include if not null
-                .element("revisions", (Object) getRevisions(build)); // only include if not null
+                .element("remote_id", String.valueOf(useRun.getNumber()))
+                .element("event_time", convertTime(useRun.getTime()))
+                .element("build_url", getBuildURL(useRun))
+                .element("status",  getStatus(useRun, eventqStatus))
+                .element("test_results", (Object) getTestResults(useRun)) // only include if not null
+                ;
+        if (!excludeCommitInfo) {         
+            buildData = buildData.element("revisions", (Object) getRevisions(useRun)); // only include if not null
+        }
 
         // Jenkins doesn't update duration until after the build is complete.
-        long duration = (System.currentTimeMillis() - build.getTimeInMillis());
+        long duration = (System.currentTimeMillis() - useRun.getTimeInMillis());
         long duration_s = Math.round(duration / 1000.0);
 
         buildData.put("duration", String.valueOf(duration_s));
@@ -120,8 +148,8 @@ public class DefaultBuildToJSON implements BuildToJSON {
      * @param build AbstractBuild
      * @return JSONObject or null if there are no results
      */
-    public JSONObject getTestResults(AbstractBuild build) {
-        AbstractTestResultAction testResultAction = build.getAction(AbstractTestResultAction.class);
+    public JSONObject getTestResults(Run run) {
+        AbstractTestResultAction testResultAction = run.getAction(AbstractTestResultAction.class);
         if (testResultAction == null) {
             return null;
         }
@@ -133,31 +161,71 @@ public class DefaultBuildToJSON implements BuildToJSON {
                 .element("passed_count", passCount)
                 .element("failed_count", testResultAction.getFailCount())
                 .element("ignored_count", testResultAction.getSkipCount())
-                .element("url", getTestResultsURL(build, testResultAction));
+                .element("url", getTestResultsURL(run, testResultAction));
     }
 
     /**
      * Build a status JSON object from the given build
      *
-     * @param build AbstractBuild
+     * @param run Run
      * @return JSONObject containing the type and name
      */
-    public JSONObject getStatus(AbstractBuild build) {
-        JSONObject status = new JSONObject();
+    public JSONObject getStatus(Run run) {
+        Result result = run.getResult();
+        String eventQStatus = null;
+        if (result != null) {
+            if (result.isBetterOrEqualTo(Result.SUCCESS)) {
+                eventQStatus = "success";
+            } else if (result.isBetterOrEqualTo(Result.UNSTABLE)) {
+                eventQStatus = "unstable";
+            } else if (result == Result.ABORTED) {
+                eventQStatus = "aborted";
+            } else {
+                eventQStatus = "fail";
+            }
+        }
+        return getStatus(eventQStatus);
+    }
 
-        Result result = build.getResult();
-        if (result.isBetterOrEqualTo(Result.SUCCESS)) {
+    /**
+     * Determines the EventQ status and builds a status JSON object.
+     *
+     * @param Run run
+     * @param statusNameOrType string
+     * @return JSONObject containing the type and name
+     */
+    private JSONObject getStatus(Run run, String statusNameOrType) {
+        return (statusNameOrType != null && statusNameOrType.trim().length() > 0) ?
+                getStatus(statusNameOrType) : getStatus(run);
+    }
+
+    /**
+     * Build a status JSON object from the given EventQ status name or type
+     *
+     * @param statusNameOrType string
+     * @return JSONObject containing the type and name
+     */
+    private JSONObject getStatus(String statusNameOrType) {
+        JSONObject status = new JSONObject();
+        if (statusNameOrType != null && statusNameOrType.trim().length() > 0) {
+            if (statusNameOrType.toLowerCase().startsWith("success")) {
+                status.put("type", "SUCCESS");
+                status.put("name", "Successful");
+            } else if (statusNameOrType.toLowerCase().startsWith("unstable")) {
+                status.put("type", "UNSTABLE");
+                status.put("name", "Unstable");
+            } else if (statusNameOrType.toLowerCase().startsWith("aborted")) {
+                status.put("type", "ABORTED");
+                status.put("name", "Aborted");
+            } else {
+                status.put("type", "FAILURE");
+                status.put("name", "Failed");
+            }
+        }
+        if (!status.has("type")) {
+            // default is 'Successful'
             status.put("type", "SUCCESS");
             status.put("name", "Successful");
-        } else if (result.isBetterOrEqualTo(Result.UNSTABLE)) {
-            status.put("type", "UNSTABLE");
-            status.put("name", "Unstable");
-        } else if (result == Result.ABORTED) {
-            status.put("type", "ABORTED");
-            status.put("name", "Aborted");
-        } else {
-            status.put("type", "FAILURE");
-            status.put("name", "Failed");
         }
 
         return status;
@@ -167,14 +235,13 @@ public class DefaultBuildToJSON implements BuildToJSON {
      * Because Jenkins is a pain in the ass to mock...
      *
      *
-     * @param build AbstractBuild we're grabbing the URI for
+     * @param run Run we're grabbing the URI for
      * @return URI for the build HTML page
      * @throws java.net.URISyntaxException
      */
-    public URI getBuildURI(AbstractBuild build) throws URISyntaxException {
-        return new URI(build.getAbsoluteUrl());
+    public URI getBuildURI(Run run) throws URISyntaxException {
+        return new URI(run.getAbsoluteUrl());
     }
-
 
     /**
      * Generate the JSON for the revision information.
@@ -184,28 +251,28 @@ public class DefaultBuildToJSON implements BuildToJSON {
      * @return
      * @throws IOException
      */
-    public JSONArray getRevisions(AbstractBuild build) throws IOException {
-        JSONObject repositoryInfo = getRepositoryInfo(build);
+    public JSONArray getRevisions(Run run) throws IOException {
+        JSONObject repositoryInfo = getRepositoryInfo(run);
 
         if (repositoryInfo == null) {
             return null;
         }
 
         JSONArray revisions = new JSONArray();
-
-        for (ChangeLogSet.Entry entry : findChangeSet(build)) {
+        for (ChangeLogSet.Entry entry : findChangeSet(run)) {
             JSONObject revision = new JSONObject();
             revision.putAll(repositoryInfo);
             revision.put("revision", ((Entry) entry).getCommitId());
-
             revisions.add(revision);
         }
-
         return revisions;
     }
 
-    public JSONObject getRepositoryInfo(AbstractBuild build) throws IOException {
-        SCM scmServer = build.getProject().getScm();
+    public JSONObject getRepositoryInfo(Run run) throws IOException {
+        SCM scmServer = getSCM(run);
+        if (scmServer == null) {
+            return null;
+        }
         String serverType = scmServer.getType();
 
         String repositoryType;
@@ -213,10 +280,10 @@ public class DefaultBuildToJSON implements BuildToJSON {
 
         if ("hudson.scm.SubversionSCM".equals(serverType)) {
             repositoryType = "svn";
-            repositoryURI = getSVNRepository(build);
+            repositoryURI = getSVNRepository(run);
         } else if ("hudson.plugins.git.GitSCM".equals(serverType)) {
             repositoryType = "git";
-            repositoryURI = getGitRepository(build);
+            repositoryURI = getGitRepository(run, scmServer);
         } else {
             logger.warning("Unknown repository type " + serverType);
             return null;
@@ -227,17 +294,18 @@ public class DefaultBuildToJSON implements BuildToJSON {
                 .element("repository_url", repositoryURI.toString());
     }
 
-    protected URI getSVNRepository(AbstractBuild build) throws IOException {
+    protected URI getSVNRepository(Run run) throws IOException {
         // SVN plugin buries the repository in revisions->module
-        JSONObject changeSet = toJson(build.getChangeSet());
+        JSONObject changeSet = toJson(getChangeSet(run));
         JSONObject firstRevision = changeSet.getJSONArray("revisions").getJSONObject(0);
 
         return stripUserAndPassword(firstRevision.getString("module"));
     }
 
-    protected URI getGitRepository(AbstractBuild build) throws IOException {
+    @SuppressWarnings("rawtypes")
+    protected URI getGitRepository(Run run, SCM scm) throws IOException {
         // build data isn't an action type that you can retrieve using getAction(class)
-        Action buildDataAction = getActionByClassName(build, "hudson.plugins.git.util.BuildData");
+        Action buildDataAction = getActionByClassName(run, "hudson.plugins.git.util.BuildData");
 
         if (buildDataAction == null) {
             logger.warning("Git plugin not found");
@@ -254,10 +322,7 @@ public class DefaultBuildToJSON implements BuildToJSON {
         if (remoteUrls != null && remoteUrls.size() > 0) {
             repositoryString = remoteUrls.getString(0);
         } else {
-
             logger.fine("Falling back to old repository detection.");
-
-            SCM scm = build.getProject().getScm();
             JSONObject scmInfo = toJson(scm);
             JSONArray userRemoteConfigs = scmInfo.getJSONArray("userRemoteConfigs");
             repositoryString = userRemoteConfigs.getJSONObject(0).getString("url");
@@ -266,8 +331,8 @@ public class DefaultBuildToJSON implements BuildToJSON {
         return stripUserAndPassword(repositoryString);
     }
 
-    protected Action getActionByClassName(AbstractBuild build, String actionName) {
-        for (Action action : build.getActions()) {
+    protected Action getActionByClassName(Run run, String actionName) {
+        for (Action action : run.getAllActions()) {
             if (actionName.equals(action.getClass().getName())) {
                 return action;
             }
@@ -281,11 +346,11 @@ public class DefaultBuildToJSON implements BuildToJSON {
      * @param build
      * @return
      */
-    private String getBuildURL(AbstractBuild build) {
+    private String getBuildURL(Run run) {
         String buildURL = null;
 
         try {
-            URI buildURI = getBuildURI(build);
+            URI buildURI = getBuildURI(run);
             buildURL = buildURI.toString();
         } catch (URISyntaxException e) {
             logger.log(Level.SEVERE, "Failed to parse build URL", e);
@@ -299,11 +364,11 @@ public class DefaultBuildToJSON implements BuildToJSON {
      * @param testResultAction
      * @return
      */
-    private String getTestResultsURL(AbstractBuild build, AbstractTestResultAction testResultAction) {
+    private String getTestResultsURL(Run run, AbstractTestResultAction testResultAction) {
         String resultsURL = null;
 
         try {
-            URI uri = getBuildURI(build);
+            URI uri = getBuildURI(run);
             URI testURI = uri.resolve(testResultAction.getUrlName());
             resultsURL = testURI.toString();
         } catch (URISyntaxException e) {
@@ -312,13 +377,69 @@ public class DefaultBuildToJSON implements BuildToJSON {
         return resultsURL;
     }
 
-    private ChangeLogSet<? extends ChangeLogSet.Entry> findChangeSet(AbstractBuild build) {
-        AbstractBuild prior = build;
-        while (prior != null && prior.getChangeSet().isEmptySet()) {
-            prior = (AbstractBuild) prior.getPreviousBuild();
+    private ChangeLogSet<? extends ChangeLogSet.Entry> findChangeSet(Run run) {
+        ChangeLogSet<? extends ChangeLogSet.Entry> cs = getChangeSet(run);
+        if (run != null && cs.isEmptySet()) {
+            return findChangeSet(run.getPreviousBuild());
         }
+        return cs;
+    }
 
-        AbstractBuild theBuild = (prior == null) ? build : prior;
-        return theBuild.getChangeSet();
+    private ChangeLogSet<? extends ChangeLogSet.Entry> getChangeSet(Run run) {
+        if (run == null) {
+            return ChangeLogSet.createEmpty(run);
+        }
+        if (run instanceof AbstractBuild) {
+            return ((AbstractBuild) run).getChangeSet();
+        }
+        if (run instanceof WorkflowRun) {
+            List<ChangeLogSet<? extends ChangeLogSet.Entry>> changeSets = ((WorkflowRun) run).getChangeSets();
+            if (!changeSets.isEmpty()) {
+                // It is possible that a workflow run can have multiple nodes (i.e. workspaces),
+                // use the last changeset assuming it is the one relevant to the pipeline step
+                return changeSets.get(changeSets.size() - 1);
+            }
+        }
+        try { // to support WorkflowRun prior to workflow-job 2.12
+            List<ChangeLogSet<? extends ChangeLogSet.Entry>> changeSets = 
+                    (List) run.getClass().getMethod("getChangeSets").invoke(run);
+            if (changeSets != null && !changeSets.isEmpty()) {
+                for (ChangeLogSet<? extends ChangeLogSet.Entry> clEntry : changeSets) {
+                    if (!clEntry.isEmptySet()) {
+                        return clEntry;
+                    }
+                }
+            }
+        } catch (Exception e) { // something weird like ExternalRun
+            // ignore
+        }
+        return ChangeLogSet.createEmpty(run);
+    }
+
+    private SCM getSCM(Run build) {
+        SCM scmServer = null;
+        if (build.getParent() instanceof AbstractProject) {
+            scmServer = ((AbstractProject)build.getParent()).getScm();
+        }
+        else if (build.getParent() instanceof WorkflowJob) {
+                WorkflowJob parentWJ = (WorkflowJob) build.getParent();
+                scmServer = parentWJ.getTypicalSCM();
+        }
+        if (scmServer == null) {
+            logger.warning("Failed to get repository info for " + build.getId());
+        }
+        return scmServer;
+    }
+
+    private Run getRawBuild(Run build) {
+        Run rawBuild = null;
+        try {
+            rawBuild = Run.fromExternalizableId(build.getExternalizableId());
+        }
+        catch(Exception e) {
+            logger.warning("Failed to get raw build for " + (build == null ? "???" : build.getNumber()));
+            // ignore
+        }
+        return rawBuild;
     }
 }
