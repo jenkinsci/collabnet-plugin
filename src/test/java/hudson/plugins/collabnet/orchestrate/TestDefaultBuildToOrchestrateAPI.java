@@ -63,7 +63,7 @@ public class TestDefaultBuildToOrchestrateAPI {
         //setup
 
         JSONObject expectedBuildData = new JSONObject().accumulate("foo", "bar");
-        expect(converter.getBuildData(build)).andReturn(expectedBuildData);
+        expect(converter.getBuildData(build, null, false)).andReturn(expectedBuildData);
 
         mocks.replayAll();
 
