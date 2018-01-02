@@ -3,10 +3,12 @@
   <parent>
     <groupId>org.jenkins-ci.plugins</groupId>
     <artifactId>plugin</artifactId>
-    <version>1.399</version>
+    <!-- <version>1.580.1</version> -->
+    <!-- <version>1.399</version> -->
+    <version>1.549</version>
   </parent>
   <artifactId>collabnet</artifactId>
-  <version>1.1.10-SNAPSHOT</version>
+  <version>1.1.12-SNAPSHOT</version>
   <name>CollabNet Plugins</name>
   <description>CollabNet packages</description>
   <url>http://wiki.jenkins-ci.org/display/JENKINS/CollabNet+Plugin</url>
