@@ -8,15 +8,21 @@ import com.collabnet.ce.webservices.CTFTracker;
 import com.collabnet.ce.webservices.CollabNetApp;
 import com.collabnet.cubit.api.CubitConnector;
 import hudson.plugins.collabnet.auth.CNAuthentication;
+import hudson.plugins.collabnet.CtfSoapHttpSender;
 import hudson.util.FormValidation;
 import hudson.util.Secret;
 import org.apache.axis.utils.StringUtils;
-import org.apache.commons.httpclient.HttpClient;
-import org.apache.commons.httpclient.methods.GetMethod;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
 import org.kohsuke.stapler.StaplerRequest;
 
 import java.io.IOException;
 import java.rmi.RemoteException;
+import java.security.KeyManagementException;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -75,18 +81,49 @@ public abstract class CNFormFieldValidator {
      * Returns form validation that represents the validity of the URL.
      */
     public static FormValidation checkUrl(String url) {
-        HttpClient client = new HttpClient();
+        CloseableHttpClient httpClient = null;
         try {
-            GetMethod get = new GetMethod(url);
-            int status = client.executeMethod(get);
-            if (status == 200)
-                return FormValidation.ok();
-            else
-                return FormValidation.error(url+" reported HTTP status code "+status);
-        } catch (IOException e) {
+            httpClient = getHttpClient();
+            HttpGet httpGet = new HttpGet(url);
+            CloseableHttpResponse r = httpClient.execute(httpGet);
+            try {
+                if (r.getStatusLine().getStatusCode() == 200) {
+                    return FormValidation.ok();
+                }
+                else {
+                    return FormValidation.error(url+" reported HTTP status code "+ r.getStatusLine().getStatusCode() +
+                            " with resaon " + r.getStatusLine().getReasonPhrase());
+                }
+            }
+            finally {
+                if (r != null) {
+                    r.close();
+                }
+            }
+        } catch (Exception e) {
             return FormValidation.error(e,"Failed to connect to "+url+" : "+e.getMessage());
-        } catch (IllegalArgumentException e) {
-            return FormValidation.error(e,"Failed to connect to "+url+" : "+e.getMessage());
+        } finally {
+            if (httpClient != null) {
+                try {
+                    httpClient.close();
+                } catch (IOException e) {
+                    // ignore
+                }
+            }
+        }
+    }
+
+    private static CloseableHttpClient getHttpClient()
+            throws KeyManagementException, NoSuchAlgorithmException, KeyStoreException {
+        if (CollabNetApp.areSslErrorsIgnored()) {
+            // finally create the HttpClient using HttpClient factory methods and assign the ssl socket factory
+            return HttpClients
+                    .custom()
+                    .setSSLSocketFactory(CtfSoapHttpSender.tryCreateAcceptAllSslSocketFactory())
+                    .build();
+        }
+        else {
+            return HttpClients.createDefault();
         }
     }
 

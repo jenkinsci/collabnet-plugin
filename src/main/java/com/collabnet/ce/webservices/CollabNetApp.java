@@ -2,10 +2,10 @@ package com.collabnet.ce.webservices;
 
 import com.collabnet.ce.soap60.fault.NoSuchObjectFault;
 import com.collabnet.ce.soap60.webservices.ClientSoapStubFactory;
-import com.collabnet.ce.soap60.webservices.cemain.UserGroupSoapList;
-import com.collabnet.ce.soap60.webservices.cemain.UserGroupSoapRow;
 import com.collabnet.ce.soap60.webservices.cemain.ICollabNetSoap;
 import com.collabnet.ce.soap60.webservices.cemain.ProjectSoapRow;
+import com.collabnet.ce.soap60.webservices.cemain.UserGroupSoapList;
+import com.collabnet.ce.soap60.webservices.cemain.UserGroupSoapRow;
 import com.collabnet.ce.soap60.webservices.cemain.UserSoapList;
 import com.collabnet.ce.soap60.webservices.cemain.UserSoapRow;
 import com.collabnet.ce.soap60.webservices.docman.IDocumentAppSoap;
@@ -16,29 +16,24 @@ import com.collabnet.ce.soap60.webservices.rbac.IRbacAppSoap;
 import com.collabnet.ce.soap60.webservices.scm.IScmAppSoap;
 import com.collabnet.ce.soap60.webservices.tracker.ITrackerAppSoap;
 import hudson.RelativePath;
+import hudson.plugins.collabnet.CollabNetPlugin;
+import hudson.plugins.collabnet.CtfSoapHttpSender;
 import hudson.plugins.collabnet.share.TeamForgeShare;
 import hudson.plugins.collabnet.util.CNHudsonUtil;
 import hudson.plugins.collabnet.util.CommonUtil;
 import hudson.util.Secret;
 import org.apache.axis.AxisFault;
-import org.apache.log4j.Logger;
+import org.apache.axis.EngineConfiguration;
+import org.apache.axis.SimpleTargetedChain;
+import org.apache.axis.configuration.SimpleProvider;
 import org.kohsuke.stapler.QueryParameter;
 
 import javax.activation.DataHandler;
 import javax.activation.FileDataSource;
-import javax.net.ssl.HttpsURLConnection;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.X509TrustManager;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.rmi.RemoteException;
-import java.security.KeyManagementException;
-import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
-import java.security.cert.CertificateException;
-import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -66,6 +61,13 @@ public class CollabNetApp {
     private volatile IDocumentAppSoap idas;
     private volatile IScmAppSoap isas;
     private volatile IRbacAppSoap iras;
+
+    static {
+        EngineConfiguration engCfg = getEngineConfiguration();
+        if (engCfg != null) {
+            ClientSoapStubFactory.setConfig(engCfg);
+        }
+    }
 
     /**
      * Creates a new session to the server at the given url.
@@ -112,13 +114,11 @@ public class CollabNetApp {
     public CollabNetApp(String url) {
         this.url = url;
         this.icns = this.getICollabNetSoap();
-        if (disableSSLCertificateCheck)
-            disableSSLCertificateCheck();
     }
 
     private <T> T createProxy(Class<T> type, String wsdlLoc) {
         String soapURL = this.getServerUrl() + SOAP_SERVICE + wsdlLoc + "?wsdl";
-        return type.cast(ClientSoapStubFactory. getSoapStub(type, soapURL));
+        return type.cast(ClientSoapStubFactory.getSoapStub(type, soapURL));
     }
 
     protected ITrackerAppSoap getTrackerSoap() {
@@ -488,30 +488,17 @@ public class CollabNetApp {
         return CNHudsonUtil.getCollabNetApp(url, username, password);
     }
 
-    public static void disableSSLCertificateCheck() {
-        TrustAllSocketFactory.install();
-        try {
-            SSLContext context = SSLContext.getInstance("TLS");
-            context.init(null, new TrustManager[] {
-                new X509TrustManager() {
-                    public void checkClientTrusted(X509Certificate[] x509Certificates, String s) throws CertificateException {
-                    }
-
-                    public void checkServerTrusted(X509Certificate[] x509Certificates, String s) throws CertificateException {
-                    }
-
-                    public X509Certificate[] getAcceptedIssuers() {
-                        return new X509Certificate[0];
-                    }
-                },
-            }, new SecureRandom());
-            HttpsURLConnection.setDefaultSSLSocketFactory(context.getSocketFactory());
-        } catch (NoSuchAlgorithmException e) {
-            throw new Error(e);
-        } catch (KeyManagementException e) {
-            throw new Error(e);
+    public static EngineConfiguration getEngineConfiguration() {
+        SimpleProvider config = null;
+        if (CollabNetApp.areSslErrorsIgnored()) {
+            config = new SimpleProvider();
+            config.deployTransport("https", new SimpleTargetedChain(new CtfSoapHttpSender())); //$NON-NLS-1$
+            config.deployTransport("http", new SimpleTargetedChain(new CtfSoapHttpSender())); //$NON-NLS-1$
         }
+        return config;
     }
 
-    public static boolean disableSSLCertificateCheck = false;
+    public static boolean areSslErrorsIgnored() {
+        return Boolean.getBoolean(CollabNetPlugin.class.getName() + ".skipSslValidation");
+    }
 }
