@@ -5,20 +5,20 @@ import groovy.lang.Binding;
 import hudson.Extension;
 import hudson.model.Descriptor;
 import hudson.model.Hudson;
+import hudson.plugins.collabnet.util.CNFormFieldValidator;
 import hudson.plugins.collabnet.util.CNHudsonUtil;
 import hudson.security.SecurityRealm;
 import hudson.util.FormValidation;
 import hudson.util.VersionNumber;
 import hudson.util.spring.BeanBuilder;
-import org.apache.commons.httpclient.HttpClient;
-import org.apache.commons.httpclient.methods.GetMethod;
+import jenkins.model.Jenkins;
+
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.springframework.web.context.WebApplicationContext;
 
 import javax.servlet.Filter;
 import javax.servlet.FilterConfig;
-import java.io.IOException;
 import java.rmi.RemoteException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -124,15 +124,12 @@ public class CollabNetSecurityRealm extends SecurityRealm {
          * @param value url
          */
         public FormValidation doCheckCollabNetUrl(@QueryParameter String value) {
-            if (!Hudson.getInstance().hasPermission(Hudson.ADMINISTER)) return FormValidation.ok();
+            if (!Jenkins.getInstance().hasPermission(Hudson.ADMINISTER)) return FormValidation.ok();
             String collabNetUrl = value;
             if (collabNetUrl == null || collabNetUrl.equals("")) {
                 return FormValidation.error("The CollabNet URL is required.");
             }
-            if (!checkSoapUrl(collabNetUrl)) {
-                return FormValidation.error("Invalid CollabNet URL.");
-            }
-            return FormValidation.ok();
+            return checkSoapUrl(collabNetUrl);
         }
         
         /**
@@ -142,19 +139,9 @@ public class CollabNetSecurityRealm extends SecurityRealm {
          * @return returns true if we can get a wsdl from the url, which
          *         indicates that it's a working CollabNet server.
          */
-        private boolean checkSoapUrl(String collabNetUrl) {
-            String soapURL = collabNetUrl + CollabNetApp.SOAP_SERVICE + 
-                "CollabNet?wsdl";
-            HttpClient client = new HttpClient();
-            try {
-                GetMethod get = new GetMethod(soapURL);
-                int status = client.executeMethod(get);
-                return status == 200;
-            } catch (IOException e) {
-                return false;
-            } catch (IllegalArgumentException iae) {
-                return false;
-            }
+        private FormValidation checkSoapUrl(String collabNetUrl) {
+            String soapURL = collabNetUrl + CollabNetApp.SOAP_SERVICE + "CollabNet?wsdl";
+            return CNFormFieldValidator.checkUrl(soapURL);
         }    
     }
 
