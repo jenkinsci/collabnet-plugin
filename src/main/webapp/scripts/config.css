@@ -22,14 +22,6 @@ table.config tr {
   line-height: 24px;
 }
 
-tr:nth-child(odd) {
-  background-color: #dfdfdf;
-}
-
-tr:nth-child(even) {
-  background-color: #f6f6f6;
-}
-
 table.config th {
   padding-left: 10px;
   text-align: left;

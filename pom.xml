@@ -6,7 +6,7 @@
     <version>1.645</version>
   </parent>
   <artifactId>collabnet</artifactId>
-  <version>2.0.6-SNAPSHOT</version>
+  <version>2.0.6</version>
   <name>CollabNet Plugins</name>
   <description>CollabNet packages</description>
   <url>http://wiki.jenkins-ci.org/display/JENKINS/CollabNet+Plugin</url>
@@ -36,6 +36,13 @@
   </repositories>
 
   <dependencies>
+    <dependency>
+      <groupId>org.jenkins-ci.main</groupId>
+      <artifactId>jenkins-war</artifactId>
+      <type>war</type>
+      <version>2.121.2</version>
+      <scope>test</scope>
+    </dependency>
     <dependency>
        <groupId>org.eclipse.aether</groupId>
        <artifactId>aether-api</artifactId>
@@ -224,6 +231,11 @@
       <artifactId>credentials</artifactId>
       <version>1.22</version>
     </dependency>
+    <dependency>
+      <groupId>org.springframework.security.oauth</groupId>
+      <artifactId>spring-security-oauth2</artifactId>
+      <version>2.1.1.RELEASE</version>
+    </dependency>
   </dependencies>
 
   <distributionManagement>
@@ -358,6 +370,14 @@
         <artifactId>maven-release-plugin</artifactId>
         <version>2.5.1</version>
       </plugin>
+        <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-compiler-plugin</artifactId>
+            <configuration>
+                <source>7</source>
+                <target>7</target>
+            </configuration>
+        </plugin>
     </plugins>
   </build>
 

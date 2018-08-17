@@ -1,5 +1,5 @@
 // This is copied from workflow-step-api plugin source code. Once the dependency is updated (2.12),
-// this can be deleted and PublishEventQStep can extend SynchronousNonBlockingStepExecution in the workflow-step-api-plugin 
+// this can be deleted and PublishEventStep can extend SynchronousNonBlockingStepExecution in the workflow-step-api-plugin
 package jenkins.plugins.collabnet.steps;
 
 import java.util.concurrent.ExecutorService;

@@ -16,11 +16,11 @@
 
 package jenkins.plugins.collabnet.steps;
 
+import hudson.plugins.collabnet.orchestrate.PushNotification;
 import static org.apache.commons.lang.StringUtils.isBlank;
 
 import java.io.IOException;
 import java.io.PrintStream;
-import java.net.URISyntaxException;
 import java.util.List;
 import java.util.Set;
 import java.util.logging.Logger;
@@ -48,25 +48,15 @@ import hudson.model.Item;
 import hudson.model.Result;
 import hudson.model.Run;
 import hudson.model.TaskListener;
-import hudson.plugins.collabnet.orchestrate.AmqpOrchestrateClient;
-import hudson.plugins.collabnet.orchestrate.BuildToOrchestrateAPI;
-import hudson.plugins.collabnet.orchestrate.DefaultBuildToJSON;
-import hudson.plugins.collabnet.orchestrate.DefaultBuildToOrchestrateAPI;
-import hudson.plugins.collabnet.orchestrate.OrchestrateClient;
-import hudson.plugins.collabnet.share.TeamForgeShare;
-import hudson.plugins.collabnet.share.TeamForgeShare.TeamForgeShareDescriptor;
 import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
 
-public class PublishEventQStep extends Step {
+public class PublishEventStep extends Step {
 
-    /** The root URL to the EventQ or MQ server. */
-    private final String serverUrl;
+    /** The REST end-point URL to the WEBR. */
+    private final String webhookUrl;
 
     private String credentialsId;
-
-    /** The key to the source to publish the build to. */
-    @DataBoundSetter public String sourceKey;
 
     /** The flag to mark current run unstable if this step fails to notify EventQ. */
     @DataBoundSetter public boolean markUnstable;
@@ -78,13 +68,13 @@ public class PublishEventQStep extends Step {
     @DataBoundSetter public boolean excludeCommitInfo;
 
     @DataBoundConstructor
-    public PublishEventQStep(String serverUrl) {
-        this.serverUrl = serverUrl;
+    public PublishEventStep(String webhookUrl) {
+        this.webhookUrl = webhookUrl;
     }
 
     @Override
     public StepExecution start(StepContext context) throws Exception {
-        PublishEventQStepExecution execution = new PublishEventQStepExecution(this, context);
+        PublishEventStepExecution execution = new PublishEventStepExecution(this, context);
         return execution;
     }
 
@@ -93,8 +83,8 @@ public class PublishEventQStep extends Step {
      *
      * @return the server URL
      */
-    public String getServerUrl() {
-        return serverUrl;
+    public String getWebhookUrl() {
+        return webhookUrl;
     }
 
     public String getCredentialsId() {
@@ -110,12 +100,12 @@ public class PublishEventQStep extends Step {
 
         @Override
         public String getFunctionName() {
-            return "publishEventQ";
+            return "publishWEBR";
         }
 
         @Override
         public String getDisplayName() {
-            return "Notify TeamForge EventQ";
+            return "Notify TeamForge WEBR";
         }
 
         @Override
@@ -130,7 +120,7 @@ public class PublishEventQStep extends Step {
             String useServerUrl = null;
             return new StandardUsernameListBoxModel()
                     .withEmptySelection()
-                    .withAll(PublishEventQStepExecution.lookupCredentials(owner, useServerUrl));
+                    .withAll(PublishEventStepExecution.lookupCredentials(owner, useServerUrl));
         }
 
         public ListBoxModel doFillStatusItems() {
@@ -146,23 +136,12 @@ public class PublishEventQStep extends Step {
         /**
          * Validates that the user provided a server URL.
          *
-         * @param serverUrl
+         * @param webhookUrl
          *            the URL provided by the user
          * @return whether or not the validation succeeded
          */
-        public FormValidation doCheckServerUrl(@QueryParameter String serverUrl) {
-            return FormValidation.validateRequired(serverUrl);
-        }
-
-        /**
-         * Validates that the user provided a source key.
-         *
-         * @param sourceKey
-         *            the key provided by the user
-         * @return whether or not the validation succeeded
-         */
-        public FormValidation doCheckSourceKey(@QueryParameter String sourceKey) {
-            return FormValidation.validateRequired(sourceKey);
+        public FormValidation doCheckWebhookUrl(@QueryParameter String webhookUrl) {
+            return FormValidation.validateRequired(webhookUrl);
         }
 
         /**
@@ -181,7 +160,7 @@ public class PublishEventQStep extends Step {
                     ) {
                 return FormValidation.ok();
             }
-            return FormValidation.error("Invalid EventQ status value");
+            return FormValidation.error("Invalid WEBR status value");
         }
 
         public FormValidation doCheckCredentialsId(
@@ -193,28 +172,23 @@ public class PublishEventQStep extends Step {
         }
     }
 
-    public static class PublishEventQStepExecution extends SynchNonBlockingStepExecution<Void> {
+    public static class PublishEventStepExecution extends SynchNonBlockingStepExecution<Void> {
         private static final long serialVersionUID = 1L;
-        private static final Logger logger = Logger.getLogger(PublishEventQStepExecution.class.getName());
+        private static final Logger logger = Logger.getLogger(PublishEventStepExecution.class.getName());
 
-        private transient PublishEventQStep step;
+        private transient PublishEventStep step;
         private transient TaskListener listener;
         private transient Run<?,?> run;
 
-        private transient BuildToOrchestrateAPI converter;
-        private transient OrchestrateClient eventqClient;
-        
+        private transient PushNotification pushNotification;
+
         /** Prefix for messages appearing in the console log, for readability */
-        public static String LOG_MESSAGE_PREFIX = "TeamForge EventQ Build Notifier - ";
+        public static String LOG_MESSAGE_PREFIX = "TeamForge Build Notifier - ";
 
-        /** Message for invalid EventQ server URL */
-        public static String LOG_MESSAGE_INVALID_URL = "The URL to the TeamForge EventQ server is missing.";
+        /** Message for invalid WEBR server URL */
+        public static String LOG_MESSAGE_INVALID_URL = "The URL to the TeamForge WEBR server is missing.";
 
-        /** Message for invalid EventQ source identifier */
-        public static String LOG_MESSAGE_INVALID_SOURCE_KEY =
-                "The source key for the TeamForge EventQ build source is missing.";
-
-        public PublishEventQStepExecution(final PublishEventQStep step, @Nonnull final StepContext ctx)
+        public PublishEventStepExecution(final PublishEventStep step, @Nonnull final StepContext ctx)
                 throws IOException, InterruptedException {
             super(ctx);
             this.step = step;
@@ -225,44 +199,18 @@ public class PublishEventQStep extends Step {
         @Override
         protected Void run() throws Exception {
             PrintStream consoleLogger = this.listener.getLogger();
-            String serverUrl = this.step.getServerUrl();
-            if (isBlank(serverUrl)) {
+            pushNotification = new PushNotification();
+            String webhookUrl = this.step.getWebhookUrl();
+            if (isBlank(webhookUrl)) {
                 markUnstable(
                         consoleLogger,
                         "Build information NOT sent: " + LOG_MESSAGE_INVALID_URL);
                 return null;
             }
 
-            String srcKey = this.step.sourceKey;
-            if (isBlank(srcKey)) {
-                markUnstable(
-                        consoleLogger,
-                        "Build information NOT sent: " + LOG_MESSAGE_INVALID_SOURCE_KEY);
-                return null;
-            }
-
             try {
-                initialize();
-                log("Sending build information using "
-                        + eventqClient.getClass().getSimpleName(),
-                        consoleLogger);
-                String json = converter.toOrchestrateAPI(run, srcKey.trim(), this.step.status,
+                pushNotification.handle(run, webhookUrl, listener, this.step.status,
                         this.step.excludeCommitInfo);
-                StandardUsernamePasswordCredentials c = getCredentials();
-                String username = c == null ? null : c.getUsername();
-                String password = c == null ?
-                        null : (c.getPassword() == null ? null : c.getPassword().getPlainText());
-                if (c == null) {
-                    // fallback to TeamForge credentials
-                    TeamForgeShareDescriptor d = TeamForgeShare.getTeamForgeShareDescriptor();
-                    username = d.getUsername();
-                    password = d.getPassword();
-
-                }
-                // log("Build information: " + json, consoleLogger);
-                eventqClient.postBuild(serverUrl.trim(),
-                        username, password, json);
-                log("Build information sent", consoleLogger);
             } catch (IllegalStateException ise) {
                 markUnstable(consoleLogger,
                         "Build information NOT sent: this step needs a Jenkins URL " +
@@ -279,7 +227,7 @@ public class PublishEventQStep extends Step {
 
         /**
          * Marks the current run as unstable and logs a message.
-         * 
+         *
          * @param consoleLogger
          *            the logger to log to
          * @param message
@@ -292,22 +240,6 @@ public class PublishEventQStep extends Step {
                 if (this.run != null) {
                     this.run.setResult(Result.UNSTABLE);
                 }
-            }
-        }
-        
-        /**
-         * Jenkins (un)helpfully wipes out any initialization done in constructors
-         * or class definitions before executing this #perform method. So we need to
-         * initialize it in case it wasn't already.
-         */
-        private void initialize() throws URISyntaxException {
-            if (this.converter == null) {
-                this.converter = new DefaultBuildToOrchestrateAPI(
-                        new DefaultBuildToJSON());
-            }
-
-            if (this.eventqClient == null) {
-                this.eventqClient = new AmqpOrchestrateClient();
             }
         }
 
@@ -325,14 +257,14 @@ public class PublishEventQStep extends Step {
 
         public StandardUsernamePasswordCredentials getCredentials() {
             return getCredentials(this.run.getParent(),
-                    this.step.getCredentialsId(), this.step.getServerUrl());
+                    this.step.getCredentialsId(), this.step.getWebhookUrl());
         }
-        
+
         public static StandardUsernamePasswordCredentials getCredentials(Item owner,
-                String credentialsId, String serverUrl) {
+                String credentialsId, String webhookUrl) {
             StandardUsernamePasswordCredentials result = null;
             if (!isBlank(credentialsId)) {
-                for (StandardUsernamePasswordCredentials c : lookupCredentials(owner, serverUrl)) {
+                for (StandardUsernamePasswordCredentials c : lookupCredentials(owner, webhookUrl)) {
                     if (c.getId().equals(credentialsId)) {
                         result = c;
                         break;
@@ -342,9 +274,9 @@ public class PublishEventQStep extends Step {
             return result;
         }
 
-        public static List<StandardUsernamePasswordCredentials> lookupCredentials(Item owner, String serverUrl) {
-            URIRequirementBuilder rBuilder = isBlank(serverUrl) ?
-                    URIRequirementBuilder.create() : URIRequirementBuilder.fromUri(serverUrl);
+        public static List<StandardUsernamePasswordCredentials> lookupCredentials(Item owner, String webhookUrl) {
+            URIRequirementBuilder rBuilder = isBlank(webhookUrl) ?
+                    URIRequirementBuilder.create() : URIRequirementBuilder.fromUri(webhookUrl);
             return CredentialsProvider.lookupCredentials(
                     StandardUsernamePasswordCredentials.class, owner, null, rBuilder.build());
         }
