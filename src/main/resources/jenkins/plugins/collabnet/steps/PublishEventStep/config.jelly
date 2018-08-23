@@ -4,9 +4,9 @@
   <f:entry title="Webhook URL" field="webhookUrl">
     <f:textbox />
   </f:entry>
-  <f:entry title="${%Credentials}" field="credentialsId">
+  <!-- <f:entry title="${%Credentials}" field="credentialsId">
     <c:select />
-  </f:entry>
+  </f:entry> -->
    <f:entry title="${%Status}" field="status">
    <f:select />
   </f:entry>

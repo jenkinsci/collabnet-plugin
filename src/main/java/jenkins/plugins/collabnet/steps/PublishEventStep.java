@@ -56,7 +56,7 @@ public class PublishEventStep extends Step {
     /** The REST end-point URL to the WEBR. */
     private final String webhookUrl;
 
-    private String credentialsId;
+    //private String credentialsId;
 
     /** The flag to mark current run unstable if this step fails to notify EventQ. */
     @DataBoundSetter public boolean markUnstable;
@@ -87,13 +87,13 @@ public class PublishEventStep extends Step {
         return webhookUrl;
     }
 
-    public String getCredentialsId() {
-        return this.credentialsId;
-    }
-
-    @DataBoundSetter public void setCredentialsId(String credentialsId) {
-        this.credentialsId = credentialsId;
-    }
+//    public String getCredentialsId() {
+//        return this.credentialsId;
+//    }
+//
+//    @DataBoundSetter public void setCredentialsId(String credentialsId) {
+//        this.credentialsId = credentialsId;
+//    }
 
     @Extension
     public static class DescriptorImpl extends StepDescriptor {
@@ -113,15 +113,15 @@ public class PublishEventStep extends Step {
             return ImmutableSet.of(Run.class, TaskListener.class, EnvVars.class);
         }
 
-        public ListBoxModel doFillCredentialsIdItems(@AncestorInPath Item owner) {
-            if (owner == null || !owner.hasPermission(Item.CONFIGURE)) {
-                return new StandardUsernameListBoxModel().withEmptySelection();
-            }
-            String useServerUrl = null;
-            return new StandardUsernameListBoxModel()
-                    .withEmptySelection()
-                    .withAll(PublishEventStepExecution.lookupCredentials(owner, useServerUrl));
-        }
+//        public ListBoxModel doFillCredentialsIdItems(@AncestorInPath Item owner) {
+//            if (owner == null || !owner.hasPermission(Item.CONFIGURE)) {
+//                return new StandardUsernameListBoxModel().withEmptySelection();
+//            }
+//            String useServerUrl = null;
+//            return new StandardUsernameListBoxModel()
+//                    .withEmptySelection()
+//                    .withAll(PublishEventStepExecution.lookupCredentials(owner, useServerUrl));
+//        }
 
         public ListBoxModel doFillStatusItems() {
             ListBoxModel items = new ListBoxModel();
@@ -162,14 +162,14 @@ public class PublishEventStep extends Step {
             }
             return FormValidation.error("Invalid WEBR status value");
         }
-
-        public FormValidation doCheckCredentialsId(
-                @QueryParameter final String credentialsId,
-                @AncestorInPath final Item owner) {
-            // TODO make sure that fallback credentials (i.e. TeamForge) exists if
-            // none is selected
-            return FormValidation.ok();
-        }
+//
+//        public FormValidation doCheckCredentialsId(
+//                @QueryParameter final String credentialsId,
+//                @AncestorInPath final Item owner) {
+//            // TODO make sure that fallback credentials (i.e. TeamForge) exists if
+//            // none is selected
+//            return FormValidation.ok();
+//        }
     }
 
     public static class PublishEventStepExecution extends SynchNonBlockingStepExecution<Void> {
@@ -255,31 +255,31 @@ public class PublishEventStep extends Step {
         }
 
 
-        public StandardUsernamePasswordCredentials getCredentials() {
-            return getCredentials(this.run.getParent(),
-                    this.step.getCredentialsId(), this.step.getWebhookUrl());
-        }
-
-        public static StandardUsernamePasswordCredentials getCredentials(Item owner,
-                String credentialsId, String webhookUrl) {
-            StandardUsernamePasswordCredentials result = null;
-            if (!isBlank(credentialsId)) {
-                for (StandardUsernamePasswordCredentials c : lookupCredentials(owner, webhookUrl)) {
-                    if (c.getId().equals(credentialsId)) {
-                        result = c;
-                        break;
-                    }
-                }
-            }
-            return result;
-        }
-
-        public static List<StandardUsernamePasswordCredentials> lookupCredentials(Item owner, String webhookUrl) {
-            URIRequirementBuilder rBuilder = isBlank(webhookUrl) ?
-                    URIRequirementBuilder.create() : URIRequirementBuilder.fromUri(webhookUrl);
-            return CredentialsProvider.lookupCredentials(
-                    StandardUsernamePasswordCredentials.class, owner, null, rBuilder.build());
-        }
+//        public StandardUsernamePasswordCredentials getCredentials() {
+//            return getCredentials(this.run.getParent(),
+//                    this.step.getCredentialsId(), this.step.getWebhookUrl());
+//        }
+//
+//        public static StandardUsernamePasswordCredentials getCredentials(Item owner,
+//                String credentialsId, String webhookUrl) {
+//            StandardUsernamePasswordCredentials result = null;
+//            if (!isBlank(credentialsId)) {
+//                for (StandardUsernamePasswordCredentials c : lookupCredentials(owner, webhookUrl)) {
+//                    if (c.getId().equals(credentialsId)) {
+//                        result = c;
+//                        break;
+//                    }
+//                }
+//            }
+//            return result;
+//        }
+//
+//        public static List<StandardUsernamePasswordCredentials> lookupCredentials(Item owner, String webhookUrl) {
+//            URIRequirementBuilder rBuilder = isBlank(webhookUrl) ?
+//                    URIRequirementBuilder.create() : URIRequirementBuilder.fromUri(webhookUrl);
+//            return CredentialsProvider.lookupCredentials(
+//                    StandardUsernamePasswordCredentials.class, owner, null, rBuilder.build());
+//        }
     }
 
 }

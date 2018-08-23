@@ -54,7 +54,7 @@ public class TestBuildNotifierDescriptor {
 
     /** The global server url is configured from a json object. */
     @Test
-    public void serverUrlConfiguredFromJson() throws Exception {
+    public void webhookUrlConfiguredFromJson() throws Exception {
         StaplerRequest request = EasyMock.createMock(StaplerRequest.class);
 
         assertNull(descriptor.getWebhookUrl());
@@ -64,26 +64,20 @@ public class TestBuildNotifierDescriptor {
 
     /** Null server urls are not allowed. */
     @Test
-    public void nullServerUrlNotAllowed() {
+    public void nullWebhookUrlNotAllowed() {
         assertError(descriptor.doCheckWebhookUrl(null));
     }
 
     /** Empty string server urls are not allowed. */
     @Test
-    public void emptyServerUrlNotAllowed() {
+    public void emptyWebhookUrlNotAllowed() {
         assertError(descriptor.doCheckWebhookUrl(""));
     }
 
     /** If you supply something, we'll try to connect to it. */
     @Test
-    public void anyStringAllowedForServerUrl() {
+    public void anyStringAllowedForWebhookUrl() {
         assertOk(descriptor.doCheckWebhookUrl("some string"));
-    }
-
-    /** Null source keys are not allowed. */
-    @Test
-    public void nullSourceKeyNotAllowed() {
-        assertError(descriptor.doCheckWebhookUrl(null));
     }
 
     /** Asserts that the given validation result is OK. */

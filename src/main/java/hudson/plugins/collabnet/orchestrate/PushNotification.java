@@ -2,12 +2,11 @@ package hudson.plugins.collabnet.orchestrate;
 
 import hudson.model.Run;
 import hudson.model.TaskListener;
-import org.apache.http.Header;
+import hudson.plugins.collabnet.util.CNFormFieldValidator;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
 import java.io.IOException;
 
 public class PushNotification {
@@ -32,19 +31,24 @@ public class PushNotification {
     }
 
     private int send(String url, String buildData) throws IOException {
-        CloseableHttpClient client = HttpClients.createDefault();
-        HttpPost httpPost = new HttpPost(url);
-        StringEntity entity = new StringEntity(buildData);
-        httpPost.setEntity(entity);
-        //httpPost.setHeader("Authorization", token");
-        httpPost.setHeader("Accept", "application/json");
-        httpPost.setHeader("Content-type", "application/json");
-        CloseableHttpResponse response;
-        try{
+        CloseableHttpClient client = null;
+        CloseableHttpResponse response = null;
+        int status = 0;
+        try {
+            client = CNFormFieldValidator.getHttpClient();
+            HttpPost httpPost = new HttpPost(url);
+            StringEntity entity = new StringEntity(buildData);
+            httpPost.setEntity(entity);
+            httpPost.setHeader("Accept", "application/json");
+            httpPost.setHeader("Content-type", "application/json");
             response = client.execute(httpPost);
-        }finally {
+            status = response.getStatusLine().getStatusCode();
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            response.close();
             client.close();
         }
-        return response.getStatusLine().getStatusCode();
+        return status;
     }
 }

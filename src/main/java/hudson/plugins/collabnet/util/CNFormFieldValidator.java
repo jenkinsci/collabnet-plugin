@@ -113,7 +113,7 @@ public abstract class CNFormFieldValidator {
         }
     }
 
-    private static CloseableHttpClient getHttpClient()
+    public static CloseableHttpClient getHttpClient()
             throws KeyManagementException, NoSuchAlgorithmException, KeyStoreException {
         if (CollabNetApp.areSslErrorsIgnored()) {
             // finally create the HttpClient using HttpClient factory methods and assign the ssl socket factory
