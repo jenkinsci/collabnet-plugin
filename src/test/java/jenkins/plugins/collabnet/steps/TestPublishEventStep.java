@@ -24,34 +24,21 @@ import org.junit.Test;
 import org.jvnet.hudson.test.JenkinsRule;
 
 import hudson.model.Result;
-import jenkins.plugins.collabnet.steps.PublishEventQStep;
 
-public class TestPublishEventQStep {
+public class TestPublishEventStep {
     
     @Rule
     public JenkinsRule jenkins = new JenkinsRule();
 
     @Test
-    public void buildWithEmptyServerUrlMustFail() throws Exception {
+    public void buildWithEmptyWebhookUrlMustFail() throws Exception {
         WorkflowJob p = jenkins.jenkins.createProject(WorkflowJob.class, "p");
         
         p.setDefinition(new CpsFlowDefinition(
-                "publishEventQ serverUrl: '', sourceKey: '1234', markUnstable: true"
+                "publishWEBR serverUrl: '', markUnstable: true"
         ));
         WorkflowRun b1 = p.scheduleBuild2(0).waitForStart();
         jenkins.assertBuildStatus(Result.UNSTABLE, jenkins.waitForCompletion(b1));
-        jenkins.assertLogContains(PublishEventQStep.PublishEventQStepExecution.LOG_MESSAGE_INVALID_URL, b1);
-    }
-
-    @Test
-    public void buildWithEmptySourceKeyMustFail() throws Exception {
-        WorkflowJob p = jenkins.jenkins.createProject(WorkflowJob.class, "p");
-        
-        p.setDefinition(new CpsFlowDefinition(
-                "publishEventQ serverUrl: 'amqp://mq.example.com:5672', sourceKey: '', markUnstable: true"
-        ));
-        WorkflowRun b1 = p.scheduleBuild2(0).waitForStart();
-        jenkins.assertBuildStatus(Result.UNSTABLE, jenkins.waitForCompletion(b1));
-        jenkins.assertLogContains(PublishEventQStep.PublishEventQStepExecution.LOG_MESSAGE_INVALID_SOURCE_KEY, b1);
+        jenkins.assertLogContains(PublishEventStep.PublishEventStepExecution.LOG_MESSAGE_INVALID_URL, b1);
     }
 }

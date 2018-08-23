@@ -50,23 +50,19 @@ public class TestEntryFieldsOnPages {
     @Test
     public void jobConfigurationHasConnectionInfoAndSourceKey() throws Exception {
 
-        BuildNotifier orcPublisher = new BuildNotifier(null,"testUrl", "testUsername", Secret.fromString("testPwd"), "sourceKey");
+        BuildNotifier orcPublisher = new BuildNotifier(null,"testUrl" );
 
         project.getPublishersList().add(orcPublisher);
 
         HtmlPage page = webClient.getPage(project, "configure");
 
-        WebAssert.assertElementPresent(page, "orchestrate-serverUrl");
-        WebAssert.assertElementPresent(page, "orchestrate-serverUsername");
-        WebAssert.assertElementPresent(page, "orchestrate-serverPassword");
-        WebAssert.assertElementPresent(page, "orchestrate-sourceKey");
+        WebAssert.assertElementPresent(page, "webhookUrl");
     }
 
-    /** Validates the Server Url help text */
+    /** Validates the Webhook Url help text */
     @Test
     public void configurationHelpHasServerUrlExamples() throws Exception {
-        HtmlPage page = webClient.goTo("descriptor/hudson.plugins.collabnet.orchestrate.BuildNotifier/help/serverUrl");
+        HtmlPage page = webClient.goTo("descriptor/hudson.plugins.collabnet.orchestrate.BuildNotifier/help/webhookUrl");
         WebAssert.assertTextNotPresent(page, "http://api.example.com");
-        WebAssert.assertTextPresent(page, "amqp://mq.example.com:5672");
     }
 }

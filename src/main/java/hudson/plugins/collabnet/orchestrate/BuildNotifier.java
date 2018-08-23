@@ -19,52 +19,31 @@ package hudson.plugins.collabnet.orchestrate;
 import hudson.Launcher;
 import hudson.model.AbstractBuild;
 import hudson.model.BuildListener;
-import hudson.model.Result;
 import hudson.plugins.collabnet.ConnectionFactory;
 import hudson.plugins.collabnet.share.TeamForgeShare;
+import hudson.plugins.collabnet.util.Helper;
 import hudson.tasks.BuildStepMonitor;
 import hudson.tasks.Notifier;
 import hudson.util.Secret;
 import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
-
 import java.io.*;
-import java.net.URISyntaxException;
-import java.util.logging.Logger;
 
-import static org.apache.commons.lang.StringUtils.isBlank;
 
 /**
- * Notifies EventQ when a build is complete. This is job-specific
+ * Notifies WEBR when a build is complete. This is job-specific
  * configuration.
  */
 public class BuildNotifier extends Notifier {
 
-    /** The root URL to the EventQ or MQ server. */
-    private String serverUrl;
-
-    /** The username for authentication against the EventQ or MQ server */
-    private String serverUsername;
-
-    /** The password for authentication against the EventQ or MQ server */
-    private Secret serverPassword;
-
-    /** The key to the source to publish the build to. */
-    private String sourceKey;
+    private String webhookUrl;
 
     /** The CTF project and credentials for traceability */
     private String ctfUrl;
     private String ctfUser;
     private Secret ctfPassword;
 
-    /** Converts builds. */
-    private transient BuildToOrchestrateAPI converter;
-
-    /** Communicates with the EventQ server. */
-    private transient OrchestrateClient orchestrateClient;
-
-    /** Prefix for messages appearing in the console log, for readability */
-    private static String LOG_MESSAGE_PREFIX = "TeamForge EventQ Build Notifier - ";
+    private PushNotification pushNotification;
 
     private String url;
     private String username;
@@ -76,16 +55,8 @@ public class BuildNotifier extends Notifier {
      * Creates a new BuildNotifier. Arguments are automatically supplied when
      * the job configuration is read from the configuration file.
      *
-     * @param serverUrl
-     *            the root of the EventQ application or MQ
-     * @param serverUsername
-     *            the username for authentication against the EventQ or MQ
-     *            server
-     * @param serverPassword
-     *            the password for authentication against the EventQ or MQ
-     *            server
-     * @param sourceKey
-     *            the association key for the source to publish to
+     * @param webhookUrl
+     *            the Webhook url to post build information
      * @param ctfUrl
      *            The project homepage URL
      * @param ctfUser
@@ -95,9 +66,7 @@ public class BuildNotifier extends Notifier {
      */
 
     @DataBoundConstructor
-    public BuildNotifier(OptionalAssociationView associationView,
-                         String serverUrl, String serverUsername,
-                          Secret serverPassword, String sourceKey) {
+    public BuildNotifier(OptionalAssociationView associationView, String webhookUrl) {
         if (associationView != null) {
             ConnectionFactory connectionFactory =
                 associationView.connectionFactory;
@@ -115,10 +84,15 @@ public class BuildNotifier extends Notifier {
             this.ctfUrl = null;
             this.setUseAssociationView(false);
         }
-        this.serverUrl = serverUrl;
-        this.serverUsername = serverUsername;
-        this.serverPassword = serverPassword;
-        this.sourceKey = sourceKey;
+        this.webhookUrl = webhookUrl;
+    }
+
+    public String getWebhookUrl() {
+        return webhookUrl;
+    }
+
+    public void setWebhookUrl(String webhookUrl) {
+        this.webhookUrl = webhookUrl;
     }
 
     public static class OptionalAssociationView {
@@ -190,63 +164,6 @@ public class BuildNotifier extends Notifier {
     }
 
     /**
-     * Reads the server URL to contact. Used by Jelly to render the UI template.
-     *
-     * @return the server URL
-     */
-    public String getServerUrl() {
-        return serverUrl;
-    }
-
-    /**
-     * Sets the server URL field.
-     *
-     * @param serverUrl
-     */
-    public void setServerUrl(String serverUrl) {
-        this.serverUrl = serverUrl;
-    }
-
-    /**
-     * Reads the server authentication username field
-     *
-     * @return String
-     */
-    public String getServerUsername() {
-        return serverUsername;
-    }
-
-    /**
-     * Reads the server authentication password field in plain text
-     *
-     * @return String
-     */
-    public String getServerPassword() {
-        String plainTextPassword = Secret.toString(this.serverPassword);
-        return (StringUtils.isBlank(plainTextPassword)) ? null
-            : plainTextPassword;
-    }
-
-    /**
-     * Reads the source key that identifies this server. Used by Jelly to render
-     * the UI template.
-     *
-     * @return the source key
-     */
-    public String getSourceKey() {
-        return sourceKey;
-    }
-
-    /**
-     * Sets the source key field
-     *
-     * @param sourceKey
-     */
-    public void setSourceKey(String sourceKey) {
-        this.sourceKey = sourceKey;
-    }
-
-    /**
      * Reads the ctf project URL
      *
      * @return the CTF project URL
@@ -306,125 +223,30 @@ public class BuildNotifier extends Notifier {
     /** {@inheritDoc} */
     @Override
     public boolean perform(AbstractBuild<?, ?> build, Launcher launcher,
-                           BuildListener listener)
-            throws InterruptedException, IOException {
+                           BuildListener listener) {
 
-        // logging setup
         PrintStream consoleLogger = listener.getLogger();
-
-        if (isBlank(getServerUrl())) {
-            markUnstable(
-                         build,
-                         consoleLogger,
-                         "Build information NOT sent: the URL to the TeamForge EventQ server is missing.");
-            return true;
-        }
-
-        if (isBlank(getSourceKey())) {
-            markUnstable(
-                         build,
-                         consoleLogger,
-                         "Build information NOT sent: the source key for the TeamForge EventQ build source is missing.");
-            return true;
-        }
+        pushNotification = new PushNotification();
 
         try {
-            initialize();
-            log("Sending build information using "
-                + orchestrateClient.getClass().getSimpleName(),
-                consoleLogger);
-            String json = converter.toOrchestrateAPI(build, getSourceKey()
-                                                     .trim());
-            orchestrateClient.postBuild(getServerUrl().trim(),
-					getServerUsername(), getServerPassword(),
-                                        json);
-            log("Build information sent", consoleLogger);
+            //URL url = new URL(this.getCtfUrl());
+            //String token = Helper.getToken(url, this.getCtfUser(), this.getCtfPassword());
+            pushNotification.handle(build, getWebhookUrl(), listener, null, false);
         } catch (IllegalStateException ise) {
-            markUnstable(
+            Helper.markUnstable(
                          build,
                          consoleLogger,
-                         "Build information NOT sent: plugin needs a Jenkins URL (go to Manage Jenkins > Configure System; click Save)");
+                         "Build information NOT sent: plugin needs a Jenkins URL (go to Manage Jenkins > Configure " +
+                                 "System; click Save)", getClass().getName());
         } catch (Exception e) {
-            markUnstable(build, consoleLogger, e.getMessage());
-            log("Build information NOT sent, details below", consoleLogger);
+            Helper.markUnstable(build, consoleLogger, e.getMessage(), getClass().getName());
+            Helper.log("Build information NOT sent, details below", consoleLogger);
             e.printStackTrace(consoleLogger);
         }
         return true;
     }
 
-    /**
-     * Marks the build as unstable and logs a message.
-     * 
-     * @param build
-     *            the build to mark unstable
-     * @param consoleLogger
-     *            the logger to log to
-     * @param message
-     *            the message to log
-     */
-    private void markUnstable(AbstractBuild<?, ?> build,
-                              PrintStream consoleLogger, String message) {
-        log(message, consoleLogger);
-        Logger logger = Logger.getLogger(getClass().getName());
-        logger.warning(message);
-        build.setResult(Result.UNSTABLE);
-    }
 
-    /**
-     * Jenkins (un)helpfully wipes out any initialization done in constructors
-     * or class definitions before executing this #perform method. So we need to
-     * initialize it in case it wasn't already.
-     */
-    private void initialize() throws URISyntaxException {
-        if (converter == null) {
-            converter = new DefaultBuildToOrchestrateAPI(
-                new DefaultBuildToJSON());
-        }
-
-        if (orchestrateClient == null) {
-            orchestrateClient = new AmqpOrchestrateClient();
-        }
-    }
-
-    /**
-     * Sets the converter to use.
-     * 
-     * @param newConverter
-     *            the new converter
-     */
-    public void setConverter(BuildToOrchestrateAPI newConverter) {
-        this.converter = newConverter;
-    }
-
-    /**
-     * Sets the Orchestrate client to use.
-     *
-     * @param client
-     *            the new client
-     */
-    public void setOrchestrateClient(OrchestrateClient client) {
-        this.orchestrateClient = client;
-    }
-
-    /**
-     * Returns the Orchestrate client
-     *
-     * @return an orchestrateClient instance
-     */
-    public OrchestrateClient getOrchestrateClient() {
-        return this.orchestrateClient;
-    }
-
-    /**
-     * Logging helper that prepends the log message prefix
-     *
-     * @param msg
-     * @param printStream
-     */
-    private void log(String msg, PrintStream printStream) {
-        printStream.print(LOG_MESSAGE_PREFIX);
-        printStream.println(msg);
-    }
 
     public boolean getUseAssociationView() {
         return useAssociationView;

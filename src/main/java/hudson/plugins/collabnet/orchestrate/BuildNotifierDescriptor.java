@@ -31,14 +31,8 @@ import org.kohsuke.stapler.StaplerRequest;
 @Extension
 public class BuildNotifierDescriptor extends BuildStepDescriptor<Publisher> {
 
-    /** The default EventQ server URL. */
-    private String serverUrl;
-
-    /** The username for authentication against the EventQ or MQ server */
-    private String serverUsername;
-
-    /** The password for authentication against the EventQ or MQ server */
-    private Secret serverPassword;
+    /** The default WEBR server URL. */
+    private String webhookUrl;
 
     /**
      * Creates a new plugin descriptor.
@@ -57,92 +51,35 @@ public class BuildNotifierDescriptor extends BuildStepDescriptor<Publisher> {
     /** {@inheritDoc} */
     @Override
     public String getDisplayName() {
-        return "Notify TeamForge EventQ when a build completes";
+        return "Notify TeamForge WEBR when a build completes";
     }
 
     /** {@inheritDoc} */
     @Override
     public boolean configure(StaplerRequest req, JSONObject formData)
         throws FormException {
-        serverUrl = formData.getString("serverUrl");
-        serverUsername = formData.getString("serverUsername");
-        serverPassword = Secret
-            .fromString(formData.getString("serverPassword"));
+        webhookUrl = formData.getString("webhookUrl");
         save();
         return super.configure(req, formData);
     }
 
     /**
-     * Gets the URL to the EventQ server to connect to. Used by the Jenkins
+     * Gets the URL to the WEBR server to connect to. Used by the Jenkins
      * configuration UI.
      */
-    public String getServerUrl() {
-        return serverUrl;
+    public String getWebhookUrl() {
+        return webhookUrl;
     }
 
-    /**
-     * Reads the server authentication username field
+   /**
+     * Validates that the user provided a webhook URL.
      *
-     * @return String
-     */
-    public String getServerUsername() {
-        return serverUsername;
-    }
-
-    /**
-     * Reads the server authentication password field in plain text
-     *
-     * @return String
-     */
-    public String getServerPassword() {
-        String plainTextPassword = Secret.toString(this.serverPassword);
-        return (StringUtils.isBlank(plainTextPassword)) ? null
-            : plainTextPassword;
-    }
-
-    /**
-     * Validates that the user provided a server URL.
-     *
-     * @param serverUrl
+     * @param webhookUrl
      *            the URL provided by the user
      * @return whether or not the validation succeeded
      */
-    public FormValidation doCheckServerUrl(@QueryParameter String serverUrl) {
-        return FormValidation.validateRequired(serverUrl);
-    }
-
-    /**
-     * Validates that the user provided a server Username.
-     *
-     * @param serverUsername
-     *            the username provided by the user
-     * @return whether or not the validation succeeded
-     */
-    public FormValidation doCheckServerUsername(@QueryParameter String serverUsername) {
-        return FormValidation.validateRequired(serverUsername);
-    }
-
-    /**
-     * Validates that the user provided a server Password.
-     *
-     * @param serverPassword
-     *            the password provided by the user
-     * @return whether or not the validation succeeded
-     */
-    public FormValidation doCheckServerPassword(@QueryParameter String serverPassword) {
-        return FormValidation.validateRequired(serverPassword);
-    }
-
-
-    /**
-     * Validates that the user provided a source key.
-     *
-     * @param sourceKey
-     *            the key provided by the user
-     * @return whether or not the validation succeeded
-     */
-    public FormValidation doCheckSourceKey(@QueryParameter String sourceKey) {
-        return FormValidation.validateRequired(sourceKey);
+    public FormValidation doCheckWebhookUrl(@QueryParameter String webhookUrl) {
+        return FormValidation.validateRequired(webhookUrl);
     }
 
     /**

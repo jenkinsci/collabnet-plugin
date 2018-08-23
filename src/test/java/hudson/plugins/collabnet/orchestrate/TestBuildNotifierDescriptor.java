@@ -16,7 +16,6 @@
 
 package hudson.plugins.collabnet.orchestrate;
 
-import hudson.plugins.collabnet.orchestrate.BuildNotifierDescriptor;
 import hudson.util.FormValidation;
 import net.sf.json.JSONObject;
 import org.easymock.EasyMock;
@@ -55,48 +54,30 @@ public class TestBuildNotifierDescriptor {
 
     /** The global server url is configured from a json object. */
     @Test
-    public void serverUrlConfiguredFromJson() throws Exception {
+    public void webhookUrlConfiguredFromJson() throws Exception {
         StaplerRequest request = EasyMock.createMock(StaplerRequest.class);
 
-        assertNull(descriptor.getServerUrl());
-        descriptor.configure(request, JSONObject.fromObject("{\"serverUrl\": \"someUrl\", \"serverUsername\": \"someUsername\", \"serverPassword\": \"somePassword\"}"));
-        assertEquals("someUrl", descriptor.getServerUrl());
+        assertNull(descriptor.getWebhookUrl());
+        descriptor.configure(request, JSONObject.fromObject("{\"webhookUrl\": \"someUrl\"}"));
+        assertEquals("someUrl", descriptor.getWebhookUrl());
     }
 
     /** Null server urls are not allowed. */
     @Test
-    public void nullServerUrlNotAllowed() {
-        assertError(descriptor.doCheckServerUrl(null));
+    public void nullWebhookUrlNotAllowed() {
+        assertError(descriptor.doCheckWebhookUrl(null));
     }
 
     /** Empty string server urls are not allowed. */
     @Test
-    public void emptyServerUrlNotAllowed() {
-        assertError(descriptor.doCheckServerUrl(""));
+    public void emptyWebhookUrlNotAllowed() {
+        assertError(descriptor.doCheckWebhookUrl(""));
     }
 
     /** If you supply something, we'll try to connect to it. */
     @Test
-    public void anyStringAllowedForServerUrl() {
-        assertOk(descriptor.doCheckServerUrl("some string"));
-    }
-
-    /** Null source keys are not allowed. */
-    @Test
-    public void nullSourceKeyNotAllowed() {
-        assertError(descriptor.doCheckServerUrl(null));
-    }
-
-    /** Empty source keys are not allowed. */
-    @Test
-    public void emptySourceKeyNotAllowed() {
-        assertError(descriptor.doCheckSourceKey(""));
-    }
-
-    /** Any string is allowed for a source key. */
-    @Test
-    public void anyStringAllowedForSourceKey() {
-        assertOk(descriptor.doCheckSourceKey("abc"));
+    public void anyStringAllowedForWebhookUrl() {
+        assertOk(descriptor.doCheckWebhookUrl("some string"));
     }
 
     /** Asserts that the given validation result is OK. */
