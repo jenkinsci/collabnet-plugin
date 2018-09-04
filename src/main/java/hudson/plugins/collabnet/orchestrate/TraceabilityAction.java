@@ -4,9 +4,11 @@ import com.collabnet.ce.soap60.webservices.ClientSoapStubFactory;
 import com.collabnet.ce.soap60.webservices.cemain.ICollabNetSoap;
 import hudson.model.AbstractBuild;
 import hudson.model.Action;
+import hudson.plugins.collabnet.util.Helper;
 import hudson.util.DescribableList;
 import org.apache.commons.validator.routines.UrlValidator;
 
+import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -195,5 +197,43 @@ public class TraceabilityAction implements Action {
         if (!urlValidator.isValid(ctfUrl.toString())) {
             throw new URISyntaxException("URISyntaxException", "Invalid url");
         }
+    }
+
+    public String getCtfRestUrl() {
+        String ctfUrl = this.getCtfUrl();
+        return (ctfUrl + "/ctfrest/foundation/v1/associations?ids=build:" + this.getBuild().getNumber());
+    }
+
+    public String getTokenId() throws IOException {
+        String ctfUrl = this.getCtfUrl();
+        String ctfUserName = this.getCtfUser();
+        String ctfPassword = this.getCtfPassword();
+        try {
+            URL url = getUrl(ctfUrl);
+            validateCtfUrl(url);
+            return Helper.getToken(url, ctfUserName, ctfPassword);
+        } catch (MalformedURLException e) {
+            addErrorMsg(INVALID_TFURL);
+            logger.log(Level.INFO, INVALID_TFURL, e);
+            return EMPTY_STRING;
+        } catch (URISyntaxException e) {
+            addErrorMsg(INVALID_TFURL);
+            logger.log(Level.INFO, INVALID_TFURL, e);
+            return EMPTY_STRING;
+        }
+    }
+
+    public boolean isSupportEventQ(){
+        if(getNotifier().getSupportEventQ()){
+            return true;
+        }
+        return false;
+    }
+
+    public boolean isSupportWebhook(){
+        if(getNotifier().getSupportWebhook()){
+            return true;
+        }
+        return false;
     }
 }

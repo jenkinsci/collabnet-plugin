@@ -19,4 +19,7 @@
   <f:entry title="Mark Unstable" field="markUnstable" >
     <f:checkbox default="true" />
   </f:entry>
+  <f:entry title="WebHook URL" field="webhookUrl">
+    <f:textbox />
+  </f:entry>
 </j:jelly>

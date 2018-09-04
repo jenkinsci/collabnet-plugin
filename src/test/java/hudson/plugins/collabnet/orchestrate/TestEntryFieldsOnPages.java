@@ -49,8 +49,10 @@ public class TestEntryFieldsOnPages {
     /** Tests the configuration properties on the global page. */
     @Test
     public void jobConfigurationHasConnectionInfoAndSourceKey() throws Exception {
+        BuildNotifier.OptionalEventQ optionalEventQ = new BuildNotifier.OptionalEventQ("testUrl",
+                "testUsername", Secret.fromString("testPwd"), "sourceKey");
 
-        BuildNotifier orcPublisher = new BuildNotifier(null,"testUrl", "testUsername", Secret.fromString("testPwd"), "sourceKey");
+        BuildNotifier orcPublisher  = new BuildNotifier(null, null, optionalEventQ);
 
         project.getPublishersList().add(orcPublisher);
 

@@ -57,7 +57,7 @@ public class BuildNotifierDescriptor extends BuildStepDescriptor<Publisher> {
     /** {@inheritDoc} */
     @Override
     public String getDisplayName() {
-        return "Notify TeamForge EventQ when a build completes";
+        return "Notify TeamForge/EventQ when a build completes";
     }
 
     /** {@inheritDoc} */

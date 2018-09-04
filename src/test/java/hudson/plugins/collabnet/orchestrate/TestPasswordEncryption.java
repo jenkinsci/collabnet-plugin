@@ -47,8 +47,9 @@ public class TestPasswordEncryption {
         username = "testUsername";
         password = Secret.fromString("testPwd");
         job = jenkinsRule.createFreeStyleProject();
-        
-        BuildNotifier orcPublisher = new BuildNotifier(null,"amqp://example.com", username, password, "sourceKey");
+        BuildNotifier.OptionalEventQ optionalEventQ = new BuildNotifier.OptionalEventQ("amqp://example.com",
+                username, password,"sourceKey");
+        BuildNotifier orcPublisher = new BuildNotifier(null, null,optionalEventQ);
         job.getPublishersList().add(orcPublisher);
 
     }

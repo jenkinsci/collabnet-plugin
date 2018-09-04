@@ -16,6 +16,7 @@
 
 package jenkins.plugins.collabnet.steps;
 
+import hudson.plugins.collabnet.orchestrate.PushNotification;
 import static org.apache.commons.lang.StringUtils.isBlank;
 
 import java.io.IOException;
@@ -63,6 +64,8 @@ public class PublishEventQStep extends Step {
     /** The root URL to the EventQ or MQ server. */
     private final String serverUrl;
 
+    private final String webhookUrl;
+
     private String credentialsId;
 
     /** The key to the source to publish the build to. */
@@ -78,8 +81,9 @@ public class PublishEventQStep extends Step {
     @DataBoundSetter public boolean excludeCommitInfo;
 
     @DataBoundConstructor
-    public PublishEventQStep(String serverUrl) {
+    public PublishEventQStep(String serverUrl, String webhookUrl) {
         this.serverUrl = serverUrl;
+        this.webhookUrl = webhookUrl;
     }
 
     @Override
@@ -105,6 +109,10 @@ public class PublishEventQStep extends Step {
         this.credentialsId = credentialsId;
     }
 
+    public String getWebhookUrl() {
+        return webhookUrl;
+    }
+
     @Extension
     public static class DescriptorImpl extends StepDescriptor {
 
@@ -115,7 +123,7 @@ public class PublishEventQStep extends Step {
 
         @Override
         public String getDisplayName() {
-            return "Notify TeamForge EventQ";
+            return "Notify TeamForge/EventQ";
         }
 
         @Override
@@ -150,9 +158,9 @@ public class PublishEventQStep extends Step {
          *            the URL provided by the user
          * @return whether or not the validation succeeded
          */
-        public FormValidation doCheckServerUrl(@QueryParameter String serverUrl) {
-            return FormValidation.validateRequired(serverUrl);
-        }
+//        public FormValidation doCheckServerUrl(@QueryParameter String serverUrl) {
+//            return FormValidation.validateRequired(serverUrl);
+//        }
 
         /**
          * Validates that the user provided a source key.
@@ -161,9 +169,9 @@ public class PublishEventQStep extends Step {
          *            the key provided by the user
          * @return whether or not the validation succeeded
          */
-        public FormValidation doCheckSourceKey(@QueryParameter String sourceKey) {
-            return FormValidation.validateRequired(sourceKey);
-        }
+//        public FormValidation doCheckSourceKey(@QueryParameter String sourceKey) {
+//            return FormValidation.validateRequired(sourceKey);
+//        }
 
         /**
          * Validates that the user provided EventQ status.
@@ -225,44 +233,47 @@ public class PublishEventQStep extends Step {
         @Override
         protected Void run() throws Exception {
             PrintStream consoleLogger = this.listener.getLogger();
-            String serverUrl = this.step.getServerUrl();
-            if (isBlank(serverUrl)) {
-                markUnstable(
-                        consoleLogger,
-                        "Build information NOT sent: " + LOG_MESSAGE_INVALID_URL);
-                return null;
-            }
-
-            String srcKey = this.step.sourceKey;
-            if (isBlank(srcKey)) {
-                markUnstable(
-                        consoleLogger,
-                        "Build information NOT sent: " + LOG_MESSAGE_INVALID_SOURCE_KEY);
-                return null;
-            }
-
             try {
-                initialize();
-                log("Sending build information using "
-                        + eventqClient.getClass().getSimpleName(),
-                        consoleLogger);
-                String json = converter.toOrchestrateAPI(run, srcKey.trim(), this.step.status,
-                        this.step.excludeCommitInfo);
-                StandardUsernamePasswordCredentials c = getCredentials();
-                String username = c == null ? null : c.getUsername();
-                String password = c == null ?
-                        null : (c.getPassword() == null ? null : c.getPassword().getPlainText());
-                if (c == null) {
-                    // fallback to TeamForge credentials
-                    TeamForgeShareDescriptor d = TeamForgeShare.getTeamForgeShareDescriptor();
-                    username = d.getUsername();
-                    password = d.getPassword();
-
+                if(!isBlank(this.step.getWebhookUrl())){
+                    PushNotification pushNotification = new PushNotification();
+                    pushNotification.handle(run, this.step.getWebhookUrl(), listener, this.step.status,
+                            this.step.excludeCommitInfo);
                 }
-                // log("Build information: " + json, consoleLogger);
-                eventqClient.postBuild(serverUrl.trim(),
-                        username, password, json);
-                log("Build information sent", consoleLogger);
+                String serverUrl = this.step.getServerUrl();
+                String srcKey = this.step.sourceKey;
+                if (isBlank(serverUrl)) {
+                    markUnstable(
+                            consoleLogger,
+                            "Build information NOT sent: " + LOG_MESSAGE_INVALID_URL);
+                    return null;
+                } else if (isBlank(srcKey)) {
+                    markUnstable(
+                            consoleLogger,
+                            "Build information NOT sent: " + LOG_MESSAGE_INVALID_SOURCE_KEY);
+                    return null;
+                } else {
+                    initialize();
+                    log("Sending build information using "
+                                    + eventqClient.getClass().getSimpleName(),
+                            consoleLogger);
+                    String json = converter.toOrchestrateAPI(run, srcKey.trim(), this.step.status,
+                            this.step.excludeCommitInfo);
+                    StandardUsernamePasswordCredentials c = getCredentials();
+                    String username = c == null ? null : c.getUsername();
+                    String password = c == null ?
+                            null : (c.getPassword() == null ? null : c.getPassword().getPlainText());
+                    if (c == null) {
+                        // fallback to TeamForge credentials
+                        TeamForgeShareDescriptor d = TeamForgeShare.getTeamForgeShareDescriptor();
+                        username = d.getUsername();
+                        password = d.getPassword();
+
+                    }
+                    // log("Build information: " + json, consoleLogger);
+                    eventqClient.postBuild(serverUrl.trim(),
+                            username, password, json);
+                    log("Build information sent", consoleLogger);
+                }
             } catch (IllegalStateException ise) {
                 markUnstable(consoleLogger,
                         "Build information NOT sent: this step needs a Jenkins URL " +

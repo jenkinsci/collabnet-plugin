@@ -1,0 +1,272 @@
+div.tf-associations-caption {
+  font-weight: bold;
+  float: left;
+}
+
+div#teamForgeIssuePanel div.modal-dialog {
+  overflow-y: initial !important;
+  width: 95%;
+  height: 90%;
+}
+
+
+div.tf-associations-modal {
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+}
+
+div.tf-associations-summary {
+  width: 100%;
+  float: none;
+}
+
+div.tf-associations-list > div {
+  vertical-align: top;
+  margin-top: 8px;
+  float: left;
+}
+
+table.tf-associations-list {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+table.tf-associations-list tr {
+  border: 1px solid #ddd;
+  border-left: none;
+  border-right: none;
+}
+
+table.tf-associations-list th {
+  color: #777;
+  text-align: left;
+  text-decoration: normal;
+  vertical-align: top;
+  padding-top: 5px;
+  padding-bottom: 5px;
+  padding-right: 5px;
+}
+
+table.tf-associations-list td {
+  white-space: pre-line;
+  vertical-align: center;
+  padding-top: 5px;
+  padding-bottom: 5px;
+  padding-right: 5px;
+}
+
+.tf-associations-col-date {
+  width: 100px;
+}
+.tf-associations-col-by {
+  width: 150px;
+}
+.tf-associations-col-typeicon {
+  width: 20px;
+}
+
+.tf-associations-col-typeicon img {
+  max-width: 16px;
+}
+
+.tf-associations-col-source {
+  width: 150px;
+}
+.tf-associations-col-status {
+  width: 150px;
+  display: none !important;
+}
+.tf-associations-col-id {
+  white-space: nowrap;
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tf-associations-col-summary {
+  white-space: nowrap;
+  min-width: 100px;
+  max-width: 500px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+div#tf-associated-node-details {
+  display: none;
+  height: 100%;
+}
+
+div.tf-associations-explore-chevrons {
+  position: relative;
+}
+
+text.tf-calendar-mmyy, text.tf-calendar-dd {
+  background: white;
+  font-family: SourceSansPro-Regular, Helvetica, Arial, sans-serif;
+  font-size: 12px;
+  font-style: normal;
+  font-weight: bold;
+  color: rgb(119, 119, 119);
+  fill: rgb(119, 119, 119);
+}
+
+.tf-left-chevron, .tf-right-chevron {
+  width: 29px;
+  height: 29px;
+  background-color: #3dade0;
+  text-align: center;
+  position: absolute;
+  display: none;
+  cursor: pointer;
+}
+
+.fa-chevron-left, .fa-chevron-right {
+  color: #ffffff;
+  margin-top: 8px;
+  display: inherited;
+}
+
+text.tf-calendar-icon {
+  fill: #3dade0;
+}
+
+div.tf-associations-modal .modal-dialog {
+  background-color: #fff;
+}
+
+div.tf-associations-modal .modal-title {
+  padding-left: 15px;
+}
+
+div.tf-associations-modal .modal-content {
+  border: none;
+  -webkit-box-shadow: none;
+  box-shadow: none;
+}
+
+div.tf-associations-modal .associations-trace {
+  float: right;
+}
+
+img.avatar {
+  border-radius: 100%;
+}
+
+img.avatar32 {
+ width: 32px;
+ height: 32px;
+}
+
+#tf-traceability-wrapper {
+  height: 100%;
+  width: 100%;
+  display: inline-block;
+}
+
+#tf-traceability-sidebar-wrapper {
+  padding: 3px 0px 0px 0px;
+  word-wrap: break-word;
+}
+
+.tf-traceability-sidebar-wrapper-table {
+  border: 2px solid #D5DCDD;
+  width: 100%;
+}
+
+.tf-traceability-sidebar-wrapper-table td {
+  padding: 0px;
+  padding: 10px;
+  border: 2px solid #D5DCDD;
+}
+
+.tf-traceability-sidebar-wrapper-td-details {
+  vertical-align: top;
+}
+
+.tf-traceability-sidebar-wrapper-details {
+  overflow-y: auto;
+}
+
+.tf-traceability-sidebar-wrapper-details-field-name {
+  font-weight: bold;
+}
+
+.tf-traceability-sidebar-wrapper-td-actions {
+  text-align: center;
+  height: 48px;
+}
+
+.tf-traceability-sidebar-wrapper-td-actions a {
+  cursor: pointer;
+  margin: 10px;
+}
+
+.tf-traceability-sidebar-wrapper-td-actions span {
+  margin: 10px;
+}
+
+#tf-traceability-main-wrapper {
+  height: 100%;
+  overflow-y: auto;
+  padding: 0px;
+}
+
+div.tf-association-id {
+  word-break: break-all;
+}
+
+.tf-association-id td,
+.tf-association-source td {
+  border: 0px;
+  border-collapse: collapse;
+  padding: 0px;
+}
+
+.tf-association-id-icon {
+  vertical-align: 0%;
+}
+
+.tf-association-source-icon {
+  vertical-align: 0%;
+  width: 25px;
+}
+
+.tf-association-source-icon-wide {
+  width: 37px !important;
+}
+
+.tf-association-id-text,
+.tf-association-source-text {
+  vertical-align: 0%;
+  width: 85%;
+}
+
+.tf-association-id-text {
+  color: #3CADE0;
+}
+
+.tf-association-inner-detail-table {
+  table-layout: fixed;
+  width: 100%;
+}
+
+.tf-association-detail-user,
+.tf-association-detail-timestamp {
+  font-style: italic;
+}
+
+.tf-association-detail-user {
+  font-weight: bold;
+}
+
+.tf-explore-close {
+  cursor: pointer;
+  vertical-align: 0%;
+  text-align: right;
+}
+
+.associations-trace-dependency-toggle {
+  padding-right: 0px;
+}
+

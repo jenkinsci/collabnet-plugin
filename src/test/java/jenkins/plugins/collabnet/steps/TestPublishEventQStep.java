@@ -22,9 +22,8 @@ import org.jenkinsci.plugins.workflow.job.WorkflowRun;
 import org.junit.Rule;
 import org.junit.Test;
 import org.jvnet.hudson.test.JenkinsRule;
-
 import hudson.model.Result;
-import jenkins.plugins.collabnet.steps.PublishEventQStep;
+
 
 public class TestPublishEventQStep {
     
