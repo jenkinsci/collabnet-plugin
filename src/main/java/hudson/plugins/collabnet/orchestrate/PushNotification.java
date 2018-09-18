@@ -28,7 +28,17 @@ public class PushNotification {
         }
         if(response == 201 || response == 200){
             listener.getLogger().println("Build notification sent successfully.");
-        } else{
+        }
+        else if(response == 400){
+            Helper.markUnstable(
+                    build,
+                    listener.getLogger(),
+                    "Build notification failed", getClass().getName());
+            listener.getLogger().println("Response: 400 Bad Request- Check your webhook end-point or registered event" +
+                    " publisher.");
+            listener.getLogger().println("Build message - " + payload.toString());
+        }
+        else{
             Helper.markUnstable(
                     build,
                     listener.getLogger(),

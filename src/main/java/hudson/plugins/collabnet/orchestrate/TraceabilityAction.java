@@ -98,6 +98,11 @@ public class TraceabilityAction implements Action {
     }
 
     public boolean getValidation() {
+        if(isSupportEventQ() && isSupportWebhook()){
+            addErrorMsg("TeamForge Association - Both TeamForge and EventQ configured. " +
+                    "Please use either one option.");
+            return true;
+        }
     	if(!getAssociationView()){
     		addErrorMsg("TeamForge Association view not configured.");
     		return true;
