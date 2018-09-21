@@ -45,8 +45,12 @@ public class Helper {
         } catch (Exception e) {
             e.printStackTrace();
         } finally {
-            response.close();
-            httpClient.close();
+            if(response != null) {
+                response.close();
+            }
+            if (httpClient != null) {
+                httpClient.close();
+            }
         }
         return token;
     }

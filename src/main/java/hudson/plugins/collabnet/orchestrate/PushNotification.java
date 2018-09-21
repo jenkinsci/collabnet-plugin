@@ -105,7 +105,9 @@ public class PushNotification {
             if(response != null) {
                 response.close();
             }
-            client.close();
+            if(client != null) {
+                client.close();
+            }
         }
         return status;
     }
