@@ -22,6 +22,7 @@ import hudson.model.BuildListener;
 import hudson.model.Result;
 import hudson.plugins.collabnet.ConnectionFactory;
 import hudson.plugins.collabnet.share.TeamForgeShare;
+import hudson.plugins.collabnet.util.Helper;
 import hudson.tasks.BuildStepMonitor;
 import hudson.tasks.Notifier;
 import hudson.util.Secret;
@@ -57,6 +58,8 @@ public class BuildNotifier extends Notifier {
     private String ctfUser;
     private Secret ctfPassword;
 
+    private PushNotification pushNotification;
+
     /** Converts builds. */
     private transient BuildToOrchestrateAPI converter;
 
@@ -71,6 +74,9 @@ public class BuildNotifier extends Notifier {
     private Secret password;
     private boolean override_auth = true;
     private boolean useAssociationView = false;
+    private boolean supportEventQ = false;
+    private boolean supportWebhook = false;
+    private String webhookUrl;
 
     /**
      * Creates a new BuildNotifier. Arguments are automatically supplied when
@@ -96,8 +102,7 @@ public class BuildNotifier extends Notifier {
 
     @DataBoundConstructor
     public BuildNotifier(OptionalAssociationView associationView,
-                         String serverUrl, String serverUsername,
-                          Secret serverPassword, String sourceKey) {
+                         OptionalWebhook webhook, OptionalEventQ eventQ) {
         if (associationView != null) {
             ConnectionFactory connectionFactory =
                 associationView.connectionFactory;
@@ -115,10 +120,17 @@ public class BuildNotifier extends Notifier {
             this.ctfUrl = null;
             this.setUseAssociationView(false);
         }
-        this.serverUrl = serverUrl;
-        this.serverUsername = serverUsername;
-        this.serverPassword = serverPassword;
-        this.sourceKey = sourceKey;
+        if(eventQ != null) {
+            this.serverUrl = eventQ.serverUrl;
+            this.serverUsername = eventQ.serverUsername;
+            this.serverPassword = eventQ.serverPassword;
+            this.sourceKey = eventQ.sourceKey;
+            this.setSupportEventQ(true);
+        }
+        if(webhook != null){
+            this.webhookUrl = webhook.webhookUrl;
+            this.setSupportWebhook(true);
+        }
     }
 
     public static class OptionalAssociationView {
@@ -129,6 +141,35 @@ public class BuildNotifier extends Notifier {
             this.connectionFactory = connectionFactory;
         }
     }
+
+    public static class OptionalEventQ{
+
+        private final String serverUrl;
+        private final String serverUsername;
+        private final Secret serverPassword;
+        private final String sourceKey;
+
+        @DataBoundConstructor
+        public OptionalEventQ(String serverUrl, String serverUsername, Secret serverPassword,
+                              String sourceKey){
+            this.serverUrl = serverUrl;
+            this.serverUsername = serverUsername;
+            this.serverPassword = serverPassword;
+            this.sourceKey = sourceKey;
+        }
+    }
+
+    public static class OptionalWebhook{
+
+        private String webhookUrl;
+
+        @DataBoundConstructor
+        public OptionalWebhook(String webhookUrl) {
+            this.webhookUrl = webhookUrl;
+        }
+
+    }
+
 
     /**
      * @return the collabneturl for the CollabNet server.
@@ -312,62 +353,67 @@ public class BuildNotifier extends Notifier {
         // logging setup
         PrintStream consoleLogger = listener.getLogger();
 
-        if (isBlank(getServerUrl())) {
-            markUnstable(
-                         build,
-                         consoleLogger,
-                         "Build information NOT sent: the URL to the TeamForge EventQ server is missing.");
-            return true;
-        }
-
-        if (isBlank(getSourceKey())) {
-            markUnstable(
-                         build,
-                         consoleLogger,
-                         "Build information NOT sent: the source key for the TeamForge EventQ build source is missing.");
+        if(getSupportEventQ() == true && getSupportWebhook() == true){
+            Helper.markUnstable(
+                    build,
+                    consoleLogger,
+                    "Build information NOT sent: Can't send notification to TeamForge and EventQ at the same" +
+                            " time." +
+                            "Please use either TeamForge/EventQ.", getClass().getName());
             return true;
         }
 
         try {
-            initialize();
-            log("Sending build information using "
-                + orchestrateClient.getClass().getSimpleName(),
-                consoleLogger);
-            String json = converter.toOrchestrateAPI(build, getSourceKey()
-                                                     .trim());
-            orchestrateClient.postBuild(getServerUrl().trim(),
-					getServerUsername(), getServerPassword(),
-                                        json);
-            log("Build information sent", consoleLogger);
+            if(getSupportEventQ() == true) {
+                if (isBlank(getServerUrl())) {
+                    Helper.markUnstable(
+                            build,
+                            consoleLogger,
+                            "Build information NOT sent: the URL to the TeamForge EventQ server is missing.", getClass().getName());
+                    return true;
+                }
+                if (isBlank(getSourceKey())) {
+                    Helper.markUnstable(
+                            build,
+                            consoleLogger,
+                            "Build information NOT sent: the source key for the TeamForge EventQ build source is " +
+                                    "missing.", getClass().getName());
+                    return true;
+                }
+                notifyEventQ(build, consoleLogger);
+            }
+            if(getSupportWebhook() == true){
+                pushNotification = new PushNotification();
+                pushNotification.handle(build, getWebhookUrl(), listener,
+                        null, false);
+            }
+
         } catch (IllegalStateException ise) {
-            markUnstable(
-                         build,
-                         consoleLogger,
-                         "Build information NOT sent: plugin needs a Jenkins URL (go to Manage Jenkins > Configure System; click Save)");
+            Helper.markUnstable(
+                    build,
+                    consoleLogger,
+                    "Build information NOT sent: plugin needs a Jenkins URL (go to Manage Jenkins > Configure " +
+                            "System; click Save)", getClass().getName());
         } catch (Exception e) {
-            markUnstable(build, consoleLogger, e.getMessage());
-            log("Build information NOT sent, details below", consoleLogger);
+            Helper.markUnstable(build, consoleLogger, e.getMessage(), getClass().getName());
+            Helper.log("Build information NOT sent, details below", consoleLogger);
             e.printStackTrace(consoleLogger);
         }
         return true;
     }
 
-    /**
-     * Marks the build as unstable and logs a message.
-     * 
-     * @param build
-     *            the build to mark unstable
-     * @param consoleLogger
-     *            the logger to log to
-     * @param message
-     *            the message to log
-     */
-    private void markUnstable(AbstractBuild<?, ?> build,
-                              PrintStream consoleLogger, String message) {
-        log(message, consoleLogger);
-        Logger logger = Logger.getLogger(getClass().getName());
-        logger.warning(message);
-        build.setResult(Result.UNSTABLE);
+    private void notifyEventQ(AbstractBuild build, PrintStream consoleLogger)
+            throws URISyntaxException, IOException {
+        initialize();
+        Helper.log("Sending build information using "
+                        + orchestrateClient.getClass().getSimpleName(),
+                consoleLogger);
+        String json = converter.toOrchestrateAPI(build, getSourceKey()
+                .trim());
+        orchestrateClient.postBuild(getServerUrl().trim(),
+                getServerUsername(), getServerPassword(),
+                json);
+        Helper.log("Build information sent", consoleLogger);
     }
 
     /**
@@ -432,5 +478,25 @@ public class BuildNotifier extends Notifier {
 
     public void setUseAssociationView(boolean useAssociationView) {
         this.useAssociationView = useAssociationView;
+    }
+
+    public String getWebhookUrl() {
+        return webhookUrl;
+    }
+
+    public boolean getSupportEventQ() {
+        return supportEventQ;
+    }
+
+    public void setSupportEventQ(boolean supportEventQ) {
+        this.supportEventQ = supportEventQ;
+    }
+
+    public boolean getSupportWebhook() {
+        return supportWebhook;
+    }
+
+    public void setSupportWebhook(boolean supportWebhook) {
+        this.supportWebhook = supportWebhook;
     }
 }

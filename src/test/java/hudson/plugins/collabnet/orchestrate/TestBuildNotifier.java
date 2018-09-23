@@ -92,7 +92,9 @@ public class TestBuildNotifier {
         ctfUrl = "http://teamforge.test/sf/project";
         ctfUser = "admin";
         ctfPassword = Secret.fromString("password");
-        notifier = new BuildNotifier(null,serverUrl, serverUsername, serverPassword, associationKey);
+        BuildNotifier.OptionalEventQ optionalEventQ = new BuildNotifier.OptionalEventQ(serverUrl,
+                serverUsername, serverPassword, associationKey);
+        notifier = new BuildNotifier(null, null, optionalEventQ);
         mocks = new MockUtils();
         listener = mocks.createMock("listener", BuildListener.class);
         outStream = new ByteArrayOutputStream(2048);
@@ -174,7 +176,9 @@ public class TestBuildNotifier {
     @Test
     public void performBuildStripsServerAndSourceKeys() throws Exception {
         // set up
-        notifier = new BuildNotifier(null," " + serverUrl + " ", serverUsername, serverPassword, " " + associationKey + " ");
+        BuildNotifier.OptionalEventQ optionalEventQ = new BuildNotifier.OptionalEventQ(serverUrl,
+                serverUsername, serverPassword, associationKey);
+        notifier = new BuildNotifier(null, null, optionalEventQ);
         AbstractBuild build = expectSendToServer(serverUrl, associationKey);
 
         // exercise
@@ -191,7 +195,9 @@ public class TestBuildNotifier {
     @Test
     public void performDoesNotTryToContactEmptyServer() throws Exception {
         // set up
-        notifier = new BuildNotifier(null,"", serverUsername, serverPassword, "somekey");
+        BuildNotifier.OptionalEventQ optionalEventQ = new BuildNotifier.OptionalEventQ(null,
+                serverUsername, serverPassword, associationKey);
+        notifier = new BuildNotifier(null, null, optionalEventQ);
         AbstractBuild build = mocks.createMock("build", AbstractBuild.class);
 
         printer.println("Starting to send build information to TeamForge EventQ...");
@@ -215,9 +221,10 @@ public class TestBuildNotifier {
     @Test
     public void performDoesNotTryToContactServerWithNoSourceKey() throws Exception {
         // set up
-        notifier = new BuildNotifier(null,"http://orchestrate.test", serverUsername, serverPassword, "");
+        BuildNotifier.OptionalEventQ optionalEventQ = new BuildNotifier.OptionalEventQ("http://orchestrate.test",
+                serverUsername, serverPassword, "");
+        notifier = new BuildNotifier(null, null, optionalEventQ);
         AbstractBuild build = mocks.createMock("build", AbstractBuild.class);
-
         printer.println("Starting to send build information to TeamForge EventQ...");
         printer.println("The source key for TeamForge EventQ build source is missing.");
 
@@ -240,7 +247,9 @@ public class TestBuildNotifier {
     public void performDoesNotTryToContactServerWithoutJenkinsRootURL() throws Exception {
         // set up
         String sourceKey = "somekey";
-        notifier = new BuildNotifier(null,"http://orchestrate.test", serverUsername, serverPassword, sourceKey);
+        BuildNotifier.OptionalEventQ optionalEventQ = new BuildNotifier.OptionalEventQ("http://orchestrate.test",
+                serverUsername, serverPassword, sourceKey);
+        notifier = new BuildNotifier(null, null, optionalEventQ);
         AbstractBuild build = mocks.createMock("build", AbstractBuild.class);
         BuildToOrchestrateAPI converter = mocks.createMock("converter", BuildToOrchestrateAPI.class);
         notifier.setConverter(converter);
@@ -268,7 +277,9 @@ public class TestBuildNotifier {
     @Test
     public void performUsesAmqpClientClass() throws Exception {
         // set up
-        notifier = new BuildNotifier(null,"amqp://mq.example.com:5672", serverUsername, serverPassword, "somekey");
+        BuildNotifier.OptionalEventQ optionalEventQ = new BuildNotifier.OptionalEventQ("amqp://mq.example.com:5672",
+                serverUsername, serverPassword, "somekey");
+        notifier = new BuildNotifier(null, null, optionalEventQ);
         AbstractBuild build = mocks.createMock("build", AbstractBuild.class);
         BuildToOrchestrateAPI converter = mocks.createMock("converter", BuildToOrchestrateAPI.class);
         notifier.setConverter(converter);
@@ -291,7 +302,10 @@ public class TestBuildNotifier {
     @Test
     public void performLogsNotifierActivity() throws Exception {
         // set up
-        notifier = new BuildNotifier(null,"amqp://mq.example.com:5672", serverUsername, serverPassword, "somekey");
+
+        BuildNotifier.OptionalEventQ optionalEventQ = new BuildNotifier.OptionalEventQ("amqp://mq.example.com:5672",
+                serverUsername, serverPassword, "somekey");
+        notifier = new BuildNotifier(null, null, optionalEventQ);
         AbstractBuild build = mocks.createMock("build", AbstractBuild.class);
         BuildToOrchestrateAPI converter = mocks.createMock("converter", BuildToOrchestrateAPI.class);
         notifier.setConverter(converter);
@@ -304,7 +318,9 @@ public class TestBuildNotifier {
 
         // verify log
         String logOutput = outStream.toString();
-        assertTrue("Log should indicate when notifier starts", logOutput.contains("TeamForge EventQ Build Notifier - Sending build information"));
-        assertTrue("Log should indicate when notifier fails", logOutput.contains("TeamForge EventQ Build Notifier - Build information NOT sent"));
+        assertTrue("Log should indicate when notifier starts", logOutput.contains("TeamForge/EventQ Build Notifier -" +
+                " Sending build information"));
+        assertTrue("Log should indicate when notifier fails", logOutput.contains("TeamForge/EventQ Build Notifier - " +
+                "Build information NOT sent"));
     }
 }

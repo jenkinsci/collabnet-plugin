@@ -15,17 +15,29 @@
       </j:otherwise>
     </j:choose>
   </f:optionalBlock>
-   
-  <f:entry title="MQ URI" field="serverUrl">
-    <f:textbox value="${(instance == null) ? descriptor.getServerUrl() : instance.getServerUrl()}" id="orchestrate-serverUrl" />
-  </f:entry>
-  <f:entry title="Server Username" field="serverUsername">
-    <f:textbox value="${(instance == null) ? descriptor.getServerUsername() : instance.getServerUsername()}" id="orchestrate-serverUsername"/>
-  </f:entry>
-  <f:entry title="Server Password" field="serverPassword">
-    <f:password value="${(instance == null) ? descriptor.getServerPassword() : instance.getServerPassword()}" id="orchestrate-serverPassword"/>
-  </f:entry>
-  <f:entry title="Build source association key" field="sourceKey">
-    <f:textbox id="orchestrate-sourceKey"/>
-  </f:entry>
+
+  <f:block>
+      <f:optionalBlock name="webhook" title="Notify TeamForge" checked="${instance.webhookUrl != null}">
+        <f:entry title="WebHook URL" field="webhookUrl">
+          <f:textbox id="webhookUrl" />
+        </f:entry>
+      </f:optionalBlock>
+  </f:block>
+
+  <f:block>
+    <f:optionalBlock name="eventQ" title="Notify EventQ" checked="${instance.getSupportEventQ()}">
+      <f:entry title="MQ URI" field="serverUrl">
+        <f:textbox id="orchestrate-serverUrl" />
+      </f:entry>
+      <f:entry title="Server Username" field="serverUsername">
+        <f:textbox id="orchestrate-serverUsername"/>
+      </f:entry>
+      <f:entry title="Server Password" field="serverPassword">
+        <f:password id="orchestrate-serverPassword"/>
+      </f:entry>
+      <f:entry title="Build source association key" field="sourceKey">
+        <f:textbox id="orchestrate-sourceKey"/>
+      </f:entry>
+    </f:optionalBlock>
+  </f:block>
 </j:jelly>
