@@ -2,6 +2,7 @@ package hudson.plugins.collabnet.orchestrate;
 
 import hudson.model.Run;
 import hudson.model.TaskListener;
+import hudson.plugins.collabnet.orchestrate.BuildNotifier.OptionalWebhook;
 import hudson.plugins.collabnet.util.CNFormFieldValidator;
 import hudson.plugins.collabnet.util.Helper;
 import net.sf.json.JSONObject;
@@ -10,31 +11,36 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import java.io.IOException;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class PushNotification {
 
     Logger logger = Logger.getLogger(getClass().getName());
 
-    public void handle(Run build, String webhookUrl, TaskListener listener,
+    public void handle(Run build, OptionalWebhook webhook, TaskListener listener,
                        String status, boolean excludeCommitInfo) throws
             IOException {
         int response = 0;
-        listener.getLogger().println("Send build notification to : " + webhookUrl);
+        String token = null;
+        listener.getLogger().println("Send build notification to : " + webhook.getWebhookUrl());
         JSONObject payload = getPayload(build, listener, status, excludeCommitInfo);
         if(verifyBuildMessage(payload)) {
-            response = send(webhookUrl, payload.toString(), listener);
+            token = Helper.getWebhookToken(getWebhookLogin(webhook.getWebhookUrl()), webhook.getWebhookUsername(),
+                    webhook.getWebhookPassword(), listener);
+            if (token != null) {
+                response = send(webhook.getWebhookUrl(), token, payload.toString(), listener);
+            }
         }
         if(response == 201 || response == 200){
             listener.getLogger().println("Build notification sent successfully.");
         }
-        else if(response == 400){
+        else if(response == 400 || token == null){
             Helper.markUnstable(
                     build,
                     listener.getLogger(),
                     "Build notification failed", getClass().getName());
-            listener.getLogger().println("Response: 400 Bad Request- Check your webhook end-point or registered event" +
+            listener.getLogger().println("Response: 400 Bad Request- Check your webhook configuration or registered " +
+                    "event" +
                     " publisher.");
             listener.getLogger().println("Build message - " + payload.toString());
         }
@@ -45,6 +51,11 @@ public class PushNotification {
                     "Build notification failed", getClass().getName());
             listener.getLogger().println("Build message - " + payload.toString());
         }
+    }
+
+    private String getWebhookLogin(String webhookUrl) {
+        String url = webhookUrl.substring(0, webhookUrl.indexOf("/inbox")).concat("/login");
+        return url;
     }
 
     private boolean verifyBuildMessage(JSONObject payload) {
@@ -60,45 +71,23 @@ public class PushNotification {
         return BuildEvent.constructJson(build, listener, status, excludeCommitInfo);
     }
 
-    private int send(String url, String buildData, TaskListener listener) throws IOException {
+    private int send(String webhookUrl, String token, String buildData, TaskListener listener) throws IOException {
         CloseableHttpClient client = null;
         CloseableHttpResponse response = null;
         int status = 0;
         try {
             client = CNFormFieldValidator.getHttpClient();
-            HttpPost httpPost = new HttpPost(url);
+            HttpPost httpPost = new HttpPost(webhookUrl);
             StringEntity entity = new StringEntity(buildData);
             httpPost.setEntity(entity);
+            httpPost.setHeader("Authorization", token);
             httpPost.setHeader("Accept", "application/json");
             httpPost.setHeader("Content-type", "application/json");
             response = client.execute(httpPost);
             status = response.getStatusLine().getStatusCode();
         }catch (IOException e) {
             String errMsg = e.getMessage();
-            if (errMsg
-                    .startsWith("; nested exception is: \n\tjavax.net.ssl.SSLHandshakeException: ")) {
-                listener.getLogger().println("SSL configuration error. Please check your SSL certificate and retry.");
-                logger.log(Level.INFO,
-                        "TeamForge Associations - " + e.getLocalizedMessage(), e);
-            } else if (errMsg
-                    .endsWith("java.net.SocketTimeoutException: connect timed out")) {
-                listener.getLogger().println("Connection timed out. Please check the configuration.");
-                logger.log(Level.INFO,
-                        "TeamForge Associations - " + e.getLocalizedMessage(), e);
-            } else if (errMsg
-                    .endsWith("java.net.ConnectException: Connection timed out")) {
-                listener.getLogger().println("Connection timed out. Please check the configuration.");
-                logger.log(Level.INFO,
-                        "TeamForge Associations - " + e.getLocalizedMessage(), e);
-            } else if (errMsg.endsWith(": Connection refused")) {
-                listener.getLogger().println("Connection refused. Please check the configuration.");
-                logger.log(Level.INFO,
-                        "TeamForge Associatqions - " + e.getLocalizedMessage(), e);
-            } else {
-                listener.getLogger().println(e.getLocalizedMessage());
-                logger.log(Level.INFO,
-                        "TeamForge Associations - " + e.getLocalizedMessage(), e);
-            }
+            Helper.logMsg(errMsg, listener, logger, e);
         } catch (Exception e) {
             e.printStackTrace();
         } finally {

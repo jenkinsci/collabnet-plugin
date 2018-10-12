@@ -77,6 +77,8 @@ public class BuildNotifier extends Notifier {
     private boolean supportEventQ = false;
     private boolean supportWebhook = false;
     private String webhookUrl;
+    private String webhookUsername;
+    private Secret webhookPassword;
 
     /**
      * Creates a new BuildNotifier. Arguments are automatically supplied when
@@ -129,8 +131,18 @@ public class BuildNotifier extends Notifier {
         }
         if(webhook != null){
             this.webhookUrl = webhook.webhookUrl;
+            this.webhookUsername = webhook.webhookUsername;
+            this.webhookPassword = webhook.webhookPassword;
             this.setSupportWebhook(true);
         }
+    }
+
+    public String getWebhookUsername() {
+        return webhookUsername;
+    }
+
+    public Secret getWebhookPassword() {
+        return webhookPassword;
     }
 
     public static class OptionalAssociationView {
@@ -162,12 +174,31 @@ public class BuildNotifier extends Notifier {
     public static class OptionalWebhook{
 
         private String webhookUrl;
+        private String webhookUsername;
+        private Secret webhookPassword;
 
         @DataBoundConstructor
-        public OptionalWebhook(String webhookUrl) {
-            this.webhookUrl = webhookUrl;
+        public OptionalWebhook(String webhookUrl, String webhookUsername, String webhookPassword) {
+            this(webhookUrl, webhookUsername, Secret.fromString(webhookPassword));
         }
 
+        public OptionalWebhook(String webhookUrl, String webhookUsername, Secret webhookPassword) {
+            this.webhookUrl = webhookUrl;
+            this.webhookUsername = webhookUsername;
+            this.webhookPassword = webhookPassword;
+        }
+
+        public String getWebhookUrl(){
+            return this.webhookUrl;
+        }
+
+        public String getWebhookUsername(){
+            return this.webhookUsername;
+        }
+
+        public String getWebhookPassword(){
+            return Secret.toString(this.webhookPassword);
+        }
     }
 
 
@@ -215,6 +246,13 @@ public class BuildNotifier extends Notifier {
         if (this.overrideAuth())
             return new ConnectionFactory(getCollabNetUrl(), getUsername(),
                                          getPassword());
+        return null;
+    }
+
+    public OptionalWebhook getWebhook(){
+        if(this.getSupportWebhook()){
+            return new OptionalWebhook(getWebhookUrl(), getWebhookUsername(), getWebhookPassword());
+        }
         return null;
     }
 
@@ -384,7 +422,7 @@ public class BuildNotifier extends Notifier {
             }
             if(getSupportWebhook() == true){
                 pushNotification = new PushNotification();
-                pushNotification.handle(build, getWebhookUrl(), listener,
+                pushNotification.handle(build, getWebhook(), listener,
                         null, false);
             }
 
