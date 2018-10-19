@@ -25,6 +25,7 @@ import hudson.plugins.collabnet.orchestrate.BuildNotifier;
 import hudson.plugins.collabnet.orchestrate.BuildNotifier.OptionalWebhook;
 import hudson.plugins.collabnet.orchestrate.PushNotification;
 import hudson.plugins.collabnet.share.TeamForgeShare;
+import hudson.plugins.collabnet.util.Helper;
 import static org.apache.commons.lang.StringUtils.isBlank;
 
 import java.io.IOException;
@@ -171,7 +172,7 @@ public class PublishWebhookStep extends Step {
             String useServerUrl = null;
             return new StandardUsernameListBoxModel()
                     .withEmptySelection()
-                    .withAll(PublishEventQStep.PublishEventQStepExecution.lookupCredentials(owner, useServerUrl));
+                    .withAll(Helper.lookupCredentials(owner, useServerUrl));
         }
     }
 
@@ -263,31 +264,9 @@ public class PublishWebhookStep extends Step {
         }
 
         public StandardUsernamePasswordCredentials getCredentials() {
-            return getCredentials(this.run.getParent(),
+            return Helper.getCredentials(this.run.getParent(),
                     this.step.getCredentialsId(), this.step.getWebhookUrl());
         }
-
-        public static StandardUsernamePasswordCredentials getCredentials(Item owner,
-                                                                         String credentialsId, String webhookUrl) {
-            StandardUsernamePasswordCredentials result = null;
-            if (!isBlank(credentialsId)) {
-                for (StandardUsernamePasswordCredentials c : lookupCredentials(owner, webhookUrl)) {
-                    if (c.getId().equals(credentialsId)) {
-                        result = c;
-                        break;
-                    }
-                }
-            }
-            return result;
-        }
-
-        public static List<StandardUsernamePasswordCredentials> lookupCredentials(Item owner, String serverUrl) {
-            URIRequirementBuilder rBuilder = isBlank(serverUrl) ?
-                    URIRequirementBuilder.create() : URIRequirementBuilder.fromUri(serverUrl);
-            return CredentialsProvider.lookupCredentials(
-                    StandardUsernamePasswordCredentials.class, owner, null, rBuilder.build());
-        }
-
     }
 
 }

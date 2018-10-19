@@ -1,9 +1,14 @@
 package hudson.plugins.collabnet.util;
 
+import com.cloudbees.plugins.credentials.CredentialsProvider;
+import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
+import com.cloudbees.plugins.credentials.domains.URIRequirementBuilder;
+import hudson.model.Item;
 import hudson.model.Result;
 import hudson.model.Run;
 import hudson.model.TaskListener;
 import net.sf.json.JSONObject;
+import static org.apache.commons.lang.StringUtils.isBlank;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
@@ -48,7 +53,7 @@ public class Helper {
             token = JSONObject.fromObject(EntityUtils.toString(response.getEntity())).
                     get("access_token").toString();
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.log(Level.INFO,"TeamForge Associations - " + e.getLocalizedMessage(), e);
         } finally {
             if(response != null) {
                 response.close();
@@ -83,7 +88,7 @@ public class Helper {
             String errMsg = e.getMessage();
             logMsg(errMsg, listener, logger, e);
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.log(Level.INFO,"TeamForge Associations - " + e.getLocalizedMessage(), e);
         } finally {
             if(response != null) {
                 response.close();
@@ -158,6 +163,27 @@ public class Helper {
     public static void log(String msg, PrintStream printStream) {
         printStream.print(LOG_MESSAGE_PREFIX);
         printStream.println(msg);
+    }
+
+    public static StandardUsernamePasswordCredentials getCredentials(Item owner,
+                                                                     String credentialsId, String webhookUrl) {
+        StandardUsernamePasswordCredentials result = null;
+        if (!isBlank(credentialsId)) {
+            for (StandardUsernamePasswordCredentials c : lookupCredentials(owner, webhookUrl)) {
+                if (c.getId().equals(credentialsId)) {
+                    result = c;
+                    break;
+                }
+            }
+        }
+        return result;
+    }
+
+    public static List<StandardUsernamePasswordCredentials> lookupCredentials(Item owner, String webhookUrl) {
+        URIRequirementBuilder rBuilder = isBlank(webhookUrl) ?
+                URIRequirementBuilder.create() : URIRequirementBuilder.fromUri(webhookUrl);
+        return CredentialsProvider.lookupCredentials(
+                StandardUsernamePasswordCredentials.class, owner, null, rBuilder.build());
     }
 
 }
