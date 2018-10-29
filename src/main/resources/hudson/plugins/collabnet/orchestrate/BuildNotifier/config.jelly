@@ -21,6 +21,12 @@
         <f:entry title="WebHook URL" field="webhookUrl">
           <f:textbox id="webhookUrl" />
         </f:entry>
+        <f:entry title="Username" field="webhookUsername">
+          <f:textbox />
+        </f:entry>
+        <f:entry title="Password" field="webhookPassword">
+          <f:password />
+        </f:entry>
       </f:optionalBlock>
   </f:block>
 

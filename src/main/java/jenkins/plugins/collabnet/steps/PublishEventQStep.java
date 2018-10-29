@@ -16,6 +16,7 @@
 
 package jenkins.plugins.collabnet.steps;
 
+import hudson.plugins.collabnet.util.Helper;
 import static org.apache.commons.lang.StringUtils.isBlank;
 
 import java.io.IOException;
@@ -130,7 +131,7 @@ public class PublishEventQStep extends Step {
             String useServerUrl = null;
             return new StandardUsernameListBoxModel()
                     .withEmptySelection()
-                    .withAll(PublishEventQStepExecution.lookupCredentials(owner, useServerUrl));
+                    .withAll(Helper.lookupCredentials(owner, useServerUrl));
         }
 
         public ListBoxModel doFillStatusItems() {
@@ -324,29 +325,8 @@ public class PublishEventQStep extends Step {
 
 
         public StandardUsernamePasswordCredentials getCredentials() {
-            return getCredentials(this.run.getParent(),
+            return Helper.getCredentials(this.run.getParent(),
                     this.step.getCredentialsId(), this.step.getServerUrl());
-        }
-        
-        public static StandardUsernamePasswordCredentials getCredentials(Item owner,
-                String credentialsId, String serverUrl) {
-            StandardUsernamePasswordCredentials result = null;
-            if (!isBlank(credentialsId)) {
-                for (StandardUsernamePasswordCredentials c : lookupCredentials(owner, serverUrl)) {
-                    if (c.getId().equals(credentialsId)) {
-                        result = c;
-                        break;
-                    }
-                }
-            }
-            return result;
-        }
-
-        public static List<StandardUsernamePasswordCredentials> lookupCredentials(Item owner, String serverUrl) {
-            URIRequirementBuilder rBuilder = isBlank(serverUrl) ?
-                    URIRequirementBuilder.create() : URIRequirementBuilder.fromUri(serverUrl);
-            return CredentialsProvider.lookupCredentials(
-                    StandardUsernamePasswordCredentials.class, owner, null, rBuilder.build());
         }
     }
 

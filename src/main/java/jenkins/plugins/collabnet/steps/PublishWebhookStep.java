@@ -16,11 +16,21 @@
 
 package jenkins.plugins.collabnet.steps;
 
+import com.cloudbees.plugins.credentials.CredentialsProvider;
+import com.cloudbees.plugins.credentials.common.StandardUsernameListBoxModel;
+import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
+import com.cloudbees.plugins.credentials.domains.URIRequirementBuilder;
+import hudson.model.Item;
+import hudson.plugins.collabnet.orchestrate.BuildNotifier;
+import hudson.plugins.collabnet.orchestrate.BuildNotifier.OptionalWebhook;
 import hudson.plugins.collabnet.orchestrate.PushNotification;
+import hudson.plugins.collabnet.share.TeamForgeShare;
+import hudson.plugins.collabnet.util.Helper;
 import static org.apache.commons.lang.StringUtils.isBlank;
 
 import java.io.IOException;
 import java.io.PrintStream;
+import java.util.List;
 import java.util.Set;
 import java.util.logging.Logger;
 
@@ -30,6 +40,7 @@ import org.jenkinsci.plugins.workflow.steps.Step;
 import org.jenkinsci.plugins.workflow.steps.StepContext;
 import org.jenkinsci.plugins.workflow.steps.StepDescriptor;
 import org.jenkinsci.plugins.workflow.steps.StepExecution;
+import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
@@ -48,6 +59,8 @@ public class PublishWebhookStep extends Step {
 
     /** The REST end-point URL to the TeamForge. */
     private final String webhookUrl;
+
+    private String credentialsId;
 
     /** The flag to mark current run unstable if this step fails to notify TeamForge. */
     @DataBoundSetter public boolean markUnstable;
@@ -76,6 +89,14 @@ public class PublishWebhookStep extends Step {
      */
     public String getWebhookUrl() {
         return webhookUrl;
+    }
+
+    public String getCredentialsId() {
+        return this.credentialsId;
+    }
+
+    @DataBoundSetter public void setCredentialsId(String credentialsId) {
+        this.credentialsId = credentialsId;
     }
 
     @Extension
@@ -135,6 +156,24 @@ public class PublishWebhookStep extends Step {
             }
             return FormValidation.error("Invalid TeamForge status value");
         }
+
+        public FormValidation doCheckCredentialsId(
+                @QueryParameter final String credentialsId,
+                @AncestorInPath final Item owner) {
+            // TODO make sure that fallback credentials (i.e. TeamForge) exists if
+            // none is selected
+            return FormValidation.ok();
+        }
+
+        public ListBoxModel doFillCredentialsIdItems(@AncestorInPath Item owner) {
+            if (owner == null || !owner.hasPermission(Item.CONFIGURE)) {
+                return new StandardUsernameListBoxModel().withEmptySelection();
+            }
+            String useServerUrl = null;
+            return new StandardUsernameListBoxModel()
+                    .withEmptySelection()
+                    .withAll(Helper.lookupCredentials(owner, useServerUrl));
+        }
     }
 
     public static class PublishWebhookStepExecution extends SynchNonBlockingStepExecution<Void> {
@@ -174,7 +213,12 @@ public class PublishWebhookStep extends Step {
             }
 
             try {
-                pushNotification.handle(run, webhookUrl, listener, this.step.status,
+                StandardUsernamePasswordCredentials c = getCredentials();
+                String username = c == null ? null : c.getUsername();
+                String password = c == null ?
+                        null : (c.getPassword() == null ? null : c.getPassword().getPlainText());
+                OptionalWebhook webhook = new OptionalWebhook(webhookUrl, username, password);
+                pushNotification.handle(run, webhook, listener, this.step.status,
                         this.step.excludeCommitInfo);
             } catch (IllegalStateException ise) {
                 markUnstable(consoleLogger,
@@ -217,6 +261,11 @@ public class PublishWebhookStep extends Step {
         private void log(String msg, PrintStream printStream) {
             printStream.print(LOG_MESSAGE_PREFIX);
             printStream.println(msg);
+        }
+
+        public StandardUsernamePasswordCredentials getCredentials() {
+            return Helper.getCredentials(this.run.getParent(),
+                    this.step.getCredentialsId(), this.step.getWebhookUrl());
         }
     }
 
