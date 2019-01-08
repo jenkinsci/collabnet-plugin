@@ -4,9 +4,9 @@ import com.collabnet.ce.webservices.CollabNetApp;
 import groovy.lang.Binding;
 import hudson.Extension;
 import hudson.model.Descriptor;
-import hudson.model.Hudson;
 import hudson.plugins.collabnet.util.CNFormFieldValidator;
 import hudson.plugins.collabnet.util.CNHudsonUtil;
+import hudson.plugins.collabnet.util.CommonUtil;
 import hudson.security.SecurityRealm;
 import hudson.util.FormValidation;
 import hudson.util.VersionNumber;
@@ -124,12 +124,13 @@ public class CollabNetSecurityRealm extends SecurityRealm {
          * @param value url
          */
         public FormValidation doCheckCollabNetUrl(@QueryParameter String value) {
-            if (!Jenkins.getInstance().hasPermission(Hudson.ADMINISTER)) return FormValidation.ok();
-            String collabNetUrl = value;
-            if (collabNetUrl == null || collabNetUrl.equals("")) {
+            if (!Jenkins.getInstance().hasPermission(Jenkins.ADMINISTER)) {
+                return FormValidation.ok();
+            }
+            if (CommonUtil.isEmpty(value)) {
                 return FormValidation.error("The CollabNet URL is required.");
             }
-            return checkSoapUrl(collabNetUrl);
+            return checkSoapUrl(value);
         }
         
         /**
