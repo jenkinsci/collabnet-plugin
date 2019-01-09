@@ -13,6 +13,8 @@ import hudson.plugins.collabnet.util.CommonUtil;
 import hudson.security.SecurityRealm;
 import hudson.util.FormValidation;
 import hudson.util.Secret;
+import jenkins.model.Jenkins;
+
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 
@@ -125,16 +127,23 @@ public class ConnectionFactory extends AbstractDescribableImpl<ConnectionFactory
         }
 
         public boolean isSiteConfigured() {
-            try {
-                SecurityRealm securityRealm = Hudson.getInstance()
-                    .getSecurityRealm();
-                CollabNetSecurityRealm cnRealm = (CollabNetSecurityRealm) securityRealm;
-                url = cnRealm.getCollabNetUrl();
-                isSiteConfigured = true;
-                return true;
-            } catch (ClassCastException e) {
-                return false;
+            boolean result = false;
+            SecurityRealm securityRealm = Jenkins.getInstance().getSecurityRealm();
+            String cnUrl = null;
+            if (securityRealm instanceof CollabNetSecurityRealm) {
+                result = true;
+                cnUrl = ((CollabNetSecurityRealm) securityRealm).getCollabNetUrl();
             }
+            else if (securityRealm instanceof jenkins.plugins.collabnet.security.CnSecurityRealm) {
+                result = true;
+                cnUrl = ((jenkins.plugins.collabnet.security.CnSecurityRealm) securityRealm).getCollabNetUrl();
+            }
+            else {
+                result = false;
+            }
+            url = cnUrl;
+            isSiteConfigured = result;
+            return isSiteConfigured;
         }
 
         /**

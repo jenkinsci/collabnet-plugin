@@ -1,32 +1,31 @@
 package hudson.plugins.collabnet.auth;
 
 import java.io.IOException;
+import java.net.URLEncoder;
 import java.rmi.RemoteException;
 import java.util.logging.Logger;
 
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
-import java.net.URLEncoder;
-
-import hudson.model.Hudson;
-import hudson.plugins.collabnet.util.CommonUtil;
-import hudson.security.SecurityRealm;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 import org.acegisecurity.Authentication;
 import org.acegisecurity.GrantedAuthority;
 import org.acegisecurity.GrantedAuthorityImpl;
 import org.acegisecurity.context.SecurityContextHolder;
-
 import org.acegisecurity.providers.anonymous.AnonymousAuthenticationToken;
 import org.apache.commons.lang3.StringUtils;
 
 import com.collabnet.ce.webservices.CollabNetApp;
+
+import hudson.plugins.collabnet.util.CommonUtil;
+import hudson.security.SecurityRealm;
+import jenkins.model.Jenkins;
 
 /**
  * Class for filtering CollabNet auth information for SSO.
@@ -51,17 +50,33 @@ public class CNFilter implements Filter {
     public void doFilter(ServletRequest request, ServletResponse response,
                          FilterChain chain) throws IOException, ServletException {
 
-        if (Hudson.getInstance().isUseSecurity()) {
+        Jenkins jenkins = Jenkins.getInstance();
+        if (jenkins.isUseSecurity()) {
             // check if we're in the CollabNetSecurity Realm
-            SecurityRealm securityRealm = Hudson.getInstance().getSecurityRealm();
+            SecurityRealm securityRealm = jenkins.getSecurityRealm();
+            Authentication auth = Jenkins.getAuthentication();
+            String collabnetUrl = null;
+            boolean loginToCtf = false;
+            boolean loginToJenkins = false;
+            boolean redirect = false;
             if (securityRealm instanceof CollabNetSecurityRealm) {
                 CollabNetSecurityRealm cnRealm = (CollabNetSecurityRealm) securityRealm;
-                boolean enableSSOFromCTF = cnRealm.getEnableSSOAuthFromCTF();
-                boolean enableSSOToCTF = cnRealm.getEnableSSOAuthToCTF();
-
-                Authentication auth = Hudson.getAuthentication();
-
-                if (enableSSOFromCTF) {
+                loginToJenkins = cnRealm.getEnableSSOAuthFromCTF();
+                loginToCtf = cnRealm.getEnableSSOAuthToCTF();
+                redirect = cnRealm.getEnableSSORedirect();
+                collabnetUrl = cnRealm.getCollabNetUrl();
+            }
+            else if (securityRealm instanceof jenkins.plugins.collabnet.security.CnSecurityRealm) {
+                jenkins.plugins.collabnet.security.CnSecurityRealm cnRealm =
+                        (jenkins.plugins.collabnet.security.CnSecurityRealm) securityRealm;
+                loginToJenkins = cnRealm.getEnableSSOAuthFromCTF();
+                loginToCtf = cnRealm.getEnableSSOAuthToCTF();
+                redirect = cnRealm.getEnableSSORedirect();
+                collabnetUrl = cnRealm.getCollabNetUrl();
+            }
+            
+            if (!CommonUtil.isEmpty(collabnetUrl)) {
+                if (loginToJenkins) {
                     HttpServletRequest httpRequest = (HttpServletRequest) request;
                     // first detect if we are accessing Jenkins through CTF
                     String username = request.getParameter("sfUsername");
@@ -71,16 +86,14 @@ public class CNFilter implements Filter {
                             auth.setAuthenticated(false);
                         }
                     }
-
                     if (!auth.isAuthenticated() || auth.getPrincipal().equals("anonymous")) {
-                        loginHudsonUsingCTFSSO((CollabNetSecurityRealm)securityRealm, httpRequest);
+                        loginJenkinsUsingCTFSSO(collabnetUrl, httpRequest);;
                     }
                 }
-
-                if (enableSSOToCTF && auth instanceof CNAuthentication) {
+                if (loginToCtf && auth instanceof CNAuthentication) {
                     CNAuthentication cnauth = (CNAuthentication) auth;
                     if (!cnauth.isCNAuthed()) {
-                        loginToCTF(cnauth, (CollabNetSecurityRealm)securityRealm,
+                        loginToCTF(cnauth, collabnetUrl, redirect,
                             (HttpServletRequest) request, (HttpServletResponse) response);
                         return;
                     }
@@ -99,17 +112,16 @@ public class CNFilter implements Filter {
      * The token is a one-time token that can be used to initiate a SOAP
      * session and set authentication.
      *
-     * @param securityRealm the security realm
+     * @param collabnetUrl CollabNet Url
      * @param request the huttp servlet reuqest
      */
-    private void loginHudsonUsingCTFSSO(CollabNetSecurityRealm securityRealm, HttpServletRequest request) {
-        String url = securityRealm.getCollabNetUrl();
+    private void loginJenkinsUsingCTFSSO(String collabnetUrl, HttpServletRequest request) {
         String username = request.getParameter("sfUsername");
         String token = request.getParameter("sfLoginToken");
         Authentication auth = null;
         boolean logoff = false;
         if (username != null && token != null) {
-            CollabNetApp ca = new CollabNetApp(url, username);
+            CollabNetApp ca = new CollabNetApp(collabnetUrl, username);
             try {
                 ca.loginWithToken(token);
                 auth = new CNAuthentication(username, ca);
@@ -133,32 +145,30 @@ public class CNFilter implements Filter {
         request.getSession(true);
         SecurityContextHolder.getContext().setAuthentication(auth);
     }
-    
+
     /**
      * Redirect to the CollabNet Server to login there, and then 
      * redirect back to our original location.
      *
      * @param cnauth the CNAuthentication object
-     * @param securityRealm the security realm
+     * @param collabnetUrl CTF url
+     * @param redirect whether to add redirect query to the CTF authentication url
      * @param request the http request
      * @param response the http response
      * @throws IOException
      * @throws ServletException
      */
-    private void loginToCTF(CNAuthentication cnauth, CollabNetSecurityRealm securityRealm,
-                          HttpServletRequest request, HttpServletResponse response)
-        throws IOException, ServletException {
-
+    private void loginToCTF(CNAuthentication cnauth, String collabnetUrl, boolean redirect,
+            HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
         cnauth.setCNAuthed(true);
         String reqUrl = getCurrentUrl(request);
-        String collabNetUrl = securityRealm.getCollabNetUrl();
         String username = (String)cnauth.getPrincipal();
         String id = cnauth.getSessionId();
-        String cnauthUrl = collabNetUrl + "/sf/sfmain/do/soapredirect?id=" 
-            + URLEncoder.encode(id, "UTF-8") + "&user=" + 
-            URLEncoder.encode(username,"UTF-8");
+        String cnauthUrl = collabnetUrl + "/sf/sfmain/do/soapredirect?id=" 
+                + URLEncoder.encode(id, "UTF-8") + "&user=" + 
+                URLEncoder.encode(username,"UTF-8");
 
-        if (securityRealm.getEnableSSORedirect()) {
+        if (redirect) {
             // append redirect only if enabled
             cnauthUrl = cnauthUrl + "&redirectUrl=" + URLEncoder.encode(reqUrl,"UTF-8");
         }
@@ -166,7 +176,6 @@ public class CNFilter implements Filter {
         // prepare a redirect
         response.setStatus(HttpServletResponse.SC_MOVED_TEMPORARILY);
         response.setHeader("Location", cnauthUrl);
-        
     }
 
     /**
@@ -178,7 +187,7 @@ public class CNFilter implements Filter {
         StringBuilder url = new StringBuilder();
         
         // Use the user configured url, if available.
-        String rootUrl = Hudson.getInstance().getRootUrl();
+        String rootUrl = Jenkins.getInstance().getRootUrl();
         if (rootUrl != null) {
             url.append(rootUrl);
         }else {

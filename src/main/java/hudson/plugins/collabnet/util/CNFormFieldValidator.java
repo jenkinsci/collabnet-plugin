@@ -91,8 +91,8 @@ public abstract class CNFormFieldValidator {
                     return FormValidation.ok();
                 }
                 else {
-                    return FormValidation.error(url+" reported HTTP status code "+ r.getStatusLine().getStatusCode() +
-                            " with resaon " + r.getStatusLine().getReasonPhrase());
+                    return FormValidation.error(url + " reported HTTP status code " + r.getStatusLine().getStatusCode() +
+                            " with reason " + r.getStatusLine().getReasonPhrase());
                 }
             }
             finally {
@@ -101,7 +101,7 @@ public abstract class CNFormFieldValidator {
                 }
             }
         } catch (Exception e) {
-            return FormValidation.error(e,"Failed to connect to "+url+" : "+e.getMessage());
+            return FormValidation.error(e, "Failed to connect to " + url + " : " + e.getMessage());
         } finally {
             if (httpClient != null) {
                 try {
