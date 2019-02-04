@@ -18,6 +18,7 @@ import hudson.model.Hudson;
 import hudson.plugins.collabnet.util.CommonUtil;
 import hudson.security.SecurityRealm;
 
+import jenkins.security.SecurityListener;
 import org.acegisecurity.Authentication;
 import org.acegisecurity.GrantedAuthority;
 import org.acegisecurity.GrantedAuthorityImpl;
@@ -132,6 +133,8 @@ public class CNFilter implements Filter {
         // see artf42298
         request.getSession(true);
         SecurityContextHolder.getContext().setAuthentication(auth);
+
+        SecurityListener.fireLoggedIn(auth.getName());
     }
     
     /**
