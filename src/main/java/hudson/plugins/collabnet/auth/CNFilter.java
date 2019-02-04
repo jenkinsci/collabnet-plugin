@@ -25,6 +25,7 @@ import org.acegisecurity.GrantedAuthorityImpl;
 import org.acegisecurity.context.SecurityContextHolder;
 
 import org.acegisecurity.providers.anonymous.AnonymousAuthenticationToken;
+import org.acegisecurity.userdetails.UserDetails;
 import org.apache.commons.lang3.StringUtils;
 
 import com.collabnet.ce.webservices.CollabNetApp;
@@ -134,7 +135,8 @@ public class CNFilter implements Filter {
         request.getSession(true);
         SecurityContextHolder.getContext().setAuthentication(auth);
 
-        SecurityListener.fireLoggedIn(auth.getName());
+        UserDetails userDetails = new CNUserDetails(auth.getName(), auth.getAuthorities());
+        SecurityListener.fireAuthenticated(userDetails);
     }
     
     /**
