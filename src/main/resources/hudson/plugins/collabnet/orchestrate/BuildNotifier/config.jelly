@@ -17,21 +17,12 @@
   </f:optionalBlock>
 
   <f:block>
-      <f:optionalBlock name="webhook" title="Notify TeamForge" checked="${instance.webhookUrl != null}">
-        <f:entry title="WebHook URL" field="webhookUrl">
-          <f:textbox id="webhookUrl" />
-        </f:entry>
-        <f:entry title="Username" field="webhookUsername">
-          <f:textbox />
-        </f:entry>
-        <f:entry title="Password" field="webhookPassword">
-          <f:password />
-        </f:entry>
-      </f:optionalBlock>
+      <f:radioBlock name="config" value="webhook" title="Notify TeamForge" checked="${instance.webhookUrl != null}">
+      </f:radioBlock>
   </f:block>
 
   <f:block>
-    <f:optionalBlock name="eventQ" title="Notify EventQ" checked="${instance.getSupportEventQ()}">
+    <f:radioBlock name="config" value="eventQ" title="Notify EventQ" checked="${instance.getSupportEventQ()}">
       <f:entry title="MQ URI" field="serverUrl">
         <f:textbox id="orchestrate-serverUrl" />
       </f:entry>
@@ -44,6 +35,6 @@
       <f:entry title="Build source association key" field="sourceKey">
         <f:textbox id="orchestrate-sourceKey"/>
       </f:entry>
-    </f:optionalBlock>
+    </f:radioBlock>
   </f:block>
 </j:jelly>

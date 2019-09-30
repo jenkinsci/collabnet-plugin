@@ -19,7 +19,6 @@ package hudson.plugins.collabnet.orchestrate;
 import hudson.Launcher;
 import hudson.model.AbstractBuild;
 import hudson.model.BuildListener;
-import hudson.model.Result;
 import hudson.plugins.collabnet.ConnectionFactory;
 import hudson.plugins.collabnet.share.TeamForgeShare;
 import hudson.plugins.collabnet.util.Helper;
@@ -29,8 +28,10 @@ import hudson.util.Secret;
 import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
 
-import java.io.*;
+import java.io.IOException;
+import java.io.PrintStream;
 import java.net.URISyntaxException;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import static org.apache.commons.lang.StringUtils.isBlank;
@@ -40,6 +41,8 @@ import static org.apache.commons.lang.StringUtils.isBlank;
  * configuration.
  */
 public class BuildNotifier extends Notifier {
+
+    static Logger logger = Logger.getLogger(BuildNotifier.class.getName());
 
     /** The root URL to the EventQ or MQ server. */
     private String serverUrl;
@@ -77,8 +80,7 @@ public class BuildNotifier extends Notifier {
     private boolean supportEventQ = false;
     private boolean supportWebhook = false;
     private String webhookUrl;
-    private String webhookUsername;
-    private Secret webhookPassword;
+    private String value;
 
     /**
      * Creates a new BuildNotifier. Arguments are automatically supplied when
@@ -104,7 +106,7 @@ public class BuildNotifier extends Notifier {
 
     @DataBoundConstructor
     public BuildNotifier(OptionalAssociationView associationView,
-                         OptionalWebhook webhook, OptionalEventQ eventQ) {
+                         RadioConfig config) {
         if (associationView != null) {
             ConnectionFactory connectionFactory =
                 associationView.connectionFactory;
@@ -122,27 +124,26 @@ public class BuildNotifier extends Notifier {
             this.ctfUrl = null;
             this.setUseAssociationView(false);
         }
-        if(eventQ != null) {
-            this.serverUrl = eventQ.serverUrl;
-            this.serverUsername = eventQ.serverUsername;
-            this.serverPassword = eventQ.serverPassword;
-            this.sourceKey = eventQ.sourceKey;
+
+        if (config.value.equals("eventQ")) {
+            this.serverUrl = config.serverUrl;
+            this.serverUsername = config.serverUsername;
+            this.serverPassword = config.serverPassword;
+            this.sourceKey = config.sourceKey;
             this.setSupportEventQ(true);
+        } else if (config.value.equals("webhook")) {
+            try {
+                String webhookEndpoint = config.getWebhookUrl();
+                if (StringUtils.isEmpty(webhookEndpoint) || webhookEndpoint.indexOf("/v4/") == -1) {
+                    this.webhookUrl = Helper.getWebhookUrl(this.ctfUrl);
+                    config.setWebhookUrl(webhookUrl);
+                    this.setSupportWebhook(true);
+                    logger.log(Level.INFO,"Webhook endpoint is registered successfully: " + webhookUrl);
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
-        if(webhook != null){
-            this.webhookUrl = webhook.webhookUrl;
-            this.webhookUsername = webhook.webhookUsername;
-            this.webhookPassword = webhook.webhookPassword;
-            this.setSupportWebhook(true);
-        }
-    }
-
-    public String getWebhookUsername() {
-        return webhookUsername;
-    }
-
-    public Secret getWebhookPassword() {
-        return webhookPassword;
     }
 
     public static class OptionalAssociationView {
@@ -154,53 +155,34 @@ public class BuildNotifier extends Notifier {
         }
     }
 
-    public static class OptionalEventQ{
+    public static class RadioConfig {
 
-        private final String serverUrl;
-        private final String serverUsername;
-        private final Secret serverPassword;
-        private final String sourceKey;
+        private String webhookUrl;
+        private String serverUrl;
+        private String serverUsername;
+        private Secret serverPassword;
+        private String sourceKey;
+        private String value;
 
         @DataBoundConstructor
-        public OptionalEventQ(String serverUrl, String serverUsername, Secret serverPassword,
-                              String sourceKey){
+        public RadioConfig(String webhookUrl, String serverUrl, String serverUsername, Secret serverPassword,
+                            String sourceKey, String value) {
+            this.webhookUrl = webhookUrl;
             this.serverUrl = serverUrl;
             this.serverUsername = serverUsername;
             this.serverPassword = serverPassword;
             this.sourceKey = sourceKey;
-        }
-    }
-
-    public static class OptionalWebhook{
-
-        private String webhookUrl;
-        private String webhookUsername;
-        private Secret webhookPassword;
-
-        @DataBoundConstructor
-        public OptionalWebhook(String webhookUrl, String webhookUsername, String webhookPassword) {
-            this(webhookUrl, webhookUsername, Secret.fromString(webhookPassword));
+            this.value = value;
         }
 
-        public OptionalWebhook(String webhookUrl, String webhookUsername, Secret webhookPassword) {
-            this.webhookUrl = webhookUrl;
-            this.webhookUsername = webhookUsername;
-            this.webhookPassword = webhookPassword;
-        }
-
-        public String getWebhookUrl(){
+        public String getWebhookUrl() {
             return this.webhookUrl;
         }
 
-        public String getWebhookUsername(){
-            return this.webhookUsername;
-        }
-
-        public String getWebhookPassword(){
-            return Secret.toString(this.webhookPassword);
+        public void setWebhookUrl(String webhookUrl) {
+            this.webhookUrl = webhookUrl;
         }
     }
-
 
     /**
      * @return the collabneturl for the CollabNet server.
@@ -249,9 +231,10 @@ public class BuildNotifier extends Notifier {
         return null;
     }
 
-    public OptionalWebhook getWebhook(){
+    public RadioConfig getConfig(){
         if(this.getSupportWebhook()){
-            return new OptionalWebhook(getWebhookUrl(), getWebhookUsername(), getWebhookPassword());
+            return new RadioConfig(getWebhookUrl(), getServerUrl(), getServerUsername(),
+                    Secret.fromString(getServerPassword()), getSourceKey(), getValue());
         }
         return null;
     }
@@ -390,17 +373,6 @@ public class BuildNotifier extends Notifier {
 
         // logging setup
         PrintStream consoleLogger = listener.getLogger();
-
-        if(getSupportEventQ() == true && getSupportWebhook() == true){
-            Helper.markUnstable(
-                    build,
-                    consoleLogger,
-                    "Build information NOT sent: Can't send notification to TeamForge and EventQ at the same" +
-                            " time." +
-                            "Please use either TeamForge/EventQ.", getClass().getName());
-            return true;
-        }
-
         try {
             if(getSupportEventQ() == true) {
                 if (isBlank(getServerUrl())) {
@@ -422,7 +394,7 @@ public class BuildNotifier extends Notifier {
             }
             if(getSupportWebhook() == true){
                 pushNotification = new PushNotification();
-                pushNotification.handle(build, getWebhook(), listener,
+                pushNotification.handle(build, getConfig(), getCtfUrl(), listener,
                         null, false);
             }
 
@@ -536,5 +508,13 @@ public class BuildNotifier extends Notifier {
 
     public void setSupportWebhook(boolean supportWebhook) {
         this.supportWebhook = supportWebhook;
+    }
+
+    public String getValue() {
+        return value;
+    }
+
+    public void setValue(String value) {
+        this.value = value;
     }
 }
