@@ -373,6 +373,17 @@ public class BuildNotifier extends Notifier {
 
         // logging setup
         PrintStream consoleLogger = listener.getLogger();
+
+        if(getSupportEventQ() == true && getSupportWebhook() == true){
+            setSupportEventQ(false);
+            RadioConfig config = getConfig();
+            config.setWebhookUrl(Helper.getWebhookUrl(getCtfUrl()));
+            String message = "By default \'Notify Teamforge\' is chosen to send data " +
+                    "from Jenkins to Teamforge. \nTo continue with EventQ, please manually " +
+                    "change the configuration to \'Notify EventQ\'.";
+            Helper.log(message, consoleLogger);
+            logger.warning(message);
+        }
         try {
             if(getSupportEventQ() == true) {
                 if (isBlank(getServerUrl())) {
