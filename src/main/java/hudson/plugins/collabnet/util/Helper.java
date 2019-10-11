@@ -79,8 +79,8 @@ public class Helper {
         CloseableHttpResponse response = null;
         String webhookEndPoint = null;
         try {
-            webhookUrl =  ctfUrl.concat(":3000/publishers/v4");
-            client = HttpClients.createDefault();
+            webhookUrl =  ctfUrl.concat("/publishers/v4");
+            client = CNFormFieldValidator.getHttpClient();
             HttpGet httpGet = new HttpGet(webhookUrl);
             URI uri = new URIBuilder(httpGet.getURI()).addParameter("q",
                     queryParam).build();
@@ -103,7 +103,7 @@ public class Helper {
                 }
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.log(Level.INFO,"TeamForge Associations - " + e.getLocalizedMessage(), e);
         } finally {
             if(response != null) {
                 response.close();

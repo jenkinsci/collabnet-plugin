@@ -28,10 +28,10 @@ public class PushNotification {
         if(verifyBuildMessage(payload)) {
         webhookEndpoint = config.getWebhookUrl();
         if (StringUtils.isEmpty(webhookEndpoint) || webhookEndpoint.indexOf("/v4/") == -1) {
-            webhookEndpoint = Helper.getWebhookUrl(ctfUrl);
-            config.setWebhookUrl(webhookEndpoint);
-            logger.log(Level.INFO,"Webhook endpoint is registered successfully: " + webhookEndpoint);
+            webhookEndpoint = Helper.getWebhookUrl(ctfUrl + ":3000");
         }
+        config.setWebhookUrl(webhookEndpoint);
+        logger.log(Level.INFO,"Webhook endpoint is registered successfully: " + webhookEndpoint);
         listener.getLogger().println("Send build notification to : " + webhookEndpoint);
         response = send(webhookEndpoint, payload.toString(), listener);
         }

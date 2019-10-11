@@ -18,6 +18,9 @@
 
   <f:block>
       <f:radioBlock name="config" value="webhook" title="Notify TeamForge" checked="${instance.webhookUrl != null}">
+      <f:entry title="WebHook URL" field="webhookUrl">
+          <f:textbox id="webhookUrl"/>
+      </f:entry>
       </f:radioBlock>
   </f:block>
 

@@ -133,13 +133,13 @@ public class BuildNotifier extends Notifier {
             this.setSupportEventQ(true);
         } else if (config.value.equals("webhook")) {
             try {
-                String webhookEndpoint = config.getWebhookUrl();
-                if (StringUtils.isEmpty(webhookEndpoint) || webhookEndpoint.indexOf("/v4/") == -1) {
-                    this.webhookUrl = Helper.getWebhookUrl(this.ctfUrl);
-                    config.setWebhookUrl(webhookUrl);
-                    this.setSupportWebhook(true);
-                    logger.log(Level.INFO,"Webhook endpoint is registered successfully: " + webhookUrl);
+                this.webhookUrl = config.getWebhookUrl();
+                if (StringUtils.isEmpty(this.webhookUrl) || this.webhookUrl.indexOf("/v4/") == -1) {
+                    this.webhookUrl = Helper.getWebhookUrl(this.ctfUrl + ":3000");
                 }
+                config.setWebhookUrl(this.webhookUrl);
+                this.setSupportWebhook(true);
+                logger.log(Level.INFO,"Webhook endpoint is registered successfully: " + this.webhookUrl);
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -377,7 +377,11 @@ public class BuildNotifier extends Notifier {
         if(getSupportEventQ() == true && getSupportWebhook() == true){
             setSupportEventQ(false);
             RadioConfig config = getConfig();
-            config.setWebhookUrl(Helper.getWebhookUrl(getCtfUrl()));
+            String webhookUrl = config.getWebhookUrl();
+            if (StringUtils.isEmpty(webhookUrl) || webhookUrl.indexOf("/v4/") == -1) {
+                webhookUrl = Helper.getWebhookUrl(getCtfUrl() + ":3000");
+            }
+            config.setWebhookUrl(webhookUrl);
             String message = "By default \'Notify Teamforge\' is chosen to send data " +
                     "from Jenkins to Teamforge. \nTo continue with EventQ, please manually " +
                     "change the configuration to \'Notify EventQ\'.";
