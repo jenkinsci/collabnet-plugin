@@ -1,0 +1,20 @@
+<?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson"
+         xmlns:f="/lib/form" xmlns:c="/lib/credentials">
+
+  <f:entry title="WebHook URL" field="webhookUrl">
+    <f:textbox />
+  </f:entry>
+  <f:entry title="${%Credentials}" field="credentialsId">
+    <c:select />
+  </f:entry>
+  <f:entry title="${%Status}" field="status">
+   <f:select />
+  </f:entry>
+  <f:entry title="Exclude commit info" field="excludeCommitInfo" >
+    <f:checkbox />
+  </f:entry>
+  <f:entry title="Mark Unstable" field="markUnstable" >
+    <f:checkbox default="true" />
+  </f:entry>
+</j:jelly>
