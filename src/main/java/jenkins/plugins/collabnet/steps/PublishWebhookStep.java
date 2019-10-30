@@ -22,7 +22,7 @@ import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredenti
 import com.cloudbees.plugins.credentials.domains.URIRequirementBuilder;
 import hudson.model.Item;
 import hudson.plugins.collabnet.orchestrate.BuildNotifier;
-import hudson.plugins.collabnet.orchestrate.BuildNotifier.OptionalWebhook;
+import hudson.plugins.collabnet.orchestrate.BuildNotifier.RadioConfig;
 import hudson.plugins.collabnet.orchestrate.PushNotification;
 import hudson.plugins.collabnet.share.TeamForgeShare;
 import hudson.plugins.collabnet.util.Helper;
@@ -36,6 +36,7 @@ import java.util.logging.Logger;
 
 import javax.annotation.Nonnull;
 
+import hudson.util.Secret;
 import org.jenkinsci.plugins.workflow.steps.Step;
 import org.jenkinsci.plugins.workflow.steps.StepContext;
 import org.jenkinsci.plugins.workflow.steps.StepDescriptor;
@@ -217,8 +218,9 @@ public class PublishWebhookStep extends Step {
                 String username = c == null ? null : c.getUsername();
                 String password = c == null ?
                         null : (c.getPassword() == null ? null : c.getPassword().getPlainText());
-                OptionalWebhook webhook = new OptionalWebhook(webhookUrl, username, password);
-                pushNotification.handle(run, webhook, listener, this.step.status,
+                RadioConfig config = new RadioConfig(null, null, null, null,
+                        webhookUrl, username, Secret.fromString(password), "eventQ");
+                pushNotification.handle(run, config, listener, this.step.status,
                         this.step.excludeCommitInfo);
             } catch (IllegalStateException ise) {
                 markUnstable(consoleLogger,

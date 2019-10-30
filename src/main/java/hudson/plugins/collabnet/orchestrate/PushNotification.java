@@ -2,54 +2,63 @@ package hudson.plugins.collabnet.orchestrate;
 
 import hudson.model.Run;
 import hudson.model.TaskListener;
-import hudson.plugins.collabnet.orchestrate.BuildNotifier.OptionalWebhook;
+import hudson.plugins.collabnet.orchestrate.BuildNotifier.RadioConfig;
 import hudson.plugins.collabnet.util.CNFormFieldValidator;
 import hudson.plugins.collabnet.util.Helper;
 import net.sf.json.JSONObject;
+import org.apache.axis.utils.StringUtils;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import java.io.IOException;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class PushNotification {
 
     Logger logger = Logger.getLogger(getClass().getName());
 
-    public void handle(Run build, OptionalWebhook webhook, TaskListener listener,
+    public void handle(Run build, RadioConfig config, TaskListener listener,
                        String status, boolean excludeCommitInfo) throws
             IOException {
         int response = 0;
         String token = null;
-        listener.getLogger().println("Send build notification to : " + webhook.getWebhookUrl());
-        JSONObject payload = getPayload(build, listener, status, excludeCommitInfo);
-        if(verifyBuildMessage(payload)) {
-            token = Helper.getWebhookToken(getWebhookLogin(webhook.getWebhookUrl()), webhook.getWebhookUsername(),
-                    webhook.getWebhookPassword(), listener);
-            if (token != null) {
-                response = send(webhook.getWebhookUrl(), token, payload.toString(), listener);
+        String webhookUrl = config.getWebhookUrl();
+        if (StringUtils.isEmpty(webhookUrl)) {
+            listener.getLogger().println("Webhook endpoint is null, please check the configuration");
+        } else {
+            listener.getLogger().println("Send build notification to : " + webhookUrl);
+            JSONObject payload = getPayload(build, listener, status, excludeCommitInfo);
+            if (verifyBuildMessage(payload)) {
+                if (webhookUrl.indexOf("/v4") == -1) {
+                    token = Helper.getWebhookToken(getWebhookLogin(webhookUrl), config.getWebhookUsername(),
+                            config.getWebhookPassword(), listener);
+                    if (token != null) {
+                        response = send(webhookUrl, token, payload.toString(), listener);
+                    }
+                } else {
+                    response = send(webhookUrl, token, payload.toString(), listener);
+                }
             }
-        }
-        if(response == 201 || response == 200){
-            listener.getLogger().println("Build notification sent successfully.");
-        }
-        else if(response == 400 || token == null){
-            Helper.markUnstable(
-                    build,
-                    listener.getLogger(),
-                    "Build notification failed", getClass().getName());
-            listener.getLogger().println("Response: 400 Bad Request- Check your webhook configuration or registered " +
-                    "event" +
-                    " publisher.");
-            listener.getLogger().println("Build message - " + payload.toString());
-        }
-        else{
-            Helper.markUnstable(
-                    build,
-                    listener.getLogger(),
-                    "Build notification failed", getClass().getName());
-            listener.getLogger().println("Build message - " + payload.toString());
+            if (response == 201 || response == 200) {
+                listener.getLogger().println("Build notification sent successfully.");
+            } else if (response == 400 || token == null) {
+                Helper.markUnstable(
+                        build,
+                        listener.getLogger(),
+                        "Build notification failed", getClass().getName());
+                listener.getLogger().println("Response: 400 Bad Request- Check your webhook configuration or registered " +
+                        "event" +
+                        " publisher.");
+                listener.getLogger().println("Build message - " + payload.toString());
+            } else {
+                Helper.markUnstable(
+                        build,
+                        listener.getLogger(),
+                        "Build notification failed", getClass().getName());
+                listener.getLogger().println("Build message - " + payload.toString());
+            }
         }
     }
 
@@ -80,7 +89,9 @@ public class PushNotification {
             HttpPost httpPost = new HttpPost(webhookUrl);
             StringEntity entity = new StringEntity(buildData);
             httpPost.setEntity(entity);
-            httpPost.setHeader("Authorization", token);
+            if (token != null) {
+                httpPost.setHeader("Authorization", token);
+            }
             httpPost.setHeader("Accept", "application/json");
             httpPost.setHeader("Content-type", "application/json");
             response = client.execute(httpPost);

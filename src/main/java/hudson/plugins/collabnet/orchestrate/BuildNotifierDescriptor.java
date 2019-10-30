@@ -155,4 +155,16 @@ public class BuildNotifierDescriptor extends BuildStepDescriptor<Publisher> {
     public static TeamForgeShare.TeamForgeShareDescriptor getTeamForgeShareDescriptor() {
         return TeamForgeShare.getTeamForgeShareDescriptor();
     }
+
+    /**
+     * Validates that the user provided a webhook url.
+     *
+     * @param webhookUrl
+     *            the webhookUrl provided by the user
+     * @return whether or not the validation succeeded
+     */
+    public FormValidation doCheckWebhookUrl(@QueryParameter String webhookUrl) {
+        return FormValidation.validateRequired(webhookUrl);
+    }
+
 }

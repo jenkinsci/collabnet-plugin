@@ -7,12 +7,15 @@ import hudson.model.Item;
 import hudson.model.Result;
 import hudson.model.Run;
 import hudson.model.TaskListener;
+import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 import static org.apache.commons.lang.StringUtils.isBlank;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.message.BasicNameValuePair;
@@ -20,6 +23,7 @@ import org.apache.http.util.EntityUtils;
 
 import java.io.IOException;
 import java.io.PrintStream;
+import java.net.URI;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
@@ -32,6 +36,9 @@ public class Helper {
 
     /** Prefix for messages appearing in the console log, for readability */
     private static String LOG_MESSAGE_PREFIX = "TeamForge/EventQ Build Notifier - ";
+
+    private static final String queryParam = "{\"PublisherName\": \"TeamForgeJenkinsIntegrationPlugin\"}";
+    private static final String eventName = "JenkinsBuildData";
     
     public static String getToken(URL ctfUrl, String ctfUserName, String ctfPassword) throws IOException {
         String end_point = ctfUrl.toString()+"/oauth/auth/token";
@@ -98,6 +105,46 @@ public class Helper {
             }
         }
         return token;
+    }
+
+    public static String getWebhookUrl(String ctfUrl) throws IOException {
+        String webhookUrl = null;
+        CloseableHttpClient client = null;
+        CloseableHttpResponse response = null;
+        String webhookEndPoint = null;
+        try {
+            webhookUrl =  ctfUrl.concat(":3000/publishers/v4");
+            client = CNFormFieldValidator.getHttpClient();
+            HttpGet httpGet = new HttpGet(webhookUrl);
+            URI uri = new URIBuilder(httpGet.getURI()).addParameter("q",
+                    queryParam).build();
+            httpGet.setURI(uri);
+            response = client.execute(httpGet);
+            String responseMsg = EntityUtils.toString(response.getEntity());
+            if(!responseMsg.isEmpty()) {
+                JSONObject responseObject = JSONObject.fromObject(responseMsg);
+                int responseCode = Integer.parseInt(responseObject.get("HTTPStatusCode").toString());
+                if (responseCode == 200) {
+                    JSONArray jsonArray = (JSONArray) responseObject.get("Response");
+                    if (!jsonArray.isEmpty()) {
+                        JSONObject jsonObject = (JSONObject) jsonArray.get(0);
+                        String endpointUrl = jsonObject.get("WebhookEndpoint").toString();
+                        webhookEndPoint = endpointUrl.replace("<<EventName>>", eventName);
+                    }
+                } else {
+                    logger.log(Level.INFO, "Error in getting the webhook endpoint.");
+                    logger.log(Level.INFO, responseObject.get("ErrorText").toString());
+                }
+            }
+        } catch (Exception e) {
+            logger.log(Level.INFO,"TeamForge Associations - " + e.getLocalizedMessage(), e);
+        } finally {
+            if(response != null) {
+                response.close();
+                client.close();
+            }
+        }
+        return webhookEndPoint;
     }
 
     public static void logMsg(String errMsg, TaskListener listener, Logger logger, Exception e){
