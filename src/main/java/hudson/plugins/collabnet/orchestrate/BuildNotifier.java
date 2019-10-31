@@ -138,10 +138,12 @@ public class BuildNotifier extends Notifier {
                     this.webhookUrl = Helper.getWebhookUrl(this.ctfUrl);
                 }
                 config.setWebhookUrl(this.webhookUrl);
+                this.webhookUsername = config.webhookUsername;
+                this.webhookPassword = config.webhookPassword;
                 this.setSupportWebhook(true);
                 logger.log(Level.INFO,"Webhook endpoint is registered successfully: " + webhookUrl);
             } catch (IOException e) {
-                e.printStackTrace();
+                logger.log(Level.INFO,"TeamForge Associations - " + e.getLocalizedMessage(), e);
             }
         }
     }
