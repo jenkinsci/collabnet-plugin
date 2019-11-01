@@ -25,9 +25,13 @@ public class PushNotification {
         listener.getLogger().println("Send build notification to : " + webhook.getWebhookUrl());
         JSONObject payload = getPayload(build, listener, status, excludeCommitInfo);
         if(verifyBuildMessage(payload)) {
-            token = Helper.getWebhookToken(getWebhookLogin(webhook.getWebhookUrl()), webhook.getWebhookUsername(),
-                    webhook.getWebhookPassword(), listener);
-            if (token != null) {
+            if (webhook.getWebhookUrl().indexOf("/v4/") == -1) {
+                token = Helper.getWebhookToken(getWebhookLogin(webhook.getWebhookUrl()), webhook.getWebhookUsername(),
+                        webhook.getWebhookPassword(), listener);
+                if (token != null) {
+                    response = send(webhook.getWebhookUrl(), token, payload.toString(), listener);
+                }
+            } else {
                 response = send(webhook.getWebhookUrl(), token, payload.toString(), listener);
             }
         }
@@ -80,7 +84,9 @@ public class PushNotification {
             HttpPost httpPost = new HttpPost(webhookUrl);
             StringEntity entity = new StringEntity(buildData);
             httpPost.setEntity(entity);
-            httpPost.setHeader("Authorization", token);
+            if (token != null) {
+                httpPost.setHeader("Authorization", token);
+            }
             httpPost.setHeader("Accept", "application/json");
             httpPost.setHeader("Content-type", "application/json");
             response = client.execute(httpPost);
