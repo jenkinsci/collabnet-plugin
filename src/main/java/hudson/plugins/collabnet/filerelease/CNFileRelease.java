@@ -173,7 +173,8 @@ public class CNFileRelease extends AbstractTeamForgeNotifier {
             build.addAction(this.createAction(0, null));
             return false;
         }
-        CTFRelease release = this.getReleaseObject();
+        String expandedRelease = build.getEnvironment(listener).expand(getRelease());
+        CTFRelease release = this.getReleaseObject(expandedRelease);
         if (release == null) {
             Result previousBuildStatus = build.getResult();
             build.setResult(previousBuildStatus.combine(Result.UNSTABLE));
@@ -378,7 +379,7 @@ public class CNFileRelease extends AbstractTeamForgeNotifier {
      *
      * @return the id for the release.
      */
-    public CTFRelease getReleaseObject() throws RemoteException {
+    public CTFRelease getReleaseObject(String expandedRelease) throws RemoteException {
         CTFProject projectId = this.getProjectObject();
         if (projectId == null) {
             this.logConsole("Critical Error: projectId cannot be found for " +
@@ -395,12 +396,12 @@ public class CNFileRelease extends AbstractTeamForgeNotifier {
                      "Setting build status to UNSTABLE (or worse).");
             return null;
         }
-        CTFRelease release = pkg.getReleaseByTitle(getRelease());
+        CTFRelease release = pkg.getReleaseByTitle(expandedRelease);
         if (release == null) {
-            release = pkg.createRelease(getRelease(), description,
+            release = pkg.createRelease(expandedRelease, description,
                                         RELEASE_STATUS_ACTIVE, MATURITY_NONE);
             this.logConsole("Note: releaseId cannot be found for " +
-                            this.getRelease() + ".  " +
+                            expandedRelease + ".  " +
                             "Creating a new release with specified releaseId." +
                             " Setting build status to STABLE.");
             return release;
