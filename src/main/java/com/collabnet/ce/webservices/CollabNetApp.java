@@ -1,6 +1,7 @@
 package com.collabnet.ce.webservices;
 
 import com.collabnet.ce.soap60.fault.NoSuchObjectFault;
+import com.collabnet.ce.soap60.webservices.ClientSoapStub;
 import com.collabnet.ce.soap60.webservices.ClientSoapStubFactory;
 import com.collabnet.ce.soap60.webservices.cemain.ICollabNetSoap;
 import com.collabnet.ce.soap60.webservices.cemain.ProjectSoapRow;
@@ -15,6 +16,7 @@ import com.collabnet.ce.soap60.webservices.frs.IFrsAppSoap;
 import com.collabnet.ce.soap60.webservices.rbac.IRbacAppSoap;
 import com.collabnet.ce.soap60.webservices.scm.IScmAppSoap;
 import com.collabnet.ce.soap60.webservices.tracker.ITrackerAppSoap;
+
 import hudson.RelativePath;
 import hudson.plugins.collabnet.CollabNetPlugin;
 import hudson.plugins.collabnet.CtfSoapHttpSender;
@@ -22,14 +24,15 @@ import hudson.plugins.collabnet.share.TeamForgeShare;
 import hudson.plugins.collabnet.util.CNHudsonUtil;
 import hudson.plugins.collabnet.util.CommonUtil;
 import hudson.util.Secret;
+
 import org.apache.axis.AxisFault;
 import org.apache.axis.EngineConfiguration;
 import org.apache.axis.SimpleTargetedChain;
 import org.apache.axis.configuration.SimpleProvider;
 import org.kohsuke.stapler.QueryParameter;
 
-import javax.activation.DataHandler;
 import javax.activation.FileDataSource;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -61,6 +64,7 @@ public class CollabNetApp {
     private volatile IDocumentAppSoap idas;
     private volatile IScmAppSoap isas;
     private volatile IRbacAppSoap iras;
+    private transient Integer soapTimeout;
 
     static {
         EngineConfiguration engCfg = getEngineConfiguration();
@@ -117,8 +121,12 @@ public class CollabNetApp {
     }
 
     private <T> T createProxy(Class<T> type, String wsdlLoc) {
-        String soapURL = this.getServerUrl() + SOAP_SERVICE + wsdlLoc + "?wsdl";
-        return type.cast(ClientSoapStubFactory.getSoapStub(type, soapURL));
+        int to = -1;
+        if (soapTimeout == null) {
+            soapTimeout = getSoapTimeout();
+        }
+        to = soapTimeout.intValue();
+        return createProxy(type, getServerUrl(), wsdlLoc, to);
     }
 
     protected ITrackerAppSoap getTrackerSoap() {
@@ -195,12 +203,25 @@ public class CollabNetApp {
      * @return client soap stub for an arbitrary url.
      */
     private static ICollabNetSoap getICollabNetSoap(String url) {
-        String soapURL = url + CollabNetApp.SOAP_SERVICE +
-            "CollabNet?wsdl";
-        return (ICollabNetSoap) ClientSoapStubFactory.
-            getSoapStub(ICollabNetSoap.class, soapURL);
+        return createProxy(ICollabNetSoap.class, url, "CollabNet", getSoapTimeout());
     } 
-    
+
+    /**
+     * Creates ClientSoapStub for the requested type
+     * @param type TeamForge soap application type
+     * @param serverUrl TeamForge URL
+     * @param wsdlLoc wsdl location
+     * @param timeout soap timeout in milliseconds
+     * @return
+     */
+    private static <T> T createProxy(Class<T> type, String serverUrl, String wsdlLoc, int timeout) {
+        String soapUrl = serverUrl + CollabNetApp.SOAP_SERVICE + wsdlLoc + "?wsdl";
+        ClientSoapStub s = (timeout <= 0 ?
+                ClientSoapStubFactory.getSoapStub(type, soapUrl) :
+                    ClientSoapStubFactory.getSoapStub(type, soapUrl, timeout));
+        return type.cast(s);
+    }
+
     /**
      * Login is only done in the constructor.  If you need to
      * re-login, you should get a new CollabNetApp object.
@@ -251,15 +272,16 @@ public class CollabNetApp {
         this.sessionId = null;
     }
 
-    public CTFFile upload(DataHandler src) throws RemoteException {
-        return new CTFFile(this,this.getFileStorageAppSoap().uploadFile(getSessionId(),src));
-    }
-
-    public CTFFile uploadLargeFile(File src) throws RemoteException {
+    /**
+     * Uploads a file. The returned file object can be then used as an input
+     * to methods like {@link CTFRelease#addFile(String, String, CTFFile)}.
+     */
+    public CTFFile upload(File src) throws RemoteException {
         String fieldId = this.getSimpleFileStorageAppSoap().startFileUpload(getSessionId());
         byte[] buffer = new byte[UPLOAD_FILE_CHUNK_SIZE];
+        InputStream fileInputStream = null;
         try {
-            InputStream fileInputStream = new FileDataSource(src).getInputStream();
+            fileInputStream = new FileDataSource(src).getInputStream();
             while (true) {
                 int count = fileInputStream.read(buffer);
                 if (count == -1) {
@@ -268,23 +290,19 @@ public class CollabNetApp {
                 this.getSimpleFileStorageAppSoap().write(getSessionId(), fieldId, getFirstNBytesOfBuffer(buffer, count));
             }
             this.getSimpleFileStorageAppSoap().endFileUpload(getSessionId(), fieldId);
-            fileInputStream.close();
         } catch (IOException e) {
             throw new Error(e);
+        } finally {
+            if (fileInputStream != null) {
+                try {
+                    fileInputStream.close();
+                } catch (IOException e) {
+                    // ignore
+                }
+                fileInputStream = null;
+            }
         }
         return new CTFFile(this, fieldId);
-    }
-
-    /**
-     * Uploads a file. The returned file object can be then used as an input
-     * to methods like {@link CTFRelease#addFile(String, String, CTFFile)}.
-     */
-    public CTFFile upload(File src) throws RemoteException {
-        if (src.length() > MAX_FILE_STORAGE_APP_UPLOAD_SIZE) {
-            return uploadLargeFile(src);
-        } else {
-            return upload(new DataHandler(new FileDataSource(src)));
-        }
     }
 
     /**
@@ -500,5 +518,10 @@ public class CollabNetApp {
 
     public static boolean areSslErrorsIgnored() {
         return Boolean.getBoolean(CollabNetPlugin.class.getName() + ".skipSslValidation");
+    }
+
+    public static int getSoapTimeout() {
+        return Integer.getInteger(
+                CollabNetPlugin.class.getName() + ".soapTimeout", -1).intValue();
     }
 }
