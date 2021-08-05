@@ -1,4 +1,4 @@
-## Set up a Jenkins build to generate CollabNet tracker artifacts
+## Set up a Jenkins build to generate CollabNet tracker artifacts
 
 *General instructions on how to setup the Tracker component*
 

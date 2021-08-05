@@ -1,6 +1,6 @@
 # General instructions on how to setup Authentication/Authorization
 
-## Authenticate users in Jenkins
+## Authenticate users in Jenkins
 
 Enable security on your Jenkins site to authenticate users against a CollabNet SourceForge Enterprise or CollabNet Teamforge server.
 
@@ -9,7 +9,7 @@ Enable security on your Jenkins site to authenticate users against a CollabNet S
 3.  Enter the URL for your SourceForge or Teamforge site. For example, [https://forge.collab.net](https://forge.collab.net/).
 4.  Click Save.
 
-## Authorize users at the site level
+## Authorize users at the site level
 
 At the site level, you can assign administration or read-only permissions to Teamforge users and groups.
 
@@ -22,7 +22,7 @@ At the site level, you can assign administration or read-only permissions to Tea
         **Note**: To grant users permissions within individual projects, see these instructions.
 3.  Click Save.
 
-## Authorize users at the project level
+## Authorize users at the project level
 
 Assign Teamforge users default permissions for a Jenkins project, or set up user roles for that project in Teamforge.  
 **Note**: While configuring project-level access, you associate one Teamforge project to one Jenkins project
@@ -39,7 +39,7 @@ Assign Teamforge users default permissions for a Jenkins project, or set up user
     **Note**: To be able to do this, you must be the Teamforge project administrator
 3.  Click Save.
 
-## Assign project-level Jenkins roles in Teamforge
+## Assign project-level Jenkins roles in Teamforge
 
 As a Teamforge project administrator, assign roles to individual users and groups for the associated Jenkins job.  
 Jenkins -related roles are automatically created in a Teamforge project when the Create Hudson roles on CollabNet server in this project option is selected in Jenkins.

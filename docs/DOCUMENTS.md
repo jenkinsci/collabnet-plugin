@@ -1,4 +1,4 @@
-## Set up a Jenkins build to which uploads a file to a Collabnet document application
+## Set up a Jenkins build to which uploads a file to a Collabnet document application
 
 Configure the Document Uploader component as a post-build action to upload Jenkins build files as document artifacts in a CollabNet SourceForge Enterprise or Teamforge project.
 

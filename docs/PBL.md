@@ -1,4 +1,4 @@
- Setup the Project Build Library component
+## Setup the Project Build Library component
 
 **_General Instructions_**:
 

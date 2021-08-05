@@ -1,4 +1,4 @@
-## Setup Jenkins build which uploads file to File Release System
+## Setup Jenkins build which uploads file to File Release System
 
 To upload build results to a file release in CollabNet SourceForge Enterprise or CollabNet Teamforge, configure the file release component as a post-build action in Jenkins.
 
