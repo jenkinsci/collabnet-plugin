@@ -89,6 +89,23 @@ public class CollabNetSecurityRealm extends SecurityRealm {
     }
 
     /**
+     * Override the default createFilter.  We want to use one that does not
+     * return a 403 on login redirect because that may cause problems when
+     * Jenkins is run behind a proxy.
+     */
+    @Override
+    public Filter createFilter(FilterConfig filterConfig) {
+        Binding binding = new Binding();
+        SecurityComponents sc = this.createSecurityComponents();
+        binding.setVariable("securityComponents", sc);
+        BeanBuilder builder = new BeanBuilder(getClass().getClassLoader());
+        builder.parse(getClass().
+                      getResourceAsStream("CNSecurityFilters.groovy"),binding);
+        WebApplicationContext context = builder.createApplicationContext();
+        return (Filter) context.getBean("filter");
+    }
+
+    /**
      * The CollabNetSecurityRealm Descriptor class.
      */
     @Extension
