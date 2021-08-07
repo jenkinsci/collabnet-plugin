@@ -9,7 +9,7 @@
   <version>2.0.8-SNAPSHOT</version>
   <name>CollabNet Plugins</name>
   <description>CollabNet packages</description>
-  <url>http://wiki.jenkins-ci.org/display/JENKINS/CollabNet+Plugin</url>
+  <url>https://github.com/jenkinsci/collabnet-plugin</url>
   <packaging>hpi</packaging>
 
   <developers>
