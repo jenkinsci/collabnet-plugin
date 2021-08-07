@@ -1,9 +1,16 @@
 # Changelog:
 
+**Version 2.0.7:** Released 07/16/2020.
+
+-   Use HTTPS URL for plugin repository
+
+**Version 2.0.6:** Released 11/06/2018.
+
+-   Upgrade plugin to support both WEBR and EventQ
+
 **Version 2.0.5:** Released 05/25/2018.
 
--   [Fix security
-    issue](https://jenkins.io/security/advisory/2018-06-25/#SECURITY-941)
+-   [Fix security issue](https://jenkins.io/security/advisory/2018-06-25/#SECURITY-941)
 
 **Version 2.0.4**:  Released 09/08/2017.
 
