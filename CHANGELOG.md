@@ -1,5 +1,9 @@
 # Changelog:
 
+**Version 2.0.8:** Released 08/08/2021.
+
+- Fix for CollabNet Security Realm bug in Jenkins-v2.266
+
 **Version 2.0.7:** Released 07/16/2020.
 
 -   Use HTTPS URL for plugin repository
