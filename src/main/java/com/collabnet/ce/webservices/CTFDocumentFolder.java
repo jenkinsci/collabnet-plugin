@@ -60,7 +60,7 @@ public class CTFDocumentFolder extends CTFFolder {
     }
 
     public String getURL() {
-        return app.getServerUrl() + "/sf/docman/do/listDocuments/" + getPath();
+        return app.getServerUrl() + "/ctf/documents/home/" + getPath();
     }
 
 
