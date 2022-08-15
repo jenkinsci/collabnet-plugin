@@ -23,18 +23,6 @@
                   <button type="button" class="close" data-dismiss="modal">X</button>
                   <h4 class="modal-title">Trace Associations</h4>
                   <div id="angularroot">
-                      <j:if test="${it.supportEventQ}">
-                          <tf-traceability-exploration endpoint="${it.reqUrl}"
-                                                 token="${it.soapSessionId}"
-                                                 sourcetype="build"
-                                                 remotesource="sak:${it.sourceKey}"
-                                                 remoteid="${it.build.number}"
-                                                 imagelocation="/images"
-                                                 svgwidth="100%"
-                                                 svgheight="1000px"
-                                                 ctfurl="${it.ctfUrl}">
-                          </tf-traceability-exploration>
-                      </j:if>
                       <j:if test="${it.supportWebhook}">
                           <tf-traceability-exploration endpoint="${it.ctfRestUrl}&amp;includeDependencies=true"
                                                        token="${it.tokenId}"
@@ -53,21 +41,6 @@
             </div>
         </div>
         <button type="button" id="btn-explore" class="aui-button" data-toggle="modal" data-target="#exploreModal" style="float: right">Trace</button>
-            <j:if test="${it.supportEventQ}">
-                <tf-traceability-summary endpoint="${it.reqUrl}"
-                                     token="${it.soapSessionId}"
-                                     sourcetype="build"
-                                     remotesource="sak:${it.sourceKey}"
-                                     remoteid="${it.build.number}"
-                                     imagelocation="/images"
-                                     dateformat="DD/MMM/YYYY"
-                                     timeformat="h:mm a"
-                                     timezone="Asia/Kolkata"
-                                     svgwidth="100%"
-                                     svgheight="110px"
-                                     ctfurl="${it.ctfUrl}">
-                </tf-traceability-summary>
-            </j:if>
             <j:if test="${it.supportWebhook}">
                 <tf-traceability-summary endpoint="${it.ctfRestUrl}&amp;includeDependencies=false"
                                          token="${it.tokenId}"
@@ -97,11 +70,6 @@
         <script type="text/javascript" src="${rootURL}/plugin/collabnet/scripts/moment-timezone-with-data.js" />
         <script type="text/javascript" src="${rootURL}/plugin/collabnet/scripts/jquery-1.7.2.min.js" />
         <script type="text/javascript" src="${rootURL}/plugin/collabnet/scripts/bootstrap.min.js" />
-        <j:if test="${it.supportEventQ}">
-            <link rel="stylesheet" type="text/css" href="${rootURL}/plugin/collabnet/scripts/config.css" />
-            <link rel="stylesheet" type="text/css" href="${rootURL}/plugin/collabnet/scripts/tf.css" />
-            <script type="text/javascript" src="${rootURL}/plugin/collabnet/scripts/tf-traceability.min.js" />
-        </j:if>
         <j:if test="${it.supportWebhook}">
             <link rel="stylesheet" type="text/css" href="${rootURL}/plugin/collabnet/scripts/webhook/config.css" />
             <link rel="stylesheet" type="text/css" href="${rootURL}/plugin/collabnet/scripts/webhook/tf.css" />

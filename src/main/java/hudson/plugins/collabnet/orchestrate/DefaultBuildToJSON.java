@@ -48,7 +48,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * Converts a build to JSON for importing as a build activity into EventQ.
+ * Converts a build to JSON for importing as a build activity into TeamForge.
  */
 public class DefaultBuildToJSON implements BuildToJSON {
     Logger logger = Logger.getLogger("hudson.plugins.collab.orchestrate");
@@ -132,7 +132,7 @@ public class DefaultBuildToJSON implements BuildToJSON {
     }
 
     /**
-     * Converts the standard timestamp from Java format to EventQ's format.
+     * Converts the standard timestamp from Java format to TeamForge's format.
      *
      *
      * @param time the time to convert
@@ -188,7 +188,7 @@ public class DefaultBuildToJSON implements BuildToJSON {
     }
 
     /**
-     * Determines the EventQ status and builds a status JSON object.
+     * Determines the status and builds a status JSON object.
      *
      * @param Run run
      * @param statusNameOrType string
@@ -200,7 +200,7 @@ public class DefaultBuildToJSON implements BuildToJSON {
     }
 
     /**
-     * Build a status JSON object from the given EventQ status name or type
+     * Build a status JSON object from the given status name or type
      *
      * @param statusNameOrType string
      * @return JSONObject containing the type and name
