@@ -38,6 +38,7 @@ public class CNAuthentication implements Authentication {
         this.setupAuthorities();
         this.setupGroups();
         this.setAuthenticated(true);
+        this.setCNAuthed(true);
 
         mAuthCache = new CNAuthorizationCache();
     }

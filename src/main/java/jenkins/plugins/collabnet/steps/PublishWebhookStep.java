@@ -139,7 +139,7 @@ public class PublishWebhookStep extends Step {
         }
 
         /**
-         * Validates that the user provided EventQ status.
+         * Validates that the user provided status.
          *
          * @param status
          *            the status provided by the user

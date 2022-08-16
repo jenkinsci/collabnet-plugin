@@ -29,21 +29,4 @@
         </f:entry>
       </f:optionalBlock>
   </f:block>
-
-  <f:block>
-    <f:optionalBlock name="eventQ" title="Notify EventQ" checked="${instance.getSupportEventQ()}">
-      <f:entry title="MQ URI" field="serverUrl">
-        <f:textbox id="orchestrate-serverUrl" />
-      </f:entry>
-      <f:entry title="Server Username" field="serverUsername">
-        <f:textbox id="orchestrate-serverUsername"/>
-      </f:entry>
-      <f:entry title="Server Password" field="serverPassword">
-        <f:password id="orchestrate-serverPassword"/>
-      </f:entry>
-      <f:entry title="Build source association key" field="sourceKey">
-        <f:textbox id="orchestrate-sourceKey"/>
-      </f:entry>
-    </f:optionalBlock>
-  </f:block>
 </j:jelly>

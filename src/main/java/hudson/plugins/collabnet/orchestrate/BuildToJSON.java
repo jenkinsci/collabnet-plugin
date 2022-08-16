@@ -26,7 +26,7 @@ import java.net.URISyntaxException;
 import java.util.Date;
 
 /**
- * Converts a Model object to JSON for importing build activity information into EventQ.
+ * Converts a Model object to JSON for importing build activity information into TeamForge.
  */
 public interface BuildToJSON {
 
@@ -52,11 +52,11 @@ public interface BuildToJSON {
      * Construct the payload of the JSON Message.
      *
      * @param build the build being reported
-     * @param eventqStatus the EventQ status to use
+     * @param status the status to use
      * @return JSONObject representing the 'buildData' element in the message JSON
      * @throws IOException
      */
-    public JSONObject getBuildData(Run run, String eventqStatus, boolean excludeCommitInfo) throws IOException;     
+    public JSONObject getBuildData(Run run, String status, boolean excludeCommitInfo) throws IOException;     
 
     /**
      * Convert the SCM URL to something without credentials.
@@ -111,7 +111,7 @@ public interface BuildToJSON {
     JSONObject getRepositoryInfo(Run build) throws IOException;
 
     /**
-     * Converts the standard timestamp from Java format to EventQ's format.
+     * Converts the standard timestamp from Java format to TeamForge's format.
      *
      *
      * @param time the time to convert

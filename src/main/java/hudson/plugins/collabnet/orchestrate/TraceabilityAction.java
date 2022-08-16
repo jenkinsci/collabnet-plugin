@@ -84,25 +84,11 @@ public class TraceabilityAction implements Action {
         return getNotifier().getCtfPassword();
     }
 
-    public String getSourceKey() {
-        return getNotifier().getSourceKey();
-    }
-
-    public String getReqUrl() {
-        String ctfUrl = this.getCtfUrl();
-        return (ctfUrl + "/orc/api/2/reporting");
-    }
-    
     public boolean getAssociationView(){
     	return getNotifier().getUseAssociationView();
     }
 
     public boolean getValidation() {
-        if(isSupportEventQ() && isSupportWebhook()){
-            addErrorMsg("TeamForge Association - Both TeamForge and EventQ configured. " +
-                    "Please use either one option.");
-            return true;
-        }
     	if(!getAssociationView()){
     		addErrorMsg("TeamForge Association view not configured.");
     		return true;
@@ -226,13 +212,6 @@ public class TraceabilityAction implements Action {
             logger.log(Level.INFO, INVALID_TFURL, e);
             return EMPTY_STRING;
         }
-    }
-
-    public boolean isSupportEventQ(){
-        if(getNotifier().getSupportEventQ()){
-            return true;
-        }
-        return false;
     }
 
     public boolean isSupportWebhook(){

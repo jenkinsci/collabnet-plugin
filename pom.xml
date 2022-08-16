@@ -53,16 +53,6 @@
        </exclusions>
       </dependency>  
     <dependency>
-          <groupId>com.google.guava</groupId>
-          <artifactId>guava</artifactId>
-          <version>13.0.1</version>
-    </dependency>
-    <dependency>
-      <groupId>com.rabbitmq</groupId>
-      <artifactId>amqp-client</artifactId>
-      <version>3.6.5</version>
-    </dependency>
-    <dependency>
          <groupId>org.easymock</groupId>
          <artifactId>easymock</artifactId>
          <version>3.4</version>
@@ -166,11 +156,6 @@
       <artifactId>subversion</artifactId>
       <version>1.23</version>
     </dependency>
-    <dependency>
-      <groupId>log4j</groupId>
-      <artifactId>log4j</artifactId>
-      <version>1.2.14</version>
-    </dependency>
     <dependency><!-- commons-httpclient brings in 1.3 but core wants 1.4 -->
       <groupId>commons-codec</groupId>
       <artifactId>commons-codec</artifactId>
@@ -223,11 +208,6 @@
       <groupId>org.jenkins-ci.plugins</groupId>
       <artifactId>credentials</artifactId>
       <version>2.6.1.1</version>
-    </dependency>
-    <dependency>
-      <groupId>org.springframework.security.oauth</groupId>
-      <artifactId>spring-security-oauth2</artifactId>
-      <version>2.1.1.RELEASE</version>
     </dependency>
   </dependencies>
 
@@ -375,8 +355,8 @@
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-compiler-plugin</artifactId>
             <configuration>
-                <source>7</source>
-                <target>7</target>
+                <source>${compile.java.version}</source>
+                <target>${compile.java.version}</target>
             </configuration>
         </plugin>
     </plugins>
