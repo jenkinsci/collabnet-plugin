@@ -1,17 +1,17 @@
 package hudson.plugins.collabnet.util;
 
-import com.gargoylesoftware.htmlunit.Page;
-import com.gargoylesoftware.htmlunit.WebAssert;
-import com.gargoylesoftware.htmlunit.html.DomElement;
-import com.gargoylesoftware.htmlunit.html.DomNode;
-import com.gargoylesoftware.htmlunit.html.HtmlForm;
-import com.gargoylesoftware.htmlunit.html.HtmlInput;
-import com.gargoylesoftware.htmlunit.html.HtmlLabel;
-import com.gargoylesoftware.htmlunit.html.HtmlOption;
-import com.gargoylesoftware.htmlunit.html.HtmlPage;
-import com.gargoylesoftware.htmlunit.html.HtmlPasswordInput;
-import com.gargoylesoftware.htmlunit.html.HtmlSelect;
-import com.gargoylesoftware.htmlunit.html.HtmlTextInput;
+import org.htmlunit.Page;
+import org.htmlunit.WebAssert;
+import org.htmlunit.html.DomElement;
+import org.htmlunit.html.DomNode;
+import org.htmlunit.html.HtmlForm;
+import org.htmlunit.html.HtmlInput;
+import org.htmlunit.html.HtmlLabel;
+import org.htmlunit.html.HtmlOption;
+import org.htmlunit.html.HtmlPage;
+import org.htmlunit.html.HtmlPasswordInput;
+import org.htmlunit.html.HtmlSelect;
+import org.htmlunit.html.HtmlTextInput;
 
 import hudson.FilePath;
 import hudson.FilePath.FileCallable;
@@ -107,7 +107,7 @@ public class Util {
         WebAssert.assertElementPresent(page, id);
         DomElement elem = page.getElementById(id);
         assert(elem instanceof HtmlPasswordInput);
-        return ((HtmlPasswordInput) elem).setValueAttribute(text);
+        return ((HtmlPasswordInput) elem).setValue(text);
     }
 
     /**
@@ -117,7 +117,7 @@ public class Util {
         WebAssert.assertElementPresent(page, id);
         DomElement elem = page.getElementById(id);
         assert(elem instanceof HtmlPasswordInput);
-        assert(text.equals(((HtmlPasswordInput) elem).getValueAttribute()));
+        assert(text.equals(((HtmlPasswordInput) elem).getValue()));
     }
 
     /**
@@ -127,7 +127,7 @@ public class Util {
         WebAssert.assertElementPresent(page, id);
         DomElement elem = page.getElementById(id);
         assert(elem instanceof HtmlTextInput);
-        return ((HtmlTextInput) elem).setValueAttribute(text);
+        return ((HtmlTextInput) elem).setValue(text);
     }
 
     /**
@@ -137,7 +137,7 @@ public class Util {
         WebAssert.assertElementPresent(page, id);
         DomElement elem = page.getElementById(id);
         assert(elem instanceof HtmlTextInput);
-        assert(text.equals(((HtmlTextInput) elem).getValueAttribute()));
+        assert(text.equals(((HtmlTextInput) elem).getValue()));
     }
 
     /**
@@ -147,7 +147,7 @@ public class Util {
     public static Page setTextByName(HtmlPage page, String name, String text) {
         DomElement elem = getFirstHtmlElementByName(page, name);
         assert(elem instanceof HtmlTextInput);
-        return ((HtmlTextInput) elem).setValueAttribute(text);
+        return ((HtmlTextInput) elem).setValue(text);
     }
 
     /**
@@ -157,7 +157,7 @@ public class Util {
     public static void checkTextByName(HtmlPage page, String name, String text) {
         DomElement elem = getFirstHtmlElementByName(page, name);
         assert(elem instanceof HtmlTextInput);
-        assert(text.equals(((HtmlTextInput) elem).getValueAttribute()));
+        assert(text.equals(((HtmlTextInput) elem).getValue()));
     }
 
     /**
@@ -171,7 +171,7 @@ public class Util {
         HtmlInput radioToClick = null;
         for(DomElement radio: radios) {
             assert(radio instanceof HtmlInput);
-            if (((HtmlInput)radio).getValueAttribute().equals(value)) {
+            if (((HtmlInput)radio).getValue().equals(value)) {
                 radioToClick = (HtmlInput) radio;
                 break;
             }
@@ -190,7 +190,7 @@ public class Util {
         HtmlInput radioWithValue = null;
         for(DomElement radio: radios) {
             assert(radio instanceof HtmlInput);
-            if (((HtmlInput)radio).getValueAttribute().equals(value)) {
+            if (((HtmlInput)radio).getValue().equals(value)) {
                 radioWithValue = (HtmlInput) radio;
                 break;
             }
@@ -234,7 +234,7 @@ public class Util {
         boolean failure = false;
         try {
             HtmlPage page = wc.goTo(url);
-        } catch (com.gargoylesoftware.htmlunit.FailingHttpStatusCodeException 
+        } catch (org.htmlunit.FailingHttpStatusCodeException 
                  fhsce) {
             failure = true;
         }

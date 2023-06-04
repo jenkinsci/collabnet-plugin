@@ -35,7 +35,7 @@ public class AuthnTest extends AbstractSecurityTestCase {
         try {
             createWebClient().login("invalid", "");
             fail("Expecting a login failure");
-        } catch (com.gargoylesoftware.htmlunit.FailingHttpStatusCodeException fhsce) {
+        } catch (org.htmlunit.FailingHttpStatusCodeException fhsce) {
             // we should get a 401 here.
             assertEquals(401,fhsce.getStatusCode());
         }
