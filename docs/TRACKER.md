@@ -8,7 +8,7 @@ Before you set up the plugin, make sure the following are in place in the Digita
 -   A user who is a project member, and has view, submit and edit permissions for the tracker\# In the Jenkins interface for the job, click **Configure**.
 
 1.  In the Jenkins interface for the job, click **Configure**.
-2.  In the **Post-build Actions** section, select **Digital.ai Searching ant patterTracker**.
+2.  In the **Post-build Actions** section, select **Digital.ai Tracker**.
 3.  Enter the URL of the Digital.ai  site. For example, [https://forge.collab.net](https://forge.collab.net/).
 4.  Enter the username and password of the Teamforge project member responsible for creating and updating tracker artifacts in the project.
 5.  Enter the name of the project containing the tracker.  **Note**: If the user specified is not a member of this project, the plugin will not be able to locate the project.      
