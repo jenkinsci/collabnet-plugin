@@ -1,21 +1,14 @@
 package com.collabnet.ce.webservices;
 
-import hudson.plugins.collabnet.util.CNFormFieldValidator;
-import net.sf.json.JSONArray;
-import net.sf.json.JSONObject;
-import org.apache.http.NameValuePair;
-import org.apache.http.client.entity.UrlEncodedFormEntity;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpDelete;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.message.BasicNameValuePair;
-import org.apache.http.util.EntityUtils;
+import hudson.plugins.collabnet.util.Helper;
+import org.json.simple.JSONObject;
+import org.json.simple.JSONArray;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
 
+import javax.ws.rs.HttpMethod;
+import javax.ws.rs.core.Response;
 import java.io.IOException;
-import java.rmi.RemoteException;
-import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -25,9 +18,9 @@ import java.util.logging.Logger;
  */
 public class CTFPackage extends CTFFolder {
 
-    private static final String PACKAGE_URL = "/ctfrest/frs/v1/packages/";
-
     static Logger logger = Logger.getLogger(CTFPackage.class.getName());
+
+    Helper helper = new Helper();
 
     CTFPackage(CTFObject parent, JSONObject data) {
         super(parent, data, data.get("id").toString(), data.get("parentFolderId").toString());
@@ -37,60 +30,34 @@ public class CTFPackage extends CTFFolder {
      * Deletes this package.
      */
     public void delete() throws IOException {
-        String end_point =  app.getServerUrl() + PACKAGE_URL + getId();
-        CloseableHttpClient httpClient = null;
-        CloseableHttpResponse response = null;
-        try {
-            httpClient = CNFormFieldValidator.getHttpClient();
-            HttpDelete delete = new HttpDelete(end_point);
-            delete.setHeader("Accept", "application/json");
-            delete.setHeader("Authorization", "Bearer " + app.getSessionId());
-            response = httpClient.execute(delete);
-        } catch (Exception e) {
-            logger.log(Level.INFO,"Error while deleting a package - " + e.getLocalizedMessage(), e);
-        } finally {
-            if(response != null) {
-                response.close();
-            }
-            if (httpClient != null) {
-                httpClient.close();
-            }
+        String end_point =  app.getServerUrl() + CTFConstants.PACKAGE_URL + getId();
+        Response response = helper.request(end_point, app.getSessionId(), null, HttpMethod.DELETE, null);
+        int status = response.getStatus();
+        if (status != 200) {
+                logger.log(Level.WARNING, "Error while deleting a package - " + status);
         }
     }
 
     public CTFRelease createRelease(String title, String description, String status, String maturity) throws IOException {
-        String end_point =  app.getServerUrl() + PACKAGE_URL + getId() + "/releases" ;
-        CloseableHttpClient client = null;
-        CloseableHttpResponse response = null;
-        try {
-            client = CNFormFieldValidator.getHttpClient();
-            HttpPost httpPost = new HttpPost(end_point);
-            httpPost.setHeader("Accept", "application/json");
-            httpPost.setHeader("Content-type", "application/json");
-            httpPost.setHeader("Authorization", "Bearer " +app.getSessionId());
-            ArrayList<NameValuePair> params = new ArrayList<>();
-            params.add(new BasicNameValuePair("title", title));
-            params.add(new BasicNameValuePair("description", description));
-            params.add(new BasicNameValuePair("status", status));
-            params.add(new BasicNameValuePair("maturity", maturity));
-            httpPost.setEntity(new UrlEncodedFormEntity(params));
-            response = client.execute(httpPost);
-            if(response.getStatusLine().getStatusCode() == 200) {
-                JSONObject data = JSONObject.fromObject(EntityUtils.toString(response.getEntity()));
+        String end_point =  app.getServerUrl() + CTFConstants.PACKAGE_URL + getId() + "/releases" ;
+        JSONObject requestPayload = new JSONObject();
+        requestPayload.put("title", title);
+        requestPayload.put("description", description);
+        requestPayload.put("status", status);
+        requestPayload.put("maturity", maturity);
+        Response response = helper.request(end_point, app.getSessionId(), requestPayload.toString(), HttpMethod.POST, null);
+        String result = response.readEntity(String.class);
+        int statusCode = response.getStatus();
+        if (statusCode == 200) {
+            JSONObject data = null;
+            try {
+                data = (JSONObject) new JSONParser().parse(result);
                 return new CTFRelease(this, data);
+            } catch (ParseException e) {
+                logger.log(Level.WARNING,"Unable to parse the json content in createRelease()  - " + e.getLocalizedMessage(), e);
             }
-        } catch (IOException e) {
-            String errMsg = e.getMessage();
-            logger.log(Level.INFO, errMsg);
-        } catch (Exception e) {
-            logger.log(Level.INFO,"Error creating a release" + e.getLocalizedMessage(), e);
-        } finally {
-            if(response != null) {
-                response.close();
-            }
-            if(client != null) {
-                client.close();
-            }
+        } else {
+            logger.log(Level.WARNING,"Error creating a release - " + statusCode + "Error Msg - " + result);
         }
         return null;
     }
@@ -112,25 +79,27 @@ public class CTFPackage extends CTFFolder {
 
     public CTFList<CTFRelease> getReleases() throws IOException {
         CTFList<CTFRelease> r = new CTFList<CTFRelease>();
-        String end_point = app.getServerUrl() + PACKAGE_URL + getId() + "/releases";
-        CloseableHttpClient httpClient;
-        CloseableHttpResponse response;
-        try {
-            httpClient = CNFormFieldValidator.getHttpClient();
-            HttpGet get = new HttpGet(end_point);
-            get.setHeader("Accept", "application/json");
-            get.setHeader("Content-type", "application/json");
-            get.setHeader("Authorization", "Bearer " + app.getSessionId());
-            response = httpClient.execute(get);
-            JSONObject data = JSONObject.fromObject(EntityUtils.toString(response.getEntity()));
-            JSONArray dataArray = JSONArray.fromObject(data.get("items"));
-            Iterator it = dataArray.iterator();
-            while (it.hasNext()) {
-                JSONObject jsonObject = (JSONObject) it.next();
-                r.add(new CTFRelease(this,jsonObject));
+        String end_point = app.getServerUrl() + CTFConstants.PACKAGE_URL + getId() + "/releases";
+        Response response = helper.request(end_point, app.getSessionId(), null, HttpMethod.GET, null);
+        String result = response.readEntity(String.class);
+        int status = response.getStatus();
+        if (status == 200) {
+            JSONObject data = null;
+            try {
+                data = (JSONObject) new JSONParser().parse(result);
+                if (data != null & data.containsKey("items")) {
+                    JSONArray dataArray = (JSONArray)data.get("items");
+                    Iterator it = dataArray.iterator();
+                    while (it.hasNext()) {
+                        JSONObject jsonObject = (JSONObject) it.next();
+                        r.add(new CTFRelease(this, jsonObject));
+                    }
+                }
+            } catch (ParseException e) {
+                logger.log(Level.WARNING, "Unable to parse the json content in getReleases() - " + e.getLocalizedMessage(), e);
             }
-        } catch (Exception e) {
-            logger.log(Level.INFO,"Error getting the release list" + e.getLocalizedMessage(), e);
+        } else {
+            logger.log(Level.WARNING,"Error getting a release " + status + "Error Msg - " + result);
         }
         return r;
     }

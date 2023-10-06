@@ -1,6 +1,6 @@
 package com.collabnet.ce.webservices;
 
-import net.sf.json.JSONObject;
+import org.json.simple.JSONObject;
 
 import java.io.IOException;
 

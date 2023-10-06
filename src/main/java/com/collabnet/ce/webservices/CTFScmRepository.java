@@ -1,13 +1,15 @@
 package com.collabnet.ce.webservices;
 
-import hudson.plugins.collabnet.util.CNFormFieldValidator;
-import net.sf.json.JSONObject;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.util.EntityUtils;
+import hudson.plugins.collabnet.util.Helper;
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
 
+import javax.ws.rs.HttpMethod;
+import javax.ws.rs.core.Response;
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -21,9 +23,9 @@ public class CTFScmRepository extends CTFFolder {
      * Lazily fetched.
      */
 
-    private static final String SCM_URL = "/ctfrest/scm/v1/repositories/";
-
     static Logger logger = Logger.getLogger(CTFScmRepository.class.getName());
+
+    Helper helper = new Helper();
 
     public String systemId;
     public String systemTitle;
@@ -41,18 +43,20 @@ public class CTFScmRepository extends CTFFolder {
 
     private JSONObject data() throws IOException {
         if (scmData == null) {
-            String end_point = app.getServerUrl() + SCM_URL + getId() + "/releases";
-            CloseableHttpClient httpClient;
-            CloseableHttpResponse response;
-            try {
-                httpClient = CNFormFieldValidator.getHttpClient();
-                HttpGet get = new HttpGet(end_point);
-                get.setHeader("Accept", "application/json");
-                get.setHeader("Authorization", "Bearer " + app.getSessionId());
-                response = httpClient.execute(get);
-                scmData = JSONObject.fromObject(EntityUtils.toString(response.getEntity()));
-            } catch (Exception e) {
-                logger.log(Level.INFO, "Error getting the repository data" + e.getLocalizedMessage(), e);
+            String end_point = app.getServerUrl() + CTFConstants.SCM_REPO_URL + getId();
+            Map<String, String> queryParam = new HashMap<>();
+            queryParam.put("includeWebhooks", "false");
+            Response response = helper.request(end_point, app.getSessionId(), null, HttpMethod.GET, queryParam);
+            String result = response.readEntity(String.class);
+            int status = response.getStatus();
+            if (status == 200) {
+                try {
+                    scmData = (JSONObject) new JSONParser().parse(result);
+                } catch (ParseException e) {
+                    logger.log(Level.WARNING, "Unable to parse the json content in data() - " + e.getLocalizedMessage(), e);
+                }
+            } else {
+                logger.log(Level.WARNING, "Error getting the repository data - " + status + ", Error Msg - " + result);
             }
         }
         return scmData;

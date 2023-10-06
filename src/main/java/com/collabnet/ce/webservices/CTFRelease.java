@@ -1,19 +1,14 @@
 package com.collabnet.ce.webservices;
 
-import hudson.plugins.collabnet.util.CNFormFieldValidator;
-import net.sf.json.JSONArray;
-import net.sf.json.JSONObject;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpDelete;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.entity.ContentType;
-import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.util.EntityUtils;
+import hudson.plugins.collabnet.util.Helper;
+import org.json.simple.JSONObject;
+import org.json.simple.JSONArray;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
 
+import javax.ws.rs.HttpMethod;
+import javax.ws.rs.core.Response;
 import java.io.IOException;
-import java.rmi.RemoteException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -25,9 +20,9 @@ import java.util.logging.Logger;
  */
 public class CTFRelease extends CTFFolder {
 
-    private static final String FRS_URL = "/ctfrest/frs/v1/releases/";
-
     static Logger logger = Logger.getLogger(CTFRelease.class.getName());
+
+    Helper helper = new Helper();
 
     CTFRelease(CTFObject parent, JSONObject data) {
         super(parent, data, data.get("id").toString(), data.get("parentFolderId").toString());
@@ -41,54 +36,45 @@ public class CTFRelease extends CTFFolder {
     }
 
     public void delete() throws IOException {
-        String end_point =  app.getServerUrl() + FRS_URL + getId();
-        CloseableHttpClient httpClient = null;
-        CloseableHttpResponse response = null;
-        try {
-            httpClient = CNFormFieldValidator.getHttpClient();
-            HttpDelete delete = new HttpDelete(end_point);
-            delete.setHeader("Accept", "application/json");
-            delete.setHeader("Authorization", "Bearer " + app.getSessionId());
-            response = httpClient.execute(delete);
-        } catch (Exception e) {
-            logger.log(Level.INFO,"Error while deleting a release - " + e.getLocalizedMessage(), e);
-        } finally {
-            if(response != null) {
-                response.close();
-            }
-            if (httpClient != null) {
-                httpClient.close();
-            }
+        String end_point =  app.getServerUrl() + CTFConstants.RELEASE_URL + getId();
+        Response response = helper.request(end_point, app.getSessionId(), null, HttpMethod.DELETE, null);
+        int status = response.getStatus();
+        String result = response.readEntity(String.class);
+        if (status != 200) {
+            logger.log(Level.WARNING, "Error while deleting a package - " + status + ", Error Msg - " + result);
         }
     }
 
-    public CTFReleaseFile getFileByTitle(String title) throws RemoteException {
+    public CTFReleaseFile getFileByTitle(String title) throws IOException {
         for (CTFReleaseFile f : getFiles())
             if (f.getTitle().equals(title))
                 return f;
         return null;
     }
 
-    public List<CTFReleaseFile> getFiles() throws RemoteException {
+    public List<CTFReleaseFile> getFiles() throws IOException {
         List<CTFReleaseFile> r = new ArrayList<CTFReleaseFile>();
-        String end_point = app.getServerUrl() + FRS_URL + getId() + "/files";
-        CloseableHttpClient httpClient = null;
-        CloseableHttpResponse response = null;
-        try {
-            httpClient = CNFormFieldValidator.getHttpClient();
-            HttpGet get = new HttpGet(end_point);
-            get.setHeader("Accept", "application/json");
-            get.setHeader("Authorization", "Bearer " + app.getSessionId());
-            response = httpClient.execute(get);
-            JSONObject data = JSONObject.fromObject(EntityUtils.toString(response.getEntity()));
-            JSONArray dataArray = JSONArray.fromObject(data.get("items"));
-            Iterator it = dataArray.iterator();
-            while (it.hasNext()) {
-                JSONObject jsonObject = (JSONObject) it.next();
-                r.add(new CTFReleaseFile(this, jsonObject));
+        String end_point = app.getServerUrl() + CTFConstants.RELEASE_URL + getId() + "/files";
+        Response response = helper.request(end_point, app.getSessionId(), null, HttpMethod.GET, null);
+        String result = response.readEntity(String.class);
+        int status = response.getStatus();
+        if (status == 200) {
+            JSONObject data = null;
+            try {
+                data = (JSONObject) new JSONParser().parse(result);
+                if (data != null & data.containsKey("items")) {
+                    JSONArray dataArray = (JSONArray)data.get("items");
+                    Iterator it = dataArray.iterator();
+                    while (it.hasNext()) {
+                        JSONObject jsonObject = (JSONObject) it.next();
+                        r.add(new CTFReleaseFile(this, jsonObject));
+                    }
+                }
+            } catch (ParseException e) {
+                logger.log(Level.WARNING, "Unable to parse the json content in getFiles() - " + e.getLocalizedMessage(), e);
             }
-        } catch (Exception e) {
-            logger.log(Level.INFO,"Error getting the file release lists" + e.getLocalizedMessage(), e);
+        } else {
+            logger.log(Level.WARNING,"Error getting the file release lists - " + status + ", Error Msg - " + result);
         }
         return r;
     }
@@ -96,35 +82,24 @@ public class CTFRelease extends CTFFolder {
     public CTFReleaseFile addFile(String fileName, String mimeType, CTFFile file)
         throws IOException {
         CTFReleaseFile ctfReleaseFile = null;
-        String end_point =  app.getServerUrl() + FRS_URL + getId() + "/files";
-        CloseableHttpClient httpClient = null;
-        CloseableHttpResponse response = null;
-        try {
-            httpClient = CNFormFieldValidator.getHttpClient();
-            HttpPost post = new HttpPost(end_point);
-            post.setHeader("Content-Type", "application/json");
-            post.setHeader("Accept", "application/json");
-            post.setHeader("Authorization", "Bearer " + app.getSessionId());
-            JSONObject fileRelObj = new JSONObject()
-                    .element("fileName", fileName)
-                    .element("mimeType", mimeType)
-                    .element("fileId", file.getId());
-            StringEntity stringEntity = new StringEntity(fileRelObj.toString(), ContentType.APPLICATION_JSON);
-            post.setEntity(stringEntity);
-            response = httpClient.execute(post);
-            if(response.getStatusLine().getStatusCode() == 201) {
-                JSONObject data = JSONObject.fromObject(EntityUtils.toString(response.getEntity()));
-                return new CTFReleaseFile(this, data);
+        String end_point =  app.getServerUrl() + CTFConstants.RELEASE_URL + getId() + "/files";
+        JSONObject requestPayload = new JSONObject();
+        requestPayload.put("fileName", fileName);
+        requestPayload.put("mimeType", mimeType);
+        requestPayload.put("fileId", file!=null?file.getId():null);
+        Response response = helper.request(end_point, app.getSessionId(), requestPayload.toString(), HttpMethod.POST, null);
+        String result = response.readEntity(String.class);
+        int statusCode = response.getStatus();
+        if (statusCode == 201) {
+            JSONObject data = null;
+            try {
+                data = (JSONObject) new JSONParser().parse(result);
+                ctfReleaseFile = new CTFReleaseFile(this, data);
+            } catch (ParseException e) {
+                logger.log(Level.WARNING,"Unable to parse the json content in addFile()  - " + e.getLocalizedMessage(), e);
             }
-        } catch (Exception e) {
-            logger.log(Level.INFO,"Error adding a file to the file release - " + e.getLocalizedMessage(), e);
-        } finally {
-            if(response != null) {
-                response.close();
-            }
-            if (httpClient != null) {
-                httpClient.close();
-            }
+        } else {
+            logger.log(Level.WARNING,"Error adding a file to the file release - " + statusCode +  ", Error Msg - " + result);
         }
         return ctfReleaseFile;
     }

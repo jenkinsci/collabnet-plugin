@@ -124,7 +124,7 @@ public abstract class ComboBoxUpdater {
         if (p!=null) {
             try {
                 return toModel(p.getMembers());
-            } catch (RemoteException re) {
+            } catch (IOException re) {
                 CommonUtil.logRE(log, "getUserList", re);
             }
         }

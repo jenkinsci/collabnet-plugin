@@ -391,7 +391,7 @@ public class CNTracker extends AbstractTeamForgeNotifier {
      * @return the assigned user, if that user is a member of the project.
      *         Otherwise, null.
      */
-    private String getValidAssignUser(CTFProject p) throws RemoteException {
+    private String getValidAssignUser(CTFProject p) throws IOException {
         if (!p.hasMember(this.assign_user)) {
             this.log("User (" + this.assign_user + ") is not a member of " +
                      "the project (" + this.getProject() + ").  " + "Instead " +

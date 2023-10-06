@@ -1,14 +1,13 @@
 package com.collabnet.ce.webservices;
 
-import hudson.plugins.collabnet.util.CNFormFieldValidator;
-import net.sf.json.JSONArray;
-import net.sf.json.JSONObject;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpPut;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.util.EntityUtils;
+import hudson.plugins.collabnet.util.Helper;
+import org.json.simple.JSONObject;
+import org.json.simple.JSONArray;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
 
+import javax.ws.rs.HttpMethod;
+import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.logging.Level;
@@ -22,9 +21,9 @@ import java.util.logging.Logger;
 public class CTFRole extends CTFObject implements ObjectWithTitle {
     private final String title, description;
 
-    private static final String ROLE_URL = "/ctfrest/foundation/v1/roles/";
-
     static Logger logger = Logger.getLogger(CTFRole.class.getName());
+
+    Helper helper = new Helper();
 
     public CTFRole(CTFProject parent, JSONObject data) {
         super(parent, data.get("id").toString());
@@ -45,31 +44,27 @@ public class CTFRole extends CTFObject implements ObjectWithTitle {
      */
     public CTFList<CTFUser> getMembers() throws IOException {
         CTFList<CTFUser> r = new CTFList<CTFUser>();
-        String end_point =  app.getServerUrl() + ROLE_URL + getId() + "/members";
-        CloseableHttpClient httpClient = null;
-        CloseableHttpResponse response = null;
-        try {
-            httpClient = CNFormFieldValidator.getHttpClient();
-            HttpGet get = new HttpGet(end_point);
-            get.setHeader("Accept", "application/json");
-            get.setHeader("Authorization", "Bearer " + app.getSessionId());
-            response = httpClient.execute(get);
-            JSONObject data = JSONObject.fromObject(EntityUtils.toString(response.getEntity()));
-            JSONArray dataArray = JSONArray.fromObject(data.get("items"));
-            Iterator it = dataArray.iterator();
-            while (it.hasNext()) {
-                JSONObject jsonObject = (JSONObject) it.next();
-                r.add(new CTFUser(app, jsonObject));
+        String end_point =  app.getServerUrl() + CTFConstants.ROLE_URL + getId() + "/members";
+        Response response = helper.request(end_point, app.getSessionId(), null, HttpMethod.GET, null);
+        String result = response.readEntity(String.class);
+        int status = response.getStatus();
+        if (status == 200) {
+            JSONObject data = null;
+            try {
+                data = (JSONObject) new JSONParser().parse(result);
+                if (data != null & data.containsKey("items")) {
+                    JSONArray dataArray = (JSONArray)data.get("items");
+                    Iterator it = dataArray.iterator();
+                    while (it.hasNext()) {
+                        JSONObject jsonObject = (JSONObject) it.next();
+                        r.add(new CTFUser(app, jsonObject));
+                    }
+                }
+            } catch (ParseException e) {
+                logger.log(Level.WARNING, "Unable to parse the json content in getMembers() - " + e.getLocalizedMessage(), e);
             }
-        } catch (Exception e) {
-            logger.log(Level.INFO,"Getting the artifact details failed - " + e.getLocalizedMessage(), e);
-        } finally {
-            if(response != null) {
-                response.close();
-            }
-            if (httpClient != null) {
-                httpClient.close();
-            }
+        } else {
+            logger.log(Level.WARNING,"Error getting the members of a role - " + status + ", Error Msg - " + result);
         }
         return r;
     }
@@ -78,24 +73,19 @@ public class CTFRole extends CTFObject implements ObjectWithTitle {
      * Grants this role to the given user.
      */
     public void grant(String username) throws IOException {
-        String end_point =  app.getServerUrl() + ROLE_URL + getId() + "/members/" + username;
-        CloseableHttpClient httpClient = null;
-        CloseableHttpResponse response = null;
-        try {
-            httpClient = CNFormFieldValidator.getHttpClient();
-            HttpPut put = new HttpPut(end_point);
-            put.setHeader("Accept", "application/json");
-            put.setHeader("Authorization", "Bearer " + app.getSessionId());
-            response = httpClient.execute(put);
-        } catch (Exception e) {
-            logger.log(Level.INFO,"Error while adding a member to the role - " + e.getLocalizedMessage(), e);
-        } finally {
-            if(response != null) {
-                response.close();
+        String end_point =  app.getServerUrl() + CTFConstants.ROLE_URL + getId() + "/members/" + username;
+        Response response = helper.request(end_point, app.getSessionId(), null, HttpMethod.PUT, null);
+        String result = response.readEntity(String.class);
+        int status = response.getStatus();
+        if (status == 200) {
+            JSONObject memberData = null;
+            try {
+                memberData = (JSONObject) new JSONParser().parse(result);
+            } catch (ParseException e) {
+                logger.log(Level.WARNING, "Unable to parse the json content in grant() - " + e.getLocalizedMessage(), e);
             }
-            if (httpClient != null) {
-                httpClient.close();
-            }
+        } else {
+            logger.log(Level.WARNING, "Error while adding a member to the role - " + status +  ", Error Msg - " + result);
         }
     }
 

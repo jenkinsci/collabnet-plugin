@@ -1,15 +1,12 @@
 package com.collabnet.ce.webservices;
 
-import hudson.plugins.collabnet.util.CNFormFieldValidator;
-import net.sf.json.JSONObject;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpPatch;
-import org.apache.http.entity.ContentType;
-import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.util.EntityUtils;
+import hudson.plugins.collabnet.util.Helper;
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
 
+import javax.ws.rs.HttpMethod;
+import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -19,8 +16,8 @@ import java.util.logging.Logger;
  */
 public class CTFDocument extends CTFItem {
 
-    private static final String DOCUMENT_URL = "/ctfrest/docman/v1/documents/";
     private final String description;
+    Helper helper = new Helper();
 
     static Logger logger = Logger.getLogger(CTFDocument.class.getName());
 
@@ -37,39 +34,39 @@ public class CTFDocument extends CTFItem {
      * Updates this document by a new file.
      */
     public void update(CTFFile file) throws IOException {
-        String end_point =  app.getServerUrl() + DOCUMENT_URL + getId();
-        CloseableHttpClient httpClient = null;
-        CloseableHttpResponse response = null;
-        try {
-            httpClient = CNFormFieldValidator.getHttpClient();
-            HttpGet get = new HttpGet(end_point);
-            get.setHeader("Accept", "application/json");
-            get.setHeader("Authorization", "Bearer " + app.getSessionId());
-            response = httpClient.execute(get);
-            JSONObject docData = JSONObject.fromObject(EntityUtils.toString(response.getEntity()));
-            int currentVersion = Integer.parseInt(docData.get("currentVersion").toString());
-            HttpPatch patch = new HttpPatch(end_point);
-            patch.setHeader("Accept", "application/json");
-            patch.setHeader("Content-Type", "application/json");
-            patch.setHeader("If-Match", "W/*");
-            patch.setHeader("Authorization", "Bearer " + app.getSessionId());
-            JSONObject docObj = new JSONObject()
-                    .element("fileName", docData.get("fileName").toString())
-                    .element("mimeType", docData.get("mimeType").toString())
-                    .element("fileId", file.getId())
-                    .element("currentVersion", currentVersion);
-            StringEntity stringEntity = new StringEntity(docObj.toString(), ContentType.APPLICATION_JSON);
-            patch.setEntity(stringEntity);
-            response = httpClient.execute(patch);
-        } catch (Exception e) {
-            logger.log(Level.INFO,"Updating the document data failed - " + e.getLocalizedMessage(), e);
-        } finally {
-            if(response != null) {
-                response.close();
+        String end_point = app.getServerUrl() + CTFConstants.DOCUMENT_URL + getId();
+        int currentVersion = 0;
+        JSONObject docObj = new JSONObject();
+        Response response = helper.request(end_point, app.getSessionId(), null, HttpMethod.GET, null);
+        String result = response.readEntity(String.class);
+        int status = response.getStatus();
+        if (status == 200) {
+            JSONObject data = null;
+            try {
+                data = (JSONObject) new JSONParser().parse(result);
+                currentVersion = Integer.parseInt(data.get("currentVersion").toString());
+                docObj.put("fileName", data.get("fileName").toString());
+                docObj.put("mimeType", data.get("mimeType").toString());
+                docObj.put("fileId", file != null ? file.getId() : null);
+                docObj.put("currentVersion", currentVersion);
+            } catch (ParseException e) {
+                logger.log(Level.WARNING, "Unable to parse the json content in getDocumentData() - " + e.getLocalizedMessage(), e);
             }
-            if (httpClient != null) {
-                httpClient.close();
+            Response patchResponse = helper.request(end_point, app.getSessionId(), docObj.toString(), HttpMethod.PATCH, null);
+            String patchResult = patchResponse.readEntity(String.class);
+            int patchStatus = patchResponse.getStatus();
+            if (patchStatus == 200) {
+                JSONObject patchData = null;
+                try {
+                    patchData = (JSONObject) new JSONParser().parse(patchResult);
+                } catch (ParseException e) {
+                    logger.log(Level.WARNING, "Unable to parse the json content in updateDocument() - " + e.getLocalizedMessage(), e);
+                }
+            } else {
+                logger.log(Level.WARNING, "Updating the document data failed - " + patchStatus + ", Error Msg - " +  patchResult);
             }
+        } else {
+            logger.log(Level.WARNING, "Error getting the document details - " + status + ", Error Msg - " + result);
         }
     }
 

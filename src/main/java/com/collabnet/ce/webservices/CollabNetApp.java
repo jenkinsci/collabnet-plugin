@@ -8,32 +8,25 @@ import hudson.RelativePath;
 import hudson.plugins.collabnet.CollabNetPlugin;
 import hudson.plugins.collabnet.CtfSoapHttpSender;
 import hudson.plugins.collabnet.share.TeamForgeShare;
-import hudson.plugins.collabnet.util.CNFormFieldValidator;
 import hudson.plugins.collabnet.util.CNHudsonUtil;
 import hudson.plugins.collabnet.util.CommonUtil;
 import hudson.plugins.collabnet.util.Helper;
 import hudson.util.Secret;
 
-import net.sf.json.JSONArray;
-import net.sf.json.JSONObject;
 import org.apache.axis.EngineConfiguration;
 import org.apache.axis.SimpleTargetedChain;
 import org.apache.axis.configuration.SimpleProvider;
-import org.apache.http.NameValuePair;
-import org.apache.http.client.entity.UrlEncodedFormEntity;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.client.utils.URIBuilder;
-import org.apache.http.impl.client.CloseableHttpClient;
 
-import org.apache.http.message.BasicNameValuePair;
-import org.apache.http.util.EntityUtils;
 import org.glassfish.jersey.media.multipart.MultiPart;
 import org.glassfish.jersey.media.multipart.MultiPartFeature;
 import org.glassfish.jersey.media.multipart.file.FileDataBodyPart;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
+import org.json.simple.JSONObject;
+import org.json.simple.JSONArray;
 import org.kohsuke.stapler.QueryParameter;
 
+import javax.ws.rs.HttpMethod;
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.Entity;
@@ -43,14 +36,15 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.io.File;
 import java.io.IOException;
-import java.net.URI;
 import java.net.URL;
 import java.rmi.RemoteException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -69,9 +63,9 @@ public class CollabNetApp {
     protected final ICollabNetSoap icns;
     private transient Integer soapTimeout;
 
-    private static final String FOUNDATION_URL = "/ctfrest/foundation/v1/";
-    private static final String FILE_STORAGE_URL = "/ctfrest/filestorage/v1/files";
     static Logger logger = Logger.getLogger(CollabNetApp.class.getName());
+
+    Helper helper = new Helper();
 
     static {
         EngineConfiguration engCfg = getEngineConfiguration();
@@ -182,7 +176,7 @@ public class CollabNetApp {
      * @throws RemoteException
      */
     private String login(String password) throws IOException {
-        sessionId = Helper.getToken(new URL(this.url), this.username, password);
+        sessionId = helper.getToken(new URL(this.url), this.username, password);
         return sessionId;
     }
 
@@ -227,14 +221,11 @@ public class CollabNetApp {
      * to methods like {@link CTFRelease#addFile(String, String, CTFFile)}.
      */
     public CTFFile upload(File src) throws IOException {
-        String end_point =  url + FILE_STORAGE_URL;
-        CloseableHttpClient client = null;
-        CloseableHttpResponse response = null;
+        String end_point =  url + CTFConstants.FILE_STORAGE_URL;
         try {
-            client = CNFormFieldValidator.getHttpClient();
-            Client clientc = ClientBuilder.newBuilder().
+            Client client = ClientBuilder.newBuilder().
                     register(MultiPartFeature.class).build();
-            WebTarget server = clientc.target(end_point);
+            WebTarget server = client.target(end_point);
             Invocation.Builder builder = server.request(MediaType.APPLICATION_JSON_TYPE);
             builder.header("Content-Type", "multipart/form-data");
             builder.header("accept", "application/json");
@@ -247,18 +238,11 @@ public class CollabNetApp {
                     .post(Entity.entity(multiPart, MediaType.MULTIPART_FORM_DATA));
             if (responsec.getStatus() == 200) {
                 String respnse = responsec.readEntity(String.class);
-                JSONObject data = JSONObject.fromObject(respnse);
+                JSONObject data = (JSONObject) new JSONParser().parse(respnse);
                 return new CTFFile(this, data.get("guid").toString());
             }
         } catch (Exception e) {
-            logger.log(Level.INFO,"Error uploading a file" + e.getLocalizedMessage(), e);
-        } finally {
-            if(response != null) {
-                response.close();
-            }
-            if(client != null) {
-                client.close();
-            }
+            logger.log(Level.WARNING, "Error uploading a file" + e.getLocalizedMessage(), e);
         }
         return null;
     }
@@ -285,31 +269,27 @@ public class CollabNetApp {
     public CTFList<CTFGroup> getGroups() throws IOException {
         this.checkValidSessionId();
         CTFList<CTFGroup> r = new CTFList<CTFGroup>();
-        String end_point =  url + FOUNDATION_URL + "groups?sortby=id&offset=0&count=25";
-        CloseableHttpClient httpClient = null;
-        CloseableHttpResponse response = null;
-        try {
-            httpClient = CNFormFieldValidator.getHttpClient();
-            HttpGet get = new HttpGet(end_point);
-            get.setHeader("Accept", "application/json");
-            get.setHeader("Authorization", "Bearer " + sessionId);
-            response = httpClient.execute(get);
-            JSONObject data = JSONObject.fromObject(EntityUtils.toString(response.getEntity()));
-            JSONArray dataArray = JSONArray.fromObject(data.get("items"));
-            Iterator it = dataArray.iterator();
-            while (it.hasNext()) {
-                JSONObject jsonObject = (JSONObject) it.next();
-                r.add(new CTFGroup(this, jsonObject));
+        String end_point =  url + CTFConstants.FOUNDATION_URL + "groups?sortby=id&offset=0&count=25";
+        Response response = helper.request(end_point, sessionId, null, HttpMethod.GET, null);
+        String result = response.readEntity(String.class);
+        int status = response.getStatus();
+        if (status == 200) {
+            JSONObject data = null;
+            try {
+                data = (JSONObject) new JSONParser().parse(result);
+                if (data != null & data.containsKey("items")) {
+                    JSONArray dataArray = (JSONArray)data.get("items");
+                    Iterator it = dataArray.iterator();
+                    while (it.hasNext()) {
+                        JSONObject jsonObject = (JSONObject) it.next();
+                        r.add(new CTFGroup(this, jsonObject));
+                    }
+                }
+            } catch (ParseException e) {
+                logger.log(Level.WARNING, "Unable to parse the json content in getGroups() - " + e.getLocalizedMessage(), e);
             }
-        } catch (Exception e) {
-            logger.log(Level.INFO,"Error getting the group lists - " + e.getLocalizedMessage(), e);
-        } finally {
-            if(response != null) {
-                response.close();
-            }
-            if (httpClient != null) {
-                httpClient.close();
-            }
+        } else {
+            logger.log(Level.WARNING, "Error getting the group lists - " + status  + ", Error Msg - " + result);
         }
         return r;
     }
@@ -319,36 +299,23 @@ public class CollabNetApp {
     }
 
     public CTFGroup createGroup(String fullName, String description) throws IOException {
-        String end_point =  url + FOUNDATION_URL + "groups";
-        CloseableHttpClient client = null;
-        CloseableHttpResponse response = null;
-        try {
-            client = CNFormFieldValidator.getHttpClient();
-            HttpPost httpPost = new HttpPost(end_point);
-            List<NameValuePair> params = new ArrayList<>();
-            params.add(new BasicNameValuePair("fullname", fullName));
-            params.add(new BasicNameValuePair("description", description));
-            httpPost.setEntity(new UrlEncodedFormEntity(params));
-            httpPost.setHeader("Accept", "application/json");
-            httpPost.setHeader("Content-type", "application/json");
-            httpPost.setHeader("Authorization", "Bearer " +this.sessionId);
-            response = client.execute(httpPost);
-            if(response.getStatusLine().getStatusCode() == 200) {
-                JSONObject data = JSONObject.fromObject(EntityUtils.toString(response.getEntity()));
+        String end_point =  url + CTFConstants.FOUNDATION_URL + "groups";
+        JSONObject requestPayload = new JSONObject();
+        requestPayload.put("fullname", fullName);
+        requestPayload.put("description", description);
+        Response response = helper.request(end_point, sessionId, requestPayload.toString(), HttpMethod.POST, null);
+        String result = response.readEntity(String.class);
+        int status = response.getStatus();
+        if (status == 200) {
+            JSONObject data = null;
+            try {
+                data = (JSONObject) new JSONParser().parse(result);
                 return new CTFGroup(this, data);
+            } catch (ParseException e) {
+                logger.log(Level.WARNING,"Unable to parse the json content in createGroup()" + e.getLocalizedMessage());
             }
-        } catch (IOException e) {
-            String errMsg = e.getMessage();
-            logger.log(Level.INFO, errMsg);
-        } catch (Exception e) {
-            logger.log(Level.INFO,"Error creating an user group" + e.getLocalizedMessage(), e);
-        } finally {
-            if(response != null) {
-                response.close();
-            }
-            if(client != null) {
-                client.close();
-            }
+        } else {
+            logger.log(Level.WARNING,"Error creating an user group - " + status  + ", Error Msg - " + result);
         }
         return null;
     }
@@ -365,38 +332,25 @@ public class CollabNetApp {
      *      Longer human readable description of the project.
      */
     public String createProject(String name, String title, String description) throws IOException {
-        String end_point =  url + FOUNDATION_URL + "projects";
-        CloseableHttpClient client = null;
-        CloseableHttpResponse response = null;
         String projectId = null;
-        try {
-            client = CNFormFieldValidator.getHttpClient();
-            HttpPost httpPost = new HttpPost(end_point);
-            List<NameValuePair> params = new ArrayList<>();
-            params.add(new BasicNameValuePair("name", name));
-            params.add(new BasicNameValuePair("title", title));
-            params.add(new BasicNameValuePair("description", description));
-            httpPost.setEntity(new UrlEncodedFormEntity(params));
-            httpPost.setHeader("Accept", "application/json");
-            httpPost.setHeader("Content-type", "application/json");
-            httpPost.setHeader("Authorization", "Bearer " +this.sessionId);
-            response = client.execute(httpPost);
-            if(response.getStatusLine().getStatusCode() == 200) {
-                JSONObject data = JSONObject.fromObject(EntityUtils.toString(response.getEntity()));
+        String end_point =  url + CTFConstants.FOUNDATION_URL + "projects";
+        JSONObject requestPayload = new JSONObject();
+        requestPayload.put("name", name);
+        requestPayload.put("title", title);
+        requestPayload.put("description", description);
+        Response response = helper.request(end_point, sessionId, requestPayload.toString(), HttpMethod.POST, null);
+        String result = response.readEntity(String.class);
+        int status = response.getStatus();
+        if (status == 200) {
+            JSONObject data = null;
+            try {
+                data = (JSONObject) new JSONParser().parse(result);
                 projectId = data.get("id").toString();
+            } catch (ParseException e) {
+                logger.log(Level.WARNING,"Unable to parse the json content in createProject()" + e.getLocalizedMessage());
             }
-        } catch (IOException e) {
-            String errMsg = e.getMessage();
-            logger.log(Level.INFO, errMsg);
-        } catch (Exception e) {
-            logger.log(Level.INFO,"Error creating an user group" + e.getLocalizedMessage(), e);
-        } finally {
-            if(response != null) {
-                response.close();
-            }
-            if(client != null) {
-                client.close();
-            }
+        } else {
+            logger.log(Level.WARNING,"Error creating a project - " + status  + ", Error Msg - " + result);
         }
         return projectId;
     }
@@ -412,31 +366,27 @@ public class CollabNetApp {
         throws IOException {
         this.checkValidSessionId();
         Collection<String> users = new ArrayList<String>();
-        String end_point =  url + FOUNDATION_URL + "groups/" + groupId + "/members";
-        CloseableHttpClient httpClient = null;
-        CloseableHttpResponse response = null;
-        try {
-            httpClient = CNFormFieldValidator.getHttpClient();
-            HttpGet get = new HttpGet(end_point);
-            get.setHeader("Accept", "application/json");
-            get.setHeader("Authorization", "Bearer " + sessionId);
-            response = httpClient.execute(get);
-            JSONObject data = JSONObject.fromObject(EntityUtils.toString(response.getEntity()));
-            JSONArray dataArray = JSONArray.fromObject(data.get("items"));
-            Iterator it = dataArray.iterator();
-            while (it.hasNext()) {
-                JSONObject jsonObject = (JSONObject) it.next();
-                users.add(jsonObject.get("username").toString());
+        String end_point =  url + CTFConstants.FOUNDATION_URL + "groups/" + groupId + "/members";
+        Response response = helper.request(end_point, sessionId, null, HttpMethod.GET, null);
+        String result = response.readEntity(String.class);
+        int status = response.getStatus();
+        if (status == 200) {
+            JSONObject data = null;
+            try {
+                data = (JSONObject) new JSONParser().parse(result);
+                if (data != null & data.containsKey("items")) {
+                    JSONArray dataArray = (JSONArray)data.get("items");
+                    Iterator it = dataArray.iterator();
+                    while (it.hasNext()) {
+                        JSONObject jsonObject = (JSONObject) it.next();
+                        users.add(jsonObject.get("username").toString());
+                    }
+                }
+            } catch (ParseException e) {
+                logger.log(Level.WARNING, "Unable to parse the json content in getGroupUsers() - " + e.getLocalizedMessage(), e);
             }
-        } catch (Exception e) {
-            logger.log(Level.INFO,"TeamForge Associations - " + e.getLocalizedMessage(), e);
-        } finally {
-            if(response != null) {
-                response.close();
-            }
-            if (httpClient != null) {
-                httpClient.close();
-            }
+        } else {
+            logger.log(Level.WARNING, "Error getting the active members of the group - " + status + ", Error Msg - " + result);
         }
         return users;
     }
@@ -453,61 +403,49 @@ public class CollabNetApp {
 
     public CTFProject getProjectById(String projectId) throws IOException {
         CTFProject ctfProject = null;
-        String end_point =  url + FOUNDATION_URL + "projects/" + projectId;
-        CloseableHttpClient httpClient = null;
-        CloseableHttpResponse response = null;
-        try {
-            httpClient = CNFormFieldValidator.getHttpClient();
-            HttpGet get = new HttpGet(end_point);
-            get.setHeader("Accept", "application/json");
-            get.setHeader("Authorization", "Bearer " + sessionId);
-            response = httpClient.execute(get);
-            JSONObject data = JSONObject.fromObject(EntityUtils.toString(response.getEntity()));
-            ctfProject = new CTFProject(this, data);
-        } catch (Exception e) {
-            logger.log(Level.INFO,"Error getting the members of a group" + e.getLocalizedMessage(), e);
-        } finally {
-            if(response != null) {
-                response.close();
+        String end_point =  url + CTFConstants.FOUNDATION_URL + "projects/" + projectId;
+        Response response = helper.request(end_point, sessionId, null, HttpMethod.GET, null);
+        String result = response.readEntity(String.class);
+        int status = response.getStatus();
+        if (status == 200) {
+            JSONObject data = null;
+            try {
+                data = (JSONObject) new JSONParser().parse(result);
+                ctfProject = new CTFProject(this, data);
+            } catch (ParseException e) {
+                logger.log(Level.WARNING, "Unable to parse the json content in getProjectByI() - " + e.getLocalizedMessage(), e);
             }
-            if (httpClient != null) {
-                httpClient.close();
-            }
+        } else {
+            logger.log(Level.WARNING, "Error getting the project details - " + status  + ", Error Msg - " + result);
         }
         return ctfProject;
     }
 
     public List<CTFProject> getProjects() throws IOException {
         List<CTFProject> r = new ArrayList<CTFProject>();
-        String end_point =  url + FOUNDATION_URL + "projects";
-        CloseableHttpClient httpClient = null;
-        CloseableHttpResponse response = null;
-        try {
-            httpClient = CNFormFieldValidator.getHttpClient();
-            HttpGet get = new HttpGet(end_point);
-            get.setHeader("Accept", "application/json");
-            get.setHeader("Content-type", "application/json");
-            get.setHeader("Authorization", "Bearer " + sessionId);
-            URI uri = new URIBuilder(get.getURI()).addParameter(
-                    "fetchHierarchyPath", "false").build();
-            get.setURI(uri);
-            response = httpClient.execute(get);
-            JSONObject data = JSONObject.fromObject(EntityUtils.toString(response.getEntity()));
-            JSONArray dataArray = JSONArray.fromObject(data.get("items"));
-            Iterator it = dataArray.iterator();
-            while (it.hasNext()) {
-                JSONObject jsonObject = (JSONObject) it.next();
-               r.add(new CTFProject(this, jsonObject));
+        String end_point =  url + CTFConstants.FOUNDATION_URL + "projects";
+        Map<String, String> queryParam = new HashMap<>();
+        queryParam.put("fetchHierarchyPath", "false");
+        Response response = helper.request(end_point, sessionId, null, HttpMethod.GET, queryParam);
+        String result = response.readEntity(String.class);
+        int status = response.getStatus();
+        if (status == 200) {
+            JSONObject data = null;
+            try {
+                data = (JSONObject) new JSONParser().parse(result);
+                if (data != null & data.containsKey("items")) {
+                    JSONArray dataArray = (JSONArray)data.get("items");
+                    Iterator it = dataArray.iterator();
+                    while (it.hasNext()) {
+                        JSONObject jsonObject = (JSONObject) it.next();
+                        r.add(new CTFProject(this, jsonObject));
+                    }
+                }
+            } catch (ParseException e) {
+                logger.log(Level.WARNING, "Unable to parse the json content in getProjects() - " + e.getLocalizedMessage(), e);
             }
-        } catch (Exception e) {
-            logger.log(Level.INFO,"Error getting the project details - " + e.getLocalizedMessage(), e);
-        } finally {
-            if(response != null) {
-                response.close();
-            }
-            if (httpClient != null) {
-                httpClient.close();
-            }
+        } else {
+            logger.log(Level.WARNING, "Error getting the projects - " + status + ", Error Msg - " + result);
         }
         return r;
     }
@@ -527,7 +465,7 @@ public class CollabNetApp {
     }
 
     public CTFUser getMyselfData() throws IOException {
-        return new CTFUser(this, Helper.getUserData(this.url, this.sessionId, username));
+        return new CTFUser(this, helper.getUserData(this.url, this.sessionId, username));
     }
 
     /**
@@ -535,7 +473,7 @@ public class CollabNetApp {
      */
     public CTFUser getUser(String username) throws IOException {
         try {
-            return new CTFUser(this, Helper.getUserData(this.url, getSessionId(),username));
+            return new CTFUser(this, helper.getUserData(this.url, getSessionId(),username));
         } catch (IOException e) {
             return null;
         }
@@ -551,43 +489,30 @@ public class CollabNetApp {
     	String organization = null;
     	String licenseType = "ALM";
         CTFUser ctfUser = null;
-        String end_point =  url + FOUNDATION_URL + "users";
-        CloseableHttpClient client = null;
-        CloseableHttpResponse response = null;
-        try {
-            client = CNFormFieldValidator.getHttpClient();
-            HttpPost httpPost = new HttpPost(end_point);
-            httpPost.setHeader("Accept", "application/json");
-            httpPost.setHeader("Content-type", "application/json");
-            httpPost.setHeader("Authorization", "Bearer " +this.sessionId);
-            List<NameValuePair> params = new ArrayList<>();
-            params.add(new BasicNameValuePair("username", username));
-            params.add(new BasicNameValuePair("email", email));
-            params.add(new BasicNameValuePair("fullname", fullName));
-            params.add(new BasicNameValuePair("locale", locale));
-            params.add(new BasicNameValuePair("timeZone", timeZone));
-            params.add(new BasicNameValuePair("organization", organization));
-            params.add(new BasicNameValuePair("licenseTypes", licenseType));
-            params.add(new BasicNameValuePair("superUser", Boolean.toString(isSuperUser)));
-            params.add(new BasicNameValuePair("restrictedUser",  Boolean.toString(isRestrictedUser)));
-            httpPost.setEntity(new UrlEncodedFormEntity(params));
-            response = client.execute(httpPost);
-            if(response.getStatusLine().getStatusCode() == 200) {
-                JSONObject data = JSONObject.fromObject(EntityUtils.toString(response.getEntity()));
+        String end_point =  url + CTFConstants.FOUNDATION_URL + "users";
+        JSONObject requestPayload = new JSONObject();
+        requestPayload.put("username", username);
+        requestPayload.put("email", email);
+        requestPayload.put("fullname", fullName);
+        requestPayload.put("locale", locale);
+        requestPayload.put("timeZone", timeZone);
+        requestPayload.put("organization", organization);
+        requestPayload.put("licenseTypes", licenseType);
+        requestPayload.put("superUser", Boolean.toString(isSuperUser));
+        requestPayload.put("restrictedUser",  Boolean.toString(isRestrictedUser));
+        Response response = helper.request(end_point, sessionId, requestPayload.toString(), HttpMethod.POST, null);
+        String result = response.readEntity(String.class);
+        int status = response.getStatus();
+        if (status == 200) {
+            JSONObject data = null;
+            try {
+                data = (JSONObject) new JSONParser().parse(result);
                 ctfUser = new CTFUser(this, data);
+            } catch (ParseException e) {
+                logger.log(Level.WARNING,"Unable to parse the json content in createUser() " + e.getLocalizedMessage());
             }
-        }catch (IOException e) {
-            String errMsg = e.getMessage();
-            logger.log(Level.INFO, errMsg);
-        } catch (Exception e) {
-            logger.log(Level.INFO,"Error creating an user " + e.getLocalizedMessage(), e);
-        } finally {
-            if(response != null) {
-                response.close();
-            }
-            if(client != null) {
-                client.close();
-            }
+        } else {
+            logger.log(Level.WARNING,"Error creating an user " + status  + ", Error Msg - " + result);
         }
         return  ctfUser;
     }

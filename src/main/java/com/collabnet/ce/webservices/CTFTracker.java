@@ -1,16 +1,13 @@
 package com.collabnet.ce.webservices;
 
-import com.collabnet.ce.soap60.types.SoapFieldValues;
-import hudson.plugins.collabnet.util.CNFormFieldValidator;
-import net.sf.json.JSONArray;
-import net.sf.json.JSONObject;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.entity.ContentType;
-import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.util.EntityUtils;
+import hudson.plugins.collabnet.util.Helper;
+import org.json.simple.JSONObject;
+import org.json.simple.JSONArray;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
 
+import javax.ws.rs.HttpMethod;
+import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.rmi.RemoteException;
 import java.util.ArrayList;
@@ -25,9 +22,9 @@ import java.util.logging.Logger;
 public class CTFTracker extends CTFFolder {
     private CTFProject project;
 
-    private static final String TRACKER_URL = "/ctfrest/tracker/v2/trackers/";
-
     static Logger logger = Logger.getLogger(CTFTracker.class.getName());
+
+    Helper helper = new Helper();
 
     CTFTracker(CTFObject parent, JSONObject data) {
         super(parent, data, data.get("trackerId").toString(), data.get("parentFolderId").toString());
@@ -39,45 +36,37 @@ public class CTFTracker extends CTFFolder {
     }
 
     public List<CTFArtifact> getArtifactsByTitle(String title) throws IOException {
-
         List<CTFArtifact> r = new ArrayList<CTFArtifact>();
-        String end_point =  app.getServerUrl() + TRACKER_URL + getId() + "/artifacts/filter";
-        CloseableHttpClient httpClient = null;
-        CloseableHttpResponse response = null;
-        try {
-            httpClient = CNFormFieldValidator.getHttpClient();
-            HttpPost post = new HttpPost(end_point);
-            post.setHeader("Content-Type", "application/json");
-            post.setHeader("Accept", "application/json");
-            post.setHeader("Authorization", "Bearer " + app.getSessionId());
-            JSONArray jsonArray = new JSONArray();
-            JSONObject filterObject = new JSONObject();
-            filterObject.put("column", "title");
-            filterObject.put("type", "String");
-            filterObject.put("value", title);
-            jsonArray.add(filterObject);
-            JSONObject inp = new JSONObject();
-            inp.put("filter", jsonArray);
-            inp.put("count", -1);
-            StringEntity stringEntity = new StringEntity(inp.toString(), ContentType.APPLICATION_JSON);
-            post.setEntity(stringEntity);
-            response = httpClient.execute(post);
-            JSONObject data = JSONObject.fromObject(EntityUtils.toString(response.getEntity()));
-            JSONArray dataArray = JSONArray.fromObject(data.get("items"));
-            Iterator it = dataArray.iterator();
-            while (it.hasNext()) {
-                JSONObject jsonObject = (JSONObject) it.next();
-                r.add(new CTFArtifact(this, jsonObject));
+        String end_point =  app.getServerUrl() + CTFConstants.TRACKER_URL + getId() + "/artifacts/filter";
+        JSONArray filterArray = new JSONArray();
+        JSONObject filterPayload = new JSONObject();
+        filterPayload.put("column", "title");
+        filterPayload.put("type", "String");
+        filterPayload.put("value", title);
+        filterArray.add(filterPayload);
+        JSONObject requestPayload = new JSONObject();
+        requestPayload.put("filter", filterArray);
+        requestPayload.put("count", -1);
+        Response response = helper.request(end_point, app.getSessionId(), requestPayload.toString(), HttpMethod.POST, null);
+        String result = response.readEntity(String.class);
+        int statusCode = response.getStatus();
+        if (statusCode == 200) {
+            JSONObject data = null;
+            try {
+                data = (JSONObject) new JSONParser().parse(result);
+                if (data != null & data.containsKey("items")) {
+                    JSONArray dataArray = (JSONArray)data.get("items");
+                    Iterator it = dataArray.iterator();
+                    while (it.hasNext()) {
+                        JSONObject jsonObject = (JSONObject) it.next();
+                        r.add(new CTFArtifact(this, jsonObject));
+                    }
+                }
+            } catch (ParseException e) {
+                logger.log(Level.WARNING,"Unable to parse the json content in getArtifactsByTitle() - " + e.getLocalizedMessage(), e);
             }
-        } catch (Exception e) {
-            logger.log(Level.INFO,"Get artifact details by title - " + e.getLocalizedMessage(), e);
-        } finally {
-            if(response != null) {
-                response.close();
-            }
-            if (httpClient != null) {
-                httpClient.close();
-            }
+        } else {
+            logger.log(Level.WARNING,"Error getting the artifact details by title - " + statusCode + "Error Msg - " + result);
         }
         return r;
     }
@@ -122,45 +111,48 @@ public class CTFTracker extends CTFFolder {
     	int points = 0;
     	String planningFolderId = null;
         CTFArtifact ctfArtifact = null;
-        String end_point =  app.getServerUrl() + TRACKER_URL + getId() + "/artifacts";
-        CloseableHttpClient httpClient = null;
-        CloseableHttpResponse response = null;
-        try {
-            httpClient = CNFormFieldValidator.getHttpClient();
-            HttpPost post = new HttpPost(end_point);
-            post.setHeader("Accept", "application/json");
-            post.setHeader("Content-type", "application/json");
-            post.setHeader("Authorization", "Bearer " + app.getSessionId());
-            JSONObject jsonObj = new JSONObject();
-            if (file != null) {
-                jsonObj.put("fileId", file.getId());
-                jsonObj.put("fileName", fileName);
-                jsonObj.put("mimeType", fileMimeType);
+        String end_point =  app.getServerUrl() + CTFConstants.TRACKER_URL + getId() + "/artifacts";
+        JSONArray attachmentArray = new JSONArray();
+        JSONObject filePayload = new JSONObject();
+        JSONArray releaseIds =  new JSONArray();
+        for (String relId : releaseId) {
+            releaseIds.add(relId);
+        }
+        filePayload.put("fileName", fileName);
+        filePayload.put("mimeType", fileMimeType);
+        filePayload.put("fileId", file!=null?file.getId():null);
+        attachmentArray.add(filePayload);
+        JSONObject requestPayload = new JSONObject();
+        requestPayload.put("title", title);
+        requestPayload.put("description", description);
+        requestPayload.put("status", status);
+        requestPayload.put("assignedTo", assignTo);
+        requestPayload.put("releaseId", releaseIds);
+        requestPayload.put("priority", String.valueOf(priority));
+        requestPayload.put("attachments", attachmentArray);
+        requestPayload.put("customer", customer);
+        requestPayload.put("category", category);
+        requestPayload.put("group", group);
+        requestPayload.put("flexfields", flexFields);
+        requestPayload.put("planningFolderId", planningFolderId);
+        requestPayload.put("estimatedEffort", String.valueOf(estimatedHours));
+        requestPayload.put("remainingEffort", String.valueOf(remainingEffort));
+        requestPayload.put("autoSummingPoints", String.valueOf(autosumming));
+        requestPayload.put("points", String.valueOf(points));
+
+        Response response = helper.request(end_point, app.getSessionId(), requestPayload.toString(), HttpMethod.POST, null);
+        String result = response.readEntity(String.class);
+        int statusCode = response.getStatus();
+        if ( statusCode == 201 ) {
+            JSONObject data = null;
+            try {
+                data = (JSONObject) new JSONParser().parse(result);
+                ctfArtifact = new CTFArtifact(this, data);
+            } catch (ParseException e) {
+                logger.log(Level.WARNING,"Unable to parse the json content in createArtifact() - " + e.getLocalizedMessage(), e);
             }
-            JSONArray attachArray = new JSONArray();
-            attachArray.add(jsonObj);
-            JSONObject artfObj = new JSONObject()
-                    .element("title", title)
-                    .element("description", description)
-                    .element("status", status)
-                    .element("assignedTo", assignTo)
-                    .element("releaseId", releaseId)
-                    .element("priority", String.valueOf(priority))
-                    .element("attachments", attachArray);
-            StringEntity stringEntity = new StringEntity(artfObj.toString(), ContentType.APPLICATION_JSON);
-            post.setEntity(stringEntity);
-            response = httpClient.execute(post);
-            JSONObject data = JSONObject.fromObject(EntityUtils.toString(response.getEntity()));
-            ctfArtifact = new CTFArtifact(this, data);
-        } catch (Exception e) {
-            logger.log(Level.INFO,"Error creating an artifact - " + e.getLocalizedMessage(), e);
-        } finally {
-            if(response != null) {
-                response.close();
-            }
-            if (httpClient != null) {
-                httpClient.close();
-            }
+        } else {
+            logger.log(Level.WARNING,"Error creating an artifact - " + statusCode + "Error Msg - " + result);
         }
         return ctfArtifact;
     }
