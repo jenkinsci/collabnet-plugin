@@ -9,7 +9,7 @@ import org.acegisecurity.Authentication;
 import org.acegisecurity.GrantedAuthority;
 import org.acegisecurity.GrantedAuthorityImpl;
 
-import java.rmi.RemoteException;
+import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Set;
@@ -31,10 +31,10 @@ public class CNAuthentication implements Authentication {
 
     private static Logger log = Logger.getLogger("CNAuthentication");
     
-    public CNAuthentication(Object principal, Object credentials) throws RemoteException {
+    public CNAuthentication(Object principal, Object credentials) throws IOException {
         this.principal = (String) principal;
         this.cna = (CollabNetApp) credentials;
-        this.myself = cna.getMyself();
+        this.myself = cna.getMyselfData();
         this.setupAuthorities();
         this.setupGroups();
         this.setAuthenticated(true);
@@ -46,15 +46,14 @@ public class CNAuthentication implements Authentication {
     /**
      * The only granted authority is superuser-ness.
      */
-    private void setupAuthorities() {
+    private void setupAuthorities() throws IOException {
         boolean isSuper = false;
         try {
             isSuper = myself.isSuperUser();
-        } catch (RemoteException re) {
-            log.info("setupAuthoritites: failed with RemoteException: " + 
-                     re.getMessage());
+        } catch (IOException re) {
+            log.info("setupAuthoritites: failed with RemoteException: " +
+                    re.getMessage());
         }
-
         if (isSuper) {
             this.authorities = new GrantedAuthority[2];
             this.authorities[0] = 
@@ -73,7 +72,7 @@ public class CNAuthentication implements Authentication {
         this.groups = Collections.emptyList();
         try {
             this.groups = myself.getGroupNames();
-        } catch (RemoteException re) {
+        } catch (IOException re) {
             // not much we can do
         }
     }
@@ -183,7 +182,7 @@ public class CNAuthentication implements Authentication {
     public boolean isProjectAdmin(CTFProject p) {
         try {
             return p.getAdmins().contains(cna.getMyself());
-        } catch (RemoteException re) {
+        } catch (IOException re) {
             log.info("isProjectAdmin: failed with RemoteException: " + re.getMessage());
             return false;
         }

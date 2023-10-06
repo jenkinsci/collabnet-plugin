@@ -6,18 +6,6 @@
 
   <j:set var="error_style" value="display:${descriptor.isGoodCNVersion(descriptor.getCollabNetUrl())?'none':'inline'}" />
 
-  <tr>
-    <td class="setting-leftspace"></td>
-    <td colspan="3">
-      <div id="auth_error" class="error" style="${error_style}">
-       CollabNet Authorization is designed to work with CollabNet 
-       ${descriptor.GOOD_VERSION} and later.  (The configured version is 
-       <text id="version">${descriptor.getVersion(descriptor.getCollabNetUrl()).toString()}</text>.)  
-       Please choose another method of authorization.
-      </div>
-    </td>
-  </tr>
-
   <script>
     // this function will be called when the authentication server changes
     function authentication_update(value) {

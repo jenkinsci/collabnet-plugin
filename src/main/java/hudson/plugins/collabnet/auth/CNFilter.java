@@ -1,7 +1,6 @@
 package hudson.plugins.collabnet.auth;
 
 import java.io.IOException;
-import java.rmi.RemoteException;
 import java.util.logging.Logger;
 
 import javax.servlet.Filter;
@@ -113,7 +112,7 @@ public class CNFilter implements Filter {
             try {
                 ca.loginWithToken(token);
                 auth = new CNAuthentication(username, ca);
-            } catch (RemoteException re) {
+            } catch (IOException re) {
                 // login failed, but continue
                 log.severe("Login failed with RemoteException: " + 
                            re.getMessage());

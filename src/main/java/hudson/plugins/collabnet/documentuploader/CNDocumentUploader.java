@@ -20,11 +20,11 @@ import hudson.remoting.VirtualChannel;
 import hudson.tasks.BuildStepMonitor;
 import hudson.util.FormValidation;
 
+import io.jenkins.cli.shaded.jakarta.activation.MimetypesFileTypeMap;
 import org.jenkinsci.remoting.RoleChecker;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 
-import javax.activation.MimetypesFileTypeMap;
 import java.io.File;
 import java.io.IOException;
 import java.rmi.RemoteException;
@@ -120,7 +120,7 @@ public class CNDocumentUploader extends AbstractTeamForgeNotifier {
      * @param methodName in progress on when this exception occurred.
      * @param re The RemoteException that was thrown.
      */
-    private void log(String methodName, RemoteException re) {
+    private void log(String methodName, IOException re) {
         CommonUtil.logRE(logger, methodName, re);
     }
 
@@ -360,7 +360,7 @@ public class CNDocumentUploader extends AbstractTeamForgeNotifier {
         } else {
             return folder.createDocument(fileName,
                                this.getInterpreted(build, this.getDescription()),
-                               "", "final", false, fileName,
+                               "", "Final", false, fileName,
                                mimeType, file, null, null);
         }
     }
@@ -421,8 +421,8 @@ public class CNDocumentUploader extends AbstractTeamForgeNotifier {
         }
         try {
             return cna.upload(build.getLogFile());
-        } catch (RemoteException re) {
-            this.log("uploadBuildLog", re);
+        } catch (IOException e) {
+            this.log("uploadBuildLog", e);
             return null;
         }
     }

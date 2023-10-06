@@ -1,46 +1,58 @@
 package com.collabnet.ce.webservices;
 
-import com.collabnet.ce.soap60.fault.NoSuchObjectFault;
 import com.collabnet.ce.soap60.webservices.ClientSoapStub;
 import com.collabnet.ce.soap60.webservices.ClientSoapStubFactory;
 import com.collabnet.ce.soap60.webservices.cemain.ICollabNetSoap;
-import com.collabnet.ce.soap60.webservices.cemain.ProjectSoapRow;
-import com.collabnet.ce.soap60.webservices.cemain.UserGroupSoapList;
-import com.collabnet.ce.soap60.webservices.cemain.UserGroupSoapRow;
-import com.collabnet.ce.soap60.webservices.cemain.UserSoapList;
-import com.collabnet.ce.soap60.webservices.cemain.UserSoapRow;
-import com.collabnet.ce.soap60.webservices.docman.IDocumentAppSoap;
-import com.collabnet.ce.soap60.webservices.filestorage.IFileStorageAppSoap;
-import com.collabnet.ce.soap60.webservices.filestorage.ISimpleFileStorageAppSoap;
-import com.collabnet.ce.soap60.webservices.frs.IFrsAppSoap;
-import com.collabnet.ce.soap60.webservices.rbac.IRbacAppSoap;
-import com.collabnet.ce.soap60.webservices.scm.IScmAppSoap;
-import com.collabnet.ce.soap60.webservices.tracker.ITrackerAppSoap;
 
 import hudson.RelativePath;
 import hudson.plugins.collabnet.CollabNetPlugin;
 import hudson.plugins.collabnet.CtfSoapHttpSender;
 import hudson.plugins.collabnet.share.TeamForgeShare;
+import hudson.plugins.collabnet.util.CNFormFieldValidator;
 import hudson.plugins.collabnet.util.CNHudsonUtil;
 import hudson.plugins.collabnet.util.CommonUtil;
+import hudson.plugins.collabnet.util.Helper;
 import hudson.util.Secret;
 
-import org.apache.axis.AxisFault;
+import net.sf.json.JSONArray;
+import net.sf.json.JSONObject;
 import org.apache.axis.EngineConfiguration;
 import org.apache.axis.SimpleTargetedChain;
 import org.apache.axis.configuration.SimpleProvider;
+import org.apache.http.NameValuePair;
+import org.apache.http.client.entity.UrlEncodedFormEntity;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.utils.URIBuilder;
+import org.apache.http.impl.client.CloseableHttpClient;
+
+import org.apache.http.message.BasicNameValuePair;
+import org.apache.http.util.EntityUtils;
+import org.glassfish.jersey.media.multipart.MultiPart;
+import org.glassfish.jersey.media.multipart.MultiPartFeature;
+import org.glassfish.jersey.media.multipart.file.FileDataBodyPart;
 import org.kohsuke.stapler.QueryParameter;
 
-import javax.activation.FileDataSource;
-
+import javax.ws.rs.client.Client;
+import javax.ws.rs.client.ClientBuilder;
+import javax.ws.rs.client.Entity;
+import javax.ws.rs.client.Invocation;
+import javax.ws.rs.client.WebTarget;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
+import java.net.URI;
+import java.net.URL;
 import java.rmi.RemoteException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 
 /***
@@ -51,20 +63,15 @@ import java.util.List;
  */
 public class CollabNetApp {
     public static String SOAP_SERVICE = "/ce-soap60/services/";
-    public static final int UPLOAD_FILE_CHUNK_SIZE = 780000;
-    public static final long MAX_FILE_STORAGE_APP_UPLOAD_SIZE = 130023424;
     private String sessionId;
     private String username;
     private String url;
     protected final ICollabNetSoap icns;
-    private volatile IFrsAppSoap ifrs;
-    private volatile IFileStorageAppSoap ifsa;
-    private volatile ISimpleFileStorageAppSoap isfsa;
-    private volatile ITrackerAppSoap itas;
-    private volatile IDocumentAppSoap idas;
-    private volatile IScmAppSoap isas;
-    private volatile IRbacAppSoap iras;
     private transient Integer soapTimeout;
+
+    private static final String FOUNDATION_URL = "/ctfrest/foundation/v1/";
+    private static final String FILE_STORAGE_URL = "/ctfrest/filestorage/v1/files";
+    static Logger logger = Logger.getLogger(CollabNetApp.class.getName());
 
     static {
         EngineConfiguration engCfg = getEngineConfiguration();
@@ -82,7 +89,7 @@ public class CollabNetApp {
      * @throws RemoteException if we fail to login with the username/password
      */
     public CollabNetApp(String url, String username, String password)
-        throws RemoteException {
+        throws IOException {
         this(url, username);
         this.sessionId = this.login(password);
     }
@@ -117,7 +124,7 @@ public class CollabNetApp {
      */
     public CollabNetApp(String url) {
         this.url = url;
-        this.icns = this.getICollabNetSoap();
+        this.icns = null;
     }
 
     private <T> T createProxy(Class<T> type, String wsdlLoc) {
@@ -127,48 +134,6 @@ public class CollabNetApp {
         }
         to = soapTimeout.intValue();
         return createProxy(type, getServerUrl(), wsdlLoc, to);
-    }
-
-    protected ITrackerAppSoap getTrackerSoap() {
-        if (itas==null)
-            itas = createProxy(ITrackerAppSoap.class, "TrackerApp");
-        return itas;
-    }
-
-    protected IDocumentAppSoap getDocumentAppSoap() {
-        if (idas==null)
-            idas = createProxy(IDocumentAppSoap.class, "DocumentApp");
-        return idas;
-    }
-
-    protected IScmAppSoap getScmAppSoap() {
-        if (isas==null)
-            isas = createProxy(IScmAppSoap.class, "ScmApp");
-        return isas;
-    }
-
-    protected IRbacAppSoap getRbacAppSoap() {
-        if (iras==null)
-            iras = createProxy(IRbacAppSoap.class, "RbacApp");
-        return iras;
-    }
-
-    protected IFrsAppSoap getFrsAppSoap() {
-        if (ifrs==null)
-            ifrs = createProxy(IFrsAppSoap.class, "FrsApp");
-        return ifrs;
-    }
-
-    protected IFileStorageAppSoap getFileStorageAppSoap() {
-        if (ifsa==null)
-            ifsa = createProxy(IFileStorageAppSoap.class, "FileStorageApp");
-        return ifsa;
-    }
-
-    protected ISimpleFileStorageAppSoap getSimpleFileStorageAppSoap() {
-        if (isfsa==null)
-            isfsa = createProxy(ISimpleFileStorageAppSoap.class, "SimpleFileStorageAppSoap");
-        return isfsa;
     }
 
     /**
@@ -193,20 +158,6 @@ public class CollabNetApp {
     }
     
     /**
-     * @return client soap stub for the main CollabNet.wsdl.
-     */
-    private ICollabNetSoap getICollabNetSoap() {
-        return getICollabNetSoap(url);
-    }
-
-    /**
-     * @return client soap stub for an arbitrary url.
-     */
-    private static ICollabNetSoap getICollabNetSoap(String url) {
-        return createProxy(ICollabNetSoap.class, url, "CollabNet", getSoapTimeout());
-    } 
-
-    /**
      * Creates ClientSoapStub for the requested type
      * @param type TeamForge soap application type
      * @param serverUrl TeamForge URL
@@ -230,8 +181,8 @@ public class CollabNetApp {
      * @return a new sessionId.
      * @throws RemoteException
      */
-    private String login(String password) throws RemoteException {
-        sessionId = icns.login(this.username, password);
+    private String login(String password) throws IOException {
+        sessionId = Helper.getToken(new URL(this.url), this.username, password);
         return sessionId;
     }
 
@@ -268,7 +219,6 @@ public class CollabNetApp {
      */
     public void logoff() throws RemoteException {
         this.checkValidSessionId();
-        this.icns.logoff(this.username, this.sessionId);
         this.sessionId = null;
     }
 
@@ -276,63 +226,41 @@ public class CollabNetApp {
      * Uploads a file. The returned file object can be then used as an input
      * to methods like {@link CTFRelease#addFile(String, String, CTFFile)}.
      */
-    public CTFFile upload(File src) throws RemoteException {
-        String fieldId = this.getSimpleFileStorageAppSoap().startFileUpload(getSessionId());
-        byte[] buffer = new byte[UPLOAD_FILE_CHUNK_SIZE];
-        InputStream fileInputStream = null;
+    public CTFFile upload(File src) throws IOException {
+        String end_point =  url + FILE_STORAGE_URL;
+        CloseableHttpClient client = null;
+        CloseableHttpResponse response = null;
         try {
-            fileInputStream = new FileDataSource(src).getInputStream();
-            while (true) {
-                int count = fileInputStream.read(buffer);
-                if (count == -1) {
-                    break;
-                }
-                this.getSimpleFileStorageAppSoap().write(getSessionId(), fieldId, getFirstNBytesOfBuffer(buffer, count));
+            client = CNFormFieldValidator.getHttpClient();
+            Client clientc = ClientBuilder.newBuilder().
+                    register(MultiPartFeature.class).build();
+            WebTarget server = clientc.target(end_point);
+            Invocation.Builder builder = server.request(MediaType.APPLICATION_JSON_TYPE);
+            builder.header("Content-Type", "multipart/form-data");
+            builder.header("accept", "application/json");
+            builder.header("Authorization" , "Bearer " + this.sessionId);
+            MultiPart multiPart = new MultiPart();
+            FileDataBodyPart pdfBodyPart = new FileDataBodyPart("file", src,
+                    MediaType.APPLICATION_OCTET_STREAM_TYPE);
+            multiPart.bodyPart(pdfBodyPart);
+            Response responsec = builder
+                    .post(Entity.entity(multiPart, MediaType.MULTIPART_FORM_DATA));
+            if (responsec.getStatus() == 200) {
+                String respnse = responsec.readEntity(String.class);
+                JSONObject data = JSONObject.fromObject(respnse);
+                return new CTFFile(this, data.get("guid").toString());
             }
-            this.getSimpleFileStorageAppSoap().endFileUpload(getSessionId(), fieldId);
-        } catch (IOException e) {
-            throw new Error(e);
+        } catch (Exception e) {
+            logger.log(Level.INFO,"Error uploading a file" + e.getLocalizedMessage(), e);
         } finally {
-            if (fileInputStream != null) {
-                try {
-                    fileInputStream.close();
-                } catch (IOException e) {
-                    // ignore
-                }
-                fileInputStream = null;
+            if(response != null) {
+                response.close();
+            }
+            if(client != null) {
+                client.close();
             }
         }
-        return new CTFFile(this, fieldId);
-    }
-
-    /**
-     * @param url of the CollabNet server.
-     * @return the API version number string.  This string is in the format 
-     *         ${Release major}.${Release minor}.${service pack}.${hot fix}
-     * 
-     * @throws RemoteException
-     */
-    public static String getApiVersion(String url) throws RemoteException {
-        return getICollabNetSoap(url).getApiVersion();
-    }
-
-    /**
-     * @return the api version number string for CTF.
-     *
-     * @throws RemoteException if the call fails for some unknown reason
-     */
-    public String getApiVersion() throws RemoteException {
-        return this.icns.getApiVersion();
-    }
-
-    /**
-     * @return the version number string for SourceForge itself.
-     * 
-     * @throws RemoteException
-     */
-    public String getVersion() throws RemoteException {
-        this.checkValidSessionId();
-        return this.icns.getVersion(this.sessionId);
+        return null;
     }
     
     /**
@@ -342,7 +270,7 @@ public class CollabNetApp {
      * @return true, if the user is found, false otherwise.
      * @throws RemoteException
      */
-    public boolean isUsernameValid(String username) throws RemoteException {
+    public boolean isUsernameValid(String username) throws IOException {
         this.checkValidSessionId();
         return getUser(username)!=null;
     }
@@ -354,22 +282,75 @@ public class CollabNetApp {
      * @return a Map of all group name/ids.
      * @throws RemoteException 
      */
-    public CTFList<CTFGroup> getGroups() throws RemoteException {
+    public CTFList<CTFGroup> getGroups() throws IOException {
         this.checkValidSessionId();
         CTFList<CTFGroup> r = new CTFList<CTFGroup>();
-        UserGroupSoapList gsList = this.icns.getUserGroupList(this.sessionId);
-        for (UserGroupSoapRow row: gsList.getDataRows()) {
-            r.add(new CTFGroup(this,row));
+        String end_point =  url + FOUNDATION_URL + "groups?sortby=id&offset=0&count=25";
+        CloseableHttpClient httpClient = null;
+        CloseableHttpResponse response = null;
+        try {
+            httpClient = CNFormFieldValidator.getHttpClient();
+            HttpGet get = new HttpGet(end_point);
+            get.setHeader("Accept", "application/json");
+            get.setHeader("Authorization", "Bearer " + sessionId);
+            response = httpClient.execute(get);
+            JSONObject data = JSONObject.fromObject(EntityUtils.toString(response.getEntity()));
+            JSONArray dataArray = JSONArray.fromObject(data.get("items"));
+            Iterator it = dataArray.iterator();
+            while (it.hasNext()) {
+                JSONObject jsonObject = (JSONObject) it.next();
+                r.add(new CTFGroup(this, jsonObject));
+            }
+        } catch (Exception e) {
+            logger.log(Level.INFO,"Error getting the group lists - " + e.getLocalizedMessage(), e);
+        } finally {
+            if(response != null) {
+                response.close();
+            }
+            if (httpClient != null) {
+                httpClient.close();
+            }
         }
         return r;
     }
 
-    public CTFGroup getGroupByTitle(String fullName) throws RemoteException {
+    public CTFGroup getGroupByTitle(String fullName) throws IOException {
         return getGroups().byTitle(fullName);
     }
 
-    public CTFGroup createGroup(String fullName, String description) throws RemoteException {
-        return new CTFGroup(this,icns.createUserGroup(getSessionId(),fullName,description));
+    public CTFGroup createGroup(String fullName, String description) throws IOException {
+        String end_point =  url + FOUNDATION_URL + "groups";
+        CloseableHttpClient client = null;
+        CloseableHttpResponse response = null;
+        try {
+            client = CNFormFieldValidator.getHttpClient();
+            HttpPost httpPost = new HttpPost(end_point);
+            List<NameValuePair> params = new ArrayList<>();
+            params.add(new BasicNameValuePair("fullname", fullName));
+            params.add(new BasicNameValuePair("description", description));
+            httpPost.setEntity(new UrlEncodedFormEntity(params));
+            httpPost.setHeader("Accept", "application/json");
+            httpPost.setHeader("Content-type", "application/json");
+            httpPost.setHeader("Authorization", "Bearer " +this.sessionId);
+            response = client.execute(httpPost);
+            if(response.getStatusLine().getStatusCode() == 200) {
+                JSONObject data = JSONObject.fromObject(EntityUtils.toString(response.getEntity()));
+                return new CTFGroup(this, data);
+            }
+        } catch (IOException e) {
+            String errMsg = e.getMessage();
+            logger.log(Level.INFO, errMsg);
+        } catch (Exception e) {
+            logger.log(Level.INFO,"Error creating an user group" + e.getLocalizedMessage(), e);
+        } finally {
+            if(response != null) {
+                response.close();
+            }
+            if(client != null) {
+                client.close();
+            }
+        }
+        return null;
     }
 
     /**
@@ -383,8 +364,41 @@ public class CollabNetApp {
      * @param description
      *      Longer human readable description of the project.
      */
-    public String createProject(String name, String title, String description) throws RemoteException {
-        return this.icns.createProject(this.sessionId,name,title,description).getId();
+    public String createProject(String name, String title, String description) throws IOException {
+        String end_point =  url + FOUNDATION_URL + "projects";
+        CloseableHttpClient client = null;
+        CloseableHttpResponse response = null;
+        String projectId = null;
+        try {
+            client = CNFormFieldValidator.getHttpClient();
+            HttpPost httpPost = new HttpPost(end_point);
+            List<NameValuePair> params = new ArrayList<>();
+            params.add(new BasicNameValuePair("name", name));
+            params.add(new BasicNameValuePair("title", title));
+            params.add(new BasicNameValuePair("description", description));
+            httpPost.setEntity(new UrlEncodedFormEntity(params));
+            httpPost.setHeader("Accept", "application/json");
+            httpPost.setHeader("Content-type", "application/json");
+            httpPost.setHeader("Authorization", "Bearer " +this.sessionId);
+            response = client.execute(httpPost);
+            if(response.getStatusLine().getStatusCode() == 200) {
+                JSONObject data = JSONObject.fromObject(EntityUtils.toString(response.getEntity()));
+                projectId = data.get("id").toString();
+            }
+        } catch (IOException e) {
+            String errMsg = e.getMessage();
+            logger.log(Level.INFO, errMsg);
+        } catch (Exception e) {
+            logger.log(Level.INFO,"Error creating an user group" + e.getLocalizedMessage(), e);
+        } finally {
+            if(response != null) {
+                response.close();
+            }
+            if(client != null) {
+                client.close();
+            }
+        }
+        return projectId;
     }
 
     /**
@@ -395,13 +409,34 @@ public class CollabNetApp {
      * @throws RemoteException
      */
     public Collection<String> getGroupUsers(String groupId) 
-        throws RemoteException {
+        throws IOException {
         this.checkValidSessionId();
         Collection<String> users = new ArrayList<String>();
-        UserSoapList usList = this.icns.getUserGroupMembers(this.sessionId, 
-                                                              groupId);
-        for (UserSoapRow row: usList.getDataRows()) {
-            users.add(row.getUserName());
+        String end_point =  url + FOUNDATION_URL + "groups/" + groupId + "/members";
+        CloseableHttpClient httpClient = null;
+        CloseableHttpResponse response = null;
+        try {
+            httpClient = CNFormFieldValidator.getHttpClient();
+            HttpGet get = new HttpGet(end_point);
+            get.setHeader("Accept", "application/json");
+            get.setHeader("Authorization", "Bearer " + sessionId);
+            response = httpClient.execute(get);
+            JSONObject data = JSONObject.fromObject(EntityUtils.toString(response.getEntity()));
+            JSONArray dataArray = JSONArray.fromObject(data.get("items"));
+            Iterator it = dataArray.iterator();
+            while (it.hasNext()) {
+                JSONObject jsonObject = (JSONObject) it.next();
+                users.add(jsonObject.get("username").toString());
+            }
+        } catch (Exception e) {
+            logger.log(Level.INFO,"TeamForge Associations - " + e.getLocalizedMessage(), e);
+        } finally {
+            if(response != null) {
+                response.close();
+            }
+            if (httpClient != null) {
+                httpClient.close();
+            }
         }
         return users;
     }
@@ -416,20 +451,68 @@ public class CollabNetApp {
         }
     }
 
-    public CTFProject getProjectById(String projectId) throws RemoteException {
-        return new CTFProject(this,icns.getProjectData(sessionId,projectId));
+    public CTFProject getProjectById(String projectId) throws IOException {
+        CTFProject ctfProject = null;
+        String end_point =  url + FOUNDATION_URL + "projects/" + projectId;
+        CloseableHttpClient httpClient = null;
+        CloseableHttpResponse response = null;
+        try {
+            httpClient = CNFormFieldValidator.getHttpClient();
+            HttpGet get = new HttpGet(end_point);
+            get.setHeader("Accept", "application/json");
+            get.setHeader("Authorization", "Bearer " + sessionId);
+            response = httpClient.execute(get);
+            JSONObject data = JSONObject.fromObject(EntityUtils.toString(response.getEntity()));
+            ctfProject = new CTFProject(this, data);
+        } catch (Exception e) {
+            logger.log(Level.INFO,"Error getting the members of a group" + e.getLocalizedMessage(), e);
+        } finally {
+            if(response != null) {
+                response.close();
+            }
+            if (httpClient != null) {
+                httpClient.close();
+            }
+        }
+        return ctfProject;
     }
 
-    public List<CTFProject> getProjects() throws RemoteException {
+    public List<CTFProject> getProjects() throws IOException {
         List<CTFProject> r = new ArrayList<CTFProject>();
-        boolean fetchHierarchyPath = false;
-        for (ProjectSoapRow row : icns.getProjectList(getSessionId(), fetchHierarchyPath).getDataRows()) {
-            r.add(new CTFProject(this,row));
+        String end_point =  url + FOUNDATION_URL + "projects";
+        CloseableHttpClient httpClient = null;
+        CloseableHttpResponse response = null;
+        try {
+            httpClient = CNFormFieldValidator.getHttpClient();
+            HttpGet get = new HttpGet(end_point);
+            get.setHeader("Accept", "application/json");
+            get.setHeader("Content-type", "application/json");
+            get.setHeader("Authorization", "Bearer " + sessionId);
+            URI uri = new URIBuilder(get.getURI()).addParameter(
+                    "fetchHierarchyPath", "false").build();
+            get.setURI(uri);
+            response = httpClient.execute(get);
+            JSONObject data = JSONObject.fromObject(EntityUtils.toString(response.getEntity()));
+            JSONArray dataArray = JSONArray.fromObject(data.get("items"));
+            Iterator it = dataArray.iterator();
+            while (it.hasNext()) {
+                JSONObject jsonObject = (JSONObject) it.next();
+               r.add(new CTFProject(this, jsonObject));
+            }
+        } catch (Exception e) {
+            logger.log(Level.INFO,"Error getting the project details - " + e.getLocalizedMessage(), e);
+        } finally {
+            if(response != null) {
+                response.close();
+            }
+            if (httpClient != null) {
+                httpClient.close();
+            }
         }
         return r;
     }
 
-    public CTFProject getProjectByTitle(String title) throws RemoteException {
+    public CTFProject getProjectByTitle(String title) throws IOException {
         for (CTFProject p : getProjects())
             if (p.getTitle().equals(title))
                 return p;
@@ -439,23 +522,22 @@ public class CollabNetApp {
     /**
      * Returns the current user that's logged in.
      */
-    public CTFUser getMyself() throws RemoteException {
+    public CTFUser getMyself() throws IOException {
         return getUser(username);
+    }
+
+    public CTFUser getMyselfData() throws IOException {
+        return new CTFUser(this, Helper.getUserData(this.url, this.sessionId, username));
     }
 
     /**
      * Retrieves the user, or null if no such user exists.
      */
-    public CTFUser getUser(String username) throws RemoteException {
+    public CTFUser getUser(String username) throws IOException {
         try {
-            return new CTFUser(this,this.icns.getUserData(getSessionId(),username));
-        } catch (NoSuchObjectFault e) {
+            return new CTFUser(this, Helper.getUserData(this.url, getSessionId(),username));
+        } catch (IOException e) {
             return null;
-        } catch (AxisFault e) {
-            // somehow Axis is failing to create a strongly typed binding.
-            if (NoSuchObjectFault.FAULT_CODE.equals(e.getFaultCode()))
-                return null;
-            throw e;
         }
     }
 
@@ -465,10 +547,49 @@ public class CollabNetApp {
      * @param timeZone
      *      User's time zone. The ID for a TimeZone, either an abbreviation such as "PST", a full name such as "America/Los_Angeles", or a custom ID such as "GMT-8:00".
      */
-    public CTFUser createUser(String username, String email, String fullName, String locale, String timeZone, boolean isSuperUser, boolean isRestrictedUser, String password) throws RemoteException {
+    public CTFUser createUser(String username, String email, String fullName, String locale, String timeZone, boolean isSuperUser, boolean isRestrictedUser, String password) throws IOException {
     	String organization = null;
     	String licenseType = "ALM";
-    	return new CTFUser(this,this.icns.createUser(getSessionId(),username,email,fullName,organization,locale,timeZone,licenseType,isSuperUser,isRestrictedUser,password));
+        CTFUser ctfUser = null;
+        String end_point =  url + FOUNDATION_URL + "users";
+        CloseableHttpClient client = null;
+        CloseableHttpResponse response = null;
+        try {
+            client = CNFormFieldValidator.getHttpClient();
+            HttpPost httpPost = new HttpPost(end_point);
+            httpPost.setHeader("Accept", "application/json");
+            httpPost.setHeader("Content-type", "application/json");
+            httpPost.setHeader("Authorization", "Bearer " +this.sessionId);
+            List<NameValuePair> params = new ArrayList<>();
+            params.add(new BasicNameValuePair("username", username));
+            params.add(new BasicNameValuePair("email", email));
+            params.add(new BasicNameValuePair("fullname", fullName));
+            params.add(new BasicNameValuePair("locale", locale));
+            params.add(new BasicNameValuePair("timeZone", timeZone));
+            params.add(new BasicNameValuePair("organization", organization));
+            params.add(new BasicNameValuePair("licenseTypes", licenseType));
+            params.add(new BasicNameValuePair("superUser", Boolean.toString(isSuperUser)));
+            params.add(new BasicNameValuePair("restrictedUser",  Boolean.toString(isRestrictedUser)));
+            httpPost.setEntity(new UrlEncodedFormEntity(params));
+            response = client.execute(httpPost);
+            if(response.getStatusLine().getStatusCode() == 200) {
+                JSONObject data = JSONObject.fromObject(EntityUtils.toString(response.getEntity()));
+                ctfUser = new CTFUser(this, data);
+            }
+        }catch (IOException e) {
+            String errMsg = e.getMessage();
+            logger.log(Level.INFO, errMsg);
+        } catch (Exception e) {
+            logger.log(Level.INFO,"Error creating an user " + e.getLocalizedMessage(), e);
+        } finally {
+            if(response != null) {
+                response.close();
+            }
+            if(client != null) {
+                client.close();
+            }
+        }
+        return  ctfUser;
     }
 
     /**

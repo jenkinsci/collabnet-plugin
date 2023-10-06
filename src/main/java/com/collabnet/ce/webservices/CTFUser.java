@@ -1,14 +1,20 @@
 package com.collabnet.ce.webservices;
 
-import com.collabnet.ce.soap60.webservices.cemain.UserGroupSoapList;
-import com.collabnet.ce.soap60.webservices.cemain.UserGroupSoapRow;
-import com.collabnet.ce.soap60.webservices.cemain.ProjectMemberSoapRow;
-import com.collabnet.ce.soap60.webservices.cemain.UserSoapDO;
-import com.collabnet.ce.soap60.webservices.cemain.UserSoapRow;
+import hudson.plugins.collabnet.util.CNFormFieldValidator;
+import net.sf.json.JSONArray;
+import net.sf.json.JSONObject;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.util.EntityUtils;
 
+import java.io.IOException;
 import java.rmi.RemoteException;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Set;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * @author Kohsuke Kawaguchi
@@ -21,34 +27,43 @@ public class CTFUser extends CTFObject implements ObjectWithTitle {
     /**
      * Detailed data is obtained lazily.
      */
-    private volatile UserSoapDO data;
+    private volatile JSONObject userData;
 
-    CTFUser(CollabNetApp app, ProjectMemberSoapRow data) {
-        super(app,data.getUserName());
-        this.userName = data.getUserName();
-        this.fullName = data.getFullName();
-        this.email = data.getEmail();
+    private static final String FOUNDATION_URL = "/ctfrest/foundation/v1/";
+
+    static Logger logger = Logger.getLogger(CTFUser.class.getName());
+
+    CTFUser(CollabNetApp app, JSONObject data) {
+        super(app,data.get("id").toString());
+        this.userName = data.get("username").toString();
+        this.fullName = data.get("fullname").toString();
+        this.email = data.get("email").toString();
     }
 
-    CTFUser(CollabNetApp app, UserSoapDO data) {
-        super(app,data.getUsername());
-        this.userName = data.getUsername();
-        this.fullName = data.getFullName();
-        this.email = data.getEmail();
-        this.data = data;
-    }
+    private JSONObject data() throws IOException {
+        if (userData==null) {
+            String end_point = app.getServerUrl() + FOUNDATION_URL + "users/" + getId();
+            CloseableHttpClient httpClient = null;
+            CloseableHttpResponse response = null;
+            try {
+                httpClient = CNFormFieldValidator.getHttpClient();
+                HttpGet get = new HttpGet(end_point);
+                get.setHeader("Accept", "application/json");
+                get.setHeader("Authorization", "Bearer " + app.getSessionId());
+                response = httpClient.execute(get);
+                userData = JSONObject.fromObject(EntityUtils.toString(response.getEntity()));
+            } catch (Exception e) {
 
-    CTFUser(CollabNetApp app, UserSoapRow data) {
-        super(app,data.getUserName());
-        this.userName = data.getUserName();
-        this.fullName = data.getFullName();
-        this.email = data.getEmail();
-    }
-
-    private UserSoapDO data() throws RemoteException {
-        if (data==null)
-            data = app.icns.getUserData(app.getSessionId(),getId());
-        return data;
+            } finally {
+                if(response != null) {
+                    response.close();
+                }
+                if (httpClient != null) {
+                    httpClient.close();
+                }
+            }
+        }
+        return userData;
     }
 
     public String getUserName() {
@@ -71,24 +86,24 @@ public class CTFUser extends CTFObject implements ObjectWithTitle {
         return userName;
     }
 
-    public String getLocale() throws RemoteException {
-        return data().getLocale();
+    public String getLocale() throws IOException {
+        return data().get("locale").toString();
     }
 
-    public String getTimeZone() throws RemoteException {
-        return data().getTimeZone();
+    public String getTimeZone() throws IOException {
+        return data().get("timezone").toString();
     }
 
-    public boolean isSuperUser() throws RemoteException {
-        return data().getSuperUser();
+    public boolean isSuperUser() throws IOException {
+        return Boolean.parseBoolean(data().get("superUser").toString());
     }
 
-    public boolean isRestrictedUser() throws RemoteException {
-        return data().getRestrictedUser();
+    public boolean isRestrictedUser() throws IOException {
+        return Boolean.parseBoolean(data().get("restrictedUser").toString());
     }
 
-    public String getStatus() throws RemoteException {
-        return data().getStatus();
+    public String getStatus() throws IOException {
+        return data().get("status").toString();
     }
 
     /**
@@ -102,20 +117,20 @@ public class CTFUser extends CTFObject implements ObjectWithTitle {
      * Because of the incompleteness in the API, this method cannot readily return
      * {@link CTFGroup}s.
      */
-    public Set<String> getGroupNames() throws RemoteException {
+    public Set<String> getGroupNames() throws IOException {
         Set<String> groups = new HashSet<String>();
-        UserGroupSoapList gList = app.icns.getUserGroupListForUser(app.getSessionId(),userName);
-        for (UserGroupSoapRow row: gList.getDataRows()) {
-            groups.add(row.getFullName());
+        CTFList<CTFGroup> groupList = getUserGroupListForUser();
+        for (CTFGroup ctfGroup : groupList) {
+            groups.add(ctfGroup.getFullName());
         }
         return groups;
     }
 
-    public CTFList<CTFGroup> getGroups() throws RemoteException {
+    public CTFList<CTFGroup> getGroups() throws IOException {
         CTFList<CTFGroup> groups = new CTFList<CTFGroup>();
-        UserGroupSoapList gList = app.icns.getUserGroupListForUser(app.getSessionId(),userName);
-        for (UserGroupSoapRow row: gList.getDataRows()) {
-            groups.add(app.getGroupByTitle(row.getFullName()));
+        groups = getUserGroupListForUser();
+        for (CTFGroup ctfGroup : groups) {
+            groups.add(app.getGroupByTitle(ctfGroup.getFullName()));
         }
         return groups;
     }
@@ -123,7 +138,7 @@ public class CTFUser extends CTFObject implements ObjectWithTitle {
     /**
      * Adds the user to the this group.
      */
-    public void addTo(CTFGroup g) throws RemoteException {
+    public void addTo(CTFGroup g) throws IOException {
         g.addMember(this);
     }
 
@@ -137,5 +152,29 @@ public class CTFUser extends CTFObject implements ObjectWithTitle {
     @Override
     public int hashCode() {
         return userName.hashCode();
+    }
+
+    private CTFList<CTFGroup> getUserGroupListForUser() {
+        CTFList<CTFGroup> groups = new CTFList<CTFGroup>();
+        String end_point = FOUNDATION_URL + "by-username/" + userName + "/groups";
+        CloseableHttpClient httpClient;
+        CloseableHttpResponse response;
+        try {
+            httpClient = CNFormFieldValidator.getHttpClient();
+            HttpGet get = new HttpGet(end_point);
+            get.setHeader("Accept", "application/json");
+            get.setHeader("Authorization", "Bearer " + app.getSessionId());
+            response = httpClient.execute(get);
+            JSONObject data = JSONObject.fromObject(EntityUtils.toString(response.getEntity()));
+            JSONArray dataArray = JSONArray.fromObject(data.get("items"));
+            Iterator it = dataArray.iterator();
+            while (it.hasNext()) {
+                JSONObject jsonObject = (JSONObject) it.next();
+                groups.add(app.getGroupByTitle(jsonObject.get("fullname").toString()));
+            }
+        } catch (Exception e) {
+            logger.log(Level.INFO,"Error getting the group list" + e.getLocalizedMessage(), e);
+        }
+        return groups;
     }
 }

@@ -8,21 +8,21 @@
 import hudson.plugins.collabnet.auth.CNAuthenticationEntryPoint;
 import hudson.security.AccessDeniedHandlerImpl
 import hudson.security.AuthenticationProcessingFilter2
-import hudson.security.BasicAuthenticationFilter
 import hudson.security.ChainedServletFilter
 import hudson.security.UnwrapSecurityExceptionFilter
-import org.acegisecurity.providers.anonymous.AnonymousProcessingFilter
-import org.acegisecurity.ui.ExceptionTranslationFilter
-import org.acegisecurity.ui.basicauth.BasicProcessingFilter
-import org.acegisecurity.ui.basicauth.BasicProcessingFilterEntryPoint
-import org.acegisecurity.ui.rememberme.RememberMeProcessingFilter
+import org.springframework.security.web.authentication.AnonymousAuthenticationFilter
+
+import org.springframework.security.web.authentication.www.BasicAuthenticationEntryPoint
+import org.springframework.security.web.authentication.www.BasicAuthenticationFilter
+import org.springframework.security.web.authentication.rememberme.RememberMeAuthenticationFilter
 import hudson.security.HttpSessionContextIntegrationFilter2
+import org.springframework.security.web.access.ExceptionTranslationFilter
 
 
 // providers that apply to both patterns
 def commonProviders(redirectUrl) {
     return [
-        bean(AnonymousProcessingFilter) {
+        bean(AnonymousAuthenticationFilter) {
             key = "anonymous" // must match with the AnonymousProvider
             userAttribute = "anonymous,"
         },
@@ -42,13 +42,13 @@ filter(ChainedServletFilter) {
         bean(HttpSessionContextIntegrationFilter2) {
         },
         // allow clients to submit basic authentication credential
-        bean(BasicProcessingFilter) {
+        bean(BasicAuthenticationFilter) {
             authenticationManager = securityComponents.manager
             // if basic authentication fails (which only happens incorrect basic auth credential is sent),
             // respond with 401 with basic auth request, instead of redirecting the user to the login page,
             // since users of basic auth tends to be a program and won't see the redirection to the form
             // page as a failure
-            authenticationEntryPoint = bean(BasicProcessingFilterEntryPoint) {
+            authenticationEntryPoint = bean(BasicAuthenticationEntryPoint) {
                 realmName = "Jenkins"
             }
         },
@@ -59,7 +59,7 @@ filter(ChainedServletFilter) {
             defaultTargetUrl = "/"
             filterProcessesUrl = "/j_acegi_security_check"
         },
-        bean(RememberMeProcessingFilter) {
+        bean(RememberMeAuthenticationFilter) {
             rememberMeServices = securityComponents.rememberMe
             authenticationManager = securityComponents.manager
         },

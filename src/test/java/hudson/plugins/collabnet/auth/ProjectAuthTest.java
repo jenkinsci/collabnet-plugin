@@ -21,6 +21,7 @@ import hudson.plugins.promoted_builds.conditions.ManualCondition;
 import hudson.security.ACL;
 import org.acegisecurity.context.SecurityContextHolder;
 
+import java.io.IOException;
 import java.rmi.RemoteException;
 
 /**
@@ -70,7 +71,7 @@ public class ProjectAuthTest extends AbstractSecurityTestCase {
         }
     }
 
-    private void grant(CTFList<CTFRole> existing, CollabNetRole role, String member) throws RemoteException {
+    private void grant(CTFList<CTFRole> existing, CollabNetRole role, String member) throws IOException {
         CTFRole r = existing.byTitle(role.getName());
         if (r.getMembers().byTitle(member)==null)
             r.grant(member);

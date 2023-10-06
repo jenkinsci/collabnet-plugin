@@ -9,6 +9,7 @@ import hudson.plugins.collabnet.share.TeamForgeShare;
 import hudson.util.VersionNumber;
 import org.kohsuke.stapler.StaplerRequest;
 
+import java.io.IOException;
 import java.rmi.RemoteException;
 import java.util.logging.Logger;
 
@@ -37,11 +38,11 @@ public class CNHudsonUtil {
         }
         try {
             return new CollabNetApp(url, username, password);
-        } catch (RemoteException re) {
-            CommonUtil.logRE(log, "getCollabNetApp", re);
+        } catch (IOException io) {
+            CommonUtil.logRE(log, "getCollabNetApp", io);
             // more logging
             log.log(java.util.logging.Level.SEVERE, "getCollabNetApp failed", 
-                    re);
+                    io);
             return null;
         }
     }
@@ -128,7 +129,7 @@ public class CNHudsonUtil {
      * @return the releaseId in this project which matches the release name
      *         or null if none is found.
      */
-    public static CTFRelease getProjectReleaseId(CTFProject project,  String release) throws RemoteException {
+    public static CTFRelease getProjectReleaseId(CTFProject project,  String release) throws IOException {
         if (project==null)  return null;
 
         for (CTFPackage pkg : project.getPackages()) {
@@ -147,7 +148,7 @@ public class CNHudsonUtil {
         boolean valid = false;
         try {
             valid = cna.isUsernameValid(username);
-        } catch (RemoteException re) {
+        } catch (IOException re) {
             CommonUtil.logRE(log, "userExists", re);
         }
         return valid;
@@ -160,7 +161,7 @@ public class CNHudsonUtil {
      * @param repoName name of the repository
      * @return the scm viewer url
      */
-    public static String getScmViewerUrl(CollabNetApp cna, String collabnetUrl, String projectName, String repoName) throws RemoteException {
+    public static String getScmViewerUrl(CollabNetApp cna, String collabnetUrl, String projectName, String repoName) throws IOException {
         String url = null;
         CTFScmRepository repo = CNHudsonUtil.getRepoData(cna, projectName, repoName);
         if (repo != null) {
@@ -168,19 +169,19 @@ public class CNHudsonUtil {
             url = repo.getScmViewerUrl();
 
             if (cna != null) {
-                VersionNumber apiVersion;
-                try {
-                    apiVersion = new VersionNumber(cna.getApiVersion());
-                } catch (RemoteException re) {
-                    CommonUtil.logRE(log, "getScmViewerUrl", re);
-                    return null;
-                }
+//                VersionNumber apiVersion;
+//                try {
+//                    apiVersion = new VersionNumber(cna.getApiVersion());
+//                } catch (RemoteException re) {
+//                    CommonUtil.logRE(log, "getScmViewerUrl", re);
+//                    return null;
+//                }
 
-                if (new VersionNumber("5.3.0.0").compareTo(apiVersion)<=0
-                &&  apiVersion.compareTo(new VersionNumber("6.0.0.0"))<0) {
+//                if (new VersionNumber("5.3.0.0").compareTo(apiVersion)<=0
+//                &&  apiVersion.compareTo(new VersionNumber("6.0.0.0"))<0) {
                     // starting with CTF 5.3, you can use the new viewRepositorySource method that does auth for viewvc
                     url = collabnetUrl + "/sf/scm/do/viewRepositorySource/" + repo.getPath();
-                }
+//                }
             }
         }
         return url;
@@ -209,7 +210,7 @@ public class CNHudsonUtil {
      * @param repoName
      */
     public static String getSystemId(CollabNetApp cna, String projectName, 
-                                     String repoName) throws RemoteException {
+                                     String repoName) throws IOException {
         CTFProject p = cna.getProjectByTitle(projectName);
         if (p==null)    return null;
         CTFScmRepository r = p.getScmRepositories().byTitle(repoName);
@@ -224,7 +225,7 @@ public class CNHudsonUtil {
      */
     private static CTFScmRepository getRepoData(CollabNetApp cna,
                                                  String projectName,
-                                                 String repoName) throws RemoteException {
+                                                 String repoName) throws IOException {
         CTFProject p = cna.getProjectByTitle(projectName);
         if (p==null) {
             return null;

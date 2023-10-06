@@ -1,10 +1,14 @@
 package com.collabnet.ce.webservices;
 
-import com.collabnet.ce.soap60.webservices.cemain.ItemSoapDO;
-import com.collabnet.ce.soap60.webservices.frs.FrsFileSoapDO;
-import com.collabnet.ce.soap60.webservices.frs.FrsFileSoapRow;
+import hudson.plugins.collabnet.util.CNFormFieldValidator;
+import net.sf.json.JSONObject;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpDelete;
+import org.apache.http.impl.client.CloseableHttpClient;
 
-import java.rmi.RemoteException;
+import java.io.IOException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * @author Kohsuke Kawaguchi
@@ -13,28 +17,16 @@ public class CTFReleaseFile extends CTFItem {
     private final String description, mimeType, filename;
     private final long size;
 
-    protected CTFReleaseFile(CTFObject parent, FrsFileSoapDO data) {
-        super(parent,data);
-        this.description = data.getDescription();
-        this.mimeType = data.getMimeType();
-        this.filename = data.getFilename();
-        this.size = data.getSize();
-    }
+    private static final String FRS_URL = "/ctfrest/frs/v1/files/";
 
-    protected CTFReleaseFile(CTFObject parent, FrsFileSoapRow data) {
-        super(parent, toItemSoapDO(data));
-        this.description = data.getDescription();
-        this.mimeType = data.getMimeType();
-        this.filename = data.getFilename();
-        this.size = data.getFileSize();
-    }
+    static Logger logger = Logger.getLogger(CTFReleaseFile.class.getName());
 
-    private static ItemSoapDO toItemSoapDO(FrsFileSoapRow data) {
-        ItemSoapDO r = new ItemSoapDO();
-        r.setTitle(data.getTitle());
-        r.setId(data.getId());
-        // not sure how the rest of the parameters match up
-        return r;
+    protected CTFReleaseFile(CTFObject parent, JSONObject data) {
+        super(parent, data);
+        this.description = data.get("description").toString();
+        this.mimeType = data.get("mimeType").toString();
+        this.filename = data.get("filename").toString();
+        this.size = Integer.parseInt(data.get("size").toString());
     }
 
     public String getDescription() {
@@ -57,7 +49,25 @@ public class CTFReleaseFile extends CTFItem {
         return app.getServerUrl() + "/sf/frs/do/downloadFile/" + getPath();
     }
 
-    public void delete() throws RemoteException {
-        app.getFrsAppSoap().deleteFrsFile(app.getSessionId(),getId());
+    public void delete() throws IOException {
+        String end_point =  app.getServerUrl() + FRS_URL + getId();
+        CloseableHttpClient httpClient = null;
+        CloseableHttpResponse response = null;
+        try {
+            httpClient = CNFormFieldValidator.getHttpClient();
+            HttpDelete delete = new HttpDelete(end_point);
+            delete.setHeader("Accept", "application/json");
+            delete.setHeader("Authorization", "Bearer " + app.getSessionId());
+            response = httpClient.execute(delete);
+        } catch (Exception e) {
+            logger.log(Level.INFO,"Error deleting a file in the file release - " + e.getLocalizedMessage(), e);
+        } finally {
+            if(response != null) {
+                response.close();
+            }
+            if (httpClient != null) {
+                httpClient.close();
+            }
+        }
     }
 }

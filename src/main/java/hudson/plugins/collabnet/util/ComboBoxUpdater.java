@@ -7,6 +7,7 @@ import com.collabnet.ce.webservices.CollabNetApp;
 import com.collabnet.ce.webservices.ObjectWithTitle;
 import hudson.util.ComboBoxModel;
 
+import java.io.IOException;
 import java.rmi.RemoteException;
 import java.util.Collection;
 import java.util.logging.Logger;
@@ -27,7 +28,7 @@ public abstract class ComboBoxUpdater {
         if (cna != null) {
             try {
                 return toModel(cna.getProjects());
-            } catch (RemoteException re) {
+            } catch (IOException re) {
                 CommonUtil.logRE(log, "getProjectList", re);
             }
         }
@@ -37,7 +38,7 @@ public abstract class ComboBoxUpdater {
     /**
      * Obtains the list of packages in the given project.
      */
-    public static ComboBoxModel getPackages(CollabNetApp cna, String project) throws RemoteException {
+    public static ComboBoxModel getPackages(CollabNetApp cna, String project) throws IOException {
         if (cna==null)    return EMPTY_MODEL;
 
         CTFProject p = cna.getProjectByTitle(project);
@@ -46,7 +47,7 @@ public abstract class ComboBoxUpdater {
         return toModel(p.getPackages());
     }
 
-    public static ComboBoxModel getReleases(CollabNetApp cna, String project, String rpackage) throws RemoteException {
+    public static ComboBoxModel getReleases(CollabNetApp cna, String project, String rpackage) throws IOException {
         if (cna==null)    return EMPTY_MODEL;
 
         CTFProject p = cna.getProjectByTitle(project);
@@ -63,7 +64,7 @@ public abstract class ComboBoxUpdater {
     /**
      * @return a list of releases in the package which has been sanitized.
      */
-    public static ComboBoxModel getReleaseList(CTFPackage pkg) throws RemoteException {
+    public static ComboBoxModel getReleaseList(CTFPackage pkg) throws IOException {
         if (pkg == null)  return EMPTY_MODEL;
         return toModel(pkg.getReleases());
     }
@@ -72,7 +73,7 @@ public abstract class ComboBoxUpdater {
      * @return a list of all releases in the project which has been
      *         sanitized.
      */
-    public static ComboBoxModel getReleaseList(CTFProject p) throws RemoteException {
+    public static ComboBoxModel getReleaseList(CTFProject p) throws IOException {
         if (p == null)  return EMPTY_MODEL;
 
         ComboBoxModel cbm = new ComboBoxModel();
@@ -84,7 +85,7 @@ public abstract class ComboBoxUpdater {
         return cbm;
     }
 
-    public static ComboBoxModel getRepos(CollabNetApp cna, String project) throws RemoteException {
+    public static ComboBoxModel getRepos(CollabNetApp cna, String project) throws IOException {
         if (cna==null)  return EMPTY_MODEL;
         CTFProject p =  cna.getProjectByTitle(project);
         if (p==null)    return EMPTY_MODEL;
@@ -101,13 +102,13 @@ public abstract class ComboBoxUpdater {
     /**
      * @return a list of trackers which has been sanitized.
      */
-    public static ComboBoxModel getTrackerList(CTFProject p) throws RemoteException {
+    public static ComboBoxModel getTrackerList(CTFProject p) throws IOException {
         if (p!=null)
             return toModel(p.getTrackers());
         return EMPTY_MODEL;
     }
 
-    public static ComboBoxModel getUsers(CollabNetApp cna, String project) throws RemoteException {
+    public static ComboBoxModel getUsers(CollabNetApp cna, String project) throws IOException {
         if (cna!=null) {
             CTFProject p = cna.getProjectByTitle(project);
             if (p==null)    return EMPTY_MODEL;

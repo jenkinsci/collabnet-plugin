@@ -19,7 +19,6 @@ import org.apache.http.impl.client.HttpClients;
 import org.kohsuke.stapler.StaplerRequest;
 
 import java.io.IOException;
-import java.rmi.RemoteException;
 import java.security.KeyManagementException;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
@@ -235,7 +234,7 @@ public abstract class CNFormFieldValidator {
     /**
      * Checks if a project name is valid, by using the given connection.
      */
-    public static FormValidation projectCheck(CollabNetApp app, String project) throws RemoteException {
+    public static FormValidation projectCheck(CollabNetApp app, String project) throws IOException {
         if (CommonUtil.unset(project)) {
             return FormValidation.error("The project is required.");
         }
@@ -288,7 +287,7 @@ public abstract class CNFormFieldValidator {
      * Class to check that a package exists.  Expects a StaplerRequest with 
      * a url, username, password, project, and package.
      */
-    public static FormValidation packageCheck(CollabNetApp cna, String project, String rpackage) throws RemoteException {
+    public static FormValidation packageCheck(CollabNetApp cna, String project, String rpackage) throws IOException {
         try {
             if (CommonUtil.unset(rpackage)) {
                 return FormValidation.error("The package is required.");
@@ -313,7 +312,7 @@ public abstract class CNFormFieldValidator {
      * Class to check that a release exists.  Expects a StaplerRequest with 
      * a url, username, password, project, package (optional), and release.
      */
-    public static FormValidation releaseCheck(CollabNetApp cna, String project, String rpackage, String release, boolean required) throws RemoteException {
+    public static FormValidation releaseCheck(CollabNetApp cna, String project, String rpackage, String release, boolean required) throws IOException {
         try {
             if (CommonUtil.unset(release)) {
                 if (required) {
@@ -353,7 +352,7 @@ public abstract class CNFormFieldValidator {
      * Class to check that a repo exists.  Expects a StaplerRequest with 
      * a url, username, password, and project.
      */
-    public static FormValidation repoCheck(StaplerRequest request) throws RemoteException {
+    public static FormValidation repoCheck(StaplerRequest request) throws IOException {
         String project = request.getParameter("project");
         String repoName = request.getParameter("repo");
         CollabNetApp cna = CNHudsonUtil.getCollabNetApp(request);
@@ -381,7 +380,7 @@ public abstract class CNFormFieldValidator {
      * Class to check that a tracker exists.  Expects a StaplerRequest with 
      * a url, username, password, project, and tracker.
      */
-    public static FormValidation trackerCheck(CollabNetApp cna, String project, String tracker) throws RemoteException {
+    public static FormValidation trackerCheck(CollabNetApp cna, String project, String tracker) throws IOException {
         if (CommonUtil.unset(tracker)) {
             return FormValidation.error("The tracker is required.");
         }
@@ -408,7 +407,7 @@ public abstract class CNFormFieldValidator {
      * Expects a StaplerRequest with login info (url, username, password), 
      * project, and assign (which is the username).
      */
-    public static FormValidation assignCheck(CollabNetApp cna, String project, String assign) throws RemoteException {
+    public static FormValidation assignCheck(CollabNetApp cna, String project, String assign) throws IOException {
         assign = StringUtils.strip(assign);
         if (CommonUtil.unset(assign)) {
             return FormValidation.ok();
@@ -437,7 +436,7 @@ public abstract class CNFormFieldValidator {
      * The check only works for a logged-in site-admin.  Otherwise,
      * give a warning that we cannot check the users' validity.
      */
-    public static FormValidation userListCheck(String userStr) throws RemoteException {
+    public static FormValidation userListCheck(String userStr) throws IOException {
         if (userStr == null || userStr.equals("")) {
             return FormValidation.ok();
         }
@@ -459,7 +458,7 @@ public abstract class CNFormFieldValidator {
      * @param userStr
      * @return the collection of users from the array which do not exist.
      */
-    private static Collection<String> getInvalidUsers(CollabNetApp cna, String userStr) throws RemoteException {
+    private static Collection<String> getInvalidUsers(CollabNetApp cna, String userStr) throws IOException {
         Collection<String> invalidUsers = new ArrayList<String>();
         if (cna != null) {
             for (String user: CommonUtil.splitCommaStr(userStr)) {
@@ -477,7 +476,7 @@ public abstract class CNFormFieldValidator {
      * the current user if s/he will be locked out once that user
      * saves the configuration.
      */
-    public static FormValidation groupListCheck(String groupStr, String userStr) throws RemoteException {
+    public static FormValidation groupListCheck(String groupStr, String userStr) throws IOException {
         Collection<String> invalidGroups = getInvalidGroups(groupStr);
         if (!invalidGroups.isEmpty()) {
             return FormValidation.error("The following groups do not exist: " +
@@ -502,7 +501,7 @@ public abstract class CNFormFieldValidator {
      * @param groupStr
      * @return the collection of groups from the array which do not exist.
      */
-    private static Collection<String> getInvalidGroups(String groupStr) throws RemoteException {
+    private static Collection<String> getInvalidGroups(String groupStr) throws IOException {
         CNAuthentication auth = CNAuthentication.get();
         if (auth == null) {
             // cannot connect to check.

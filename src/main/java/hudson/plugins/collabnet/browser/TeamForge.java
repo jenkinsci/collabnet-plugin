@@ -166,7 +166,7 @@ public class TeamForge extends SubversionRepositoryBrowser {
         return new URL(link.toString());
     }
 
-    private StringBuffer getViewerUrlWithPath(SubversionChangeLogSet.Path path) throws RemoteException {
+    private StringBuffer getViewerUrlWithPath(SubversionChangeLogSet.Path path) throws IOException {
         String[] urlParts = this.getViewerUrl().split("\\?");
         StringBuffer viewWithPath = new StringBuffer(urlParts[0]).append(path.getValue()).append("?");
         if (urlParts.length > 1) {
@@ -188,7 +188,7 @@ public class TeamForge extends SubversionRepositoryBrowser {
      * Get the viewer url to display to the user.
      * @return the viewer url
      */
-    private String getViewerUrl() throws RemoteException {
+    private String getViewerUrl() throws IOException {
         CollabNetApp cna = CNHudsonUtil.getCollabNetApp(this.getCollabNetUrl(), 
                                                         this.getUsername(), 
                                                         this.getPassword());
@@ -196,7 +196,7 @@ public class TeamForge extends SubversionRepositoryBrowser {
                                             this.getRepo());
     }
 
-    private String getSystemId() throws RemoteException {
+    private String getSystemId() throws IOException {
         CollabNetApp cna = CNHudsonUtil.getCollabNetApp(this.getCollabNetUrl(), 
                                                         this.getUsername(), 
                                                         this.getPassword());
@@ -240,7 +240,7 @@ public class TeamForge extends SubversionRepositoryBrowser {
         /**
          * Form validation for the project field.
          */
-        public FormValidation doCheckProject(CollabNetApp app, @QueryParameter String value) throws RemoteException {
+        public FormValidation doCheckProject(CollabNetApp app, @QueryParameter String value) throws IOException {
             return CNFormFieldValidator.projectCheck(app,value);
         }
 
@@ -251,7 +251,7 @@ public class TeamForge extends SubversionRepositoryBrowser {
          *            the config.jelly.
          * @throws ServletException
          */
-        public FormValidation doCheckRepo(StaplerRequest req) throws RemoteException {
+        public FormValidation doCheckRepo(StaplerRequest req) throws IOException {
             return CNFormFieldValidator.repoCheck(req);
         }
 
@@ -269,7 +269,7 @@ public class TeamForge extends SubversionRepositoryBrowser {
          * Gets a list of repos to choose from and write them as a 
          * JSON string into the response data.
          */
-        public ComboBoxModel doFillRepoItems(CollabNetApp cna, @QueryParameter String project) throws RemoteException {
+        public ComboBoxModel doFillRepoItems(CollabNetApp cna, @QueryParameter String project) throws IOException {
             ComboBoxModel repos = ComboBoxUpdater.getRepos(cna,project);
             CNHudsonUtil.logoff(cna);
             return repos;

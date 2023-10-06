@@ -1,8 +1,6 @@
 package com.collabnet.ce.webservices;
 
 import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
 
 /**
  * A file in the file storage.
@@ -16,12 +14,5 @@ import java.io.InputStream;
 public class CTFFile extends CTFObject {
     public CTFFile(CollabNetApp app, String id) {
         super(app, id);
-    }
-
-    /**
-     * Retrieves the file.
-     */
-    public InputStream download() throws IOException {
-        return app.getFileStorageAppSoap().downloadFile(app.getSessionId(),getId()).getInputStream();
     }
 }

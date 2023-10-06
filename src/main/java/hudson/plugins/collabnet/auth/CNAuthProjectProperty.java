@@ -34,7 +34,7 @@ import static java.util.logging.Level.WARNING;
  * Authorization purposes (used with CollabNet Authorization).
  */
 public class CNAuthProjectProperty extends JobProperty<Job<?, ?>> {
-    public static Permission CONFIGURE_PROPERTY = Item.CONFIGURE;
+    public static final Permission CONFIGURE_PROPERTY = Item.CONFIGURE;
     private transient boolean mIsNotLoadedFromDisk = false;
     private transient String project = null;
     private String projectId = null;
@@ -85,7 +85,7 @@ public class CNAuthProjectProperty extends JobProperty<Job<?, ?>> {
             try {
                 CTFProject p = conn.getProjectByTitle(project);
                 projectId = p!=null ? p.getId() : null;
-            } catch (RemoteException e) {
+            } catch (IOException e) {
                 projectId = null;
                 log.log(WARNING,"Failed to load project ID of "+project,e);
             }
@@ -118,7 +118,7 @@ public class CNAuthProjectProperty extends JobProperty<Job<?, ?>> {
                     CTFProject p = conn.getProjectById(projectId);
                     if (p!=null)
                         return p.getTitle();
-                } catch (RemoteException e) {
+                } catch (IOException e) {
                     // fall back to the stored project name
                 }
             }
@@ -161,7 +161,7 @@ public class CNAuthProjectProperty extends JobProperty<Job<?, ?>> {
     /**
      * @return the default user roles.  Lazily initialized.
      */
-    public Collection<String> getDefaultUserRoles() {
+    public static Collection<String> getDefaultUserRoles() {
         if (CNAuthProjectProperty.defaultUserRoles.isEmpty()) {
             CNAuthProjectProperty.defaultUserRoles = new ArrayList<String>();
             CNAuthProjectProperty.defaultUserRoles.add("Hudson Read");
@@ -172,7 +172,7 @@ public class CNAuthProjectProperty extends JobProperty<Job<?, ?>> {
     /**
      * @return the default admin roles.  Lazily initialized.
      */
-    public Collection<String> getDefaultAdminRoles() {
+    public static Collection<String> getDefaultAdminRoles() {
         if (CNAuthProjectProperty.defaultAdminRoles.isEmpty()) {
             CNAuthProjectProperty.defaultAdminRoles = 
                 CNProjectACL.CollabNetRoles.getNames();
@@ -210,13 +210,13 @@ public class CNAuthProjectProperty extends JobProperty<Job<?, ?>> {
                     grantRoles(p, this.getDefaultUserRoles(), p.getMembers());
                     grantRoles(p, this.getDefaultAdminRoles(), p.getAdmins());
                 }
-            } catch (RemoteException e) {
+            } catch (IOException e) {
                 log.log(WARNING, "Cannot loadRoles, incorrect authentication type.", e);
             }
         }   
     }
 
-    private void grantRoles(CTFProject p, Collection<String> roleNames, List<CTFUser> members) throws RemoteException {
+    private void grantRoles(CTFProject p, Collection<String> roleNames, List<CTFUser> members) throws IOException {
         CTFList<CTFRole> roles = p.getRoles();
         for (String name : roleNames) {
             CTFRole r = roles.byTitle(name);
@@ -262,7 +262,7 @@ public class CNAuthProjectProperty extends JobProperty<Job<?, ?>> {
         /**
          * Form validation for the project field.
          */
-        public FormValidation doCheckProject(@QueryParameter String value) throws RemoteException {
+        public FormValidation doCheckProject(@QueryParameter String value) throws IOException {
             String project = value;
             if (CommonUtil.isEmpty(project)) {
                 return FormValidation.warning("If left empty, all users will be able to configure and access this " +

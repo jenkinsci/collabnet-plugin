@@ -1,5 +1,6 @@
 package hudson.plugins.collabnet.util;
 
+import java.io.IOException;
 import java.rmi.RemoteException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -77,7 +78,7 @@ public class CommonUtil {
      * @param re The RemoteException that was thrown.
      */
     public static void logRE(Logger logger, String methodName, 
-                             RemoteException re) {
+                             IOException re) {
         logger.info(methodName + " failed due to " + 
                     re.getClass().getName() + ": " + re.getMessage());
     }

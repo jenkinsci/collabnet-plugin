@@ -52,7 +52,7 @@ public class CNTrackerTest extends CNHudsonTestCase {
         }
     }
 
-    private void ensureReleaseExists(CTFProject p) throws RemoteException {
+    private void ensureReleaseExists(CTFProject p) throws IOException {
         List<CTFPackage> pkgs = p.getPackages();
         for (CTFPackage pkg : pkgs) {
             for (CTFRelease r : pkg.getReleases()) {
@@ -147,14 +147,14 @@ public class CNTrackerTest extends CNHudsonTestCase {
         return r.get(0);
     }
 
-    public void verifyArtifactValues(CTFArtifact artifact) throws RemoteException {
+    public void verifyArtifactValues(CTFArtifact artifact) throws IOException {
         artifact.refill();
         assertEquals(artifact.getPriority(),priority);
         assertEquals(artifact.getAssignedTo(),admin_user);
         assertEquals(artifact.getReportedReleaseId(),this.getRelease().getId());
     }
 
-    public CTFRelease getRelease() throws RemoteException {
+    public CTFRelease getRelease() throws IOException {
         CollabNetApp cna = connect();
         return CNHudsonUtil.getProjectReleaseId(cna.getProjectByTitle(teamforge_project), release);
     }

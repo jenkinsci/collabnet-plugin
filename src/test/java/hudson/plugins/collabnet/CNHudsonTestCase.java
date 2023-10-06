@@ -7,6 +7,7 @@ import hudson.plugins.collabnet.share.TeamForgeShare;
 import hudson.tasks.Publisher;
 import org.jvnet.hudson.test.HudsonTestCase;
 
+import java.io.IOException;
 import java.rmi.RemoteException;
 
 /**
@@ -86,7 +87,7 @@ public abstract class CNHudsonTestCase extends HudsonTestCase {
             return new ConnectionFactory("http://www.google.com/", "abc", "def");
     }
 
-    protected CollabNetApp connect() throws RemoteException {
+    protected CollabNetApp connect() throws IOException {
         TrustAllSocketFactory.install();
         return new CollabNetApp(teamforge_url, admin_user, password);
     }

@@ -16,7 +16,6 @@ import org.kohsuke.stapler.QueryParameter;
 
 import javax.servlet.ServletException;
 import java.io.IOException;
-import java.rmi.RemoteException;
 
 /**
  * Base class for {@link Notifier}s that talk to CollabNet TeamForge.
@@ -128,7 +127,7 @@ public abstract class AbstractTeamForgeNotifier extends Notifier {
          * @throws IOException
          * @throws ServletException
          */
-        public FormValidation doCheckProject(CollabNetApp app, @QueryParameter String value) throws RemoteException {
+        public FormValidation doCheckProject(CollabNetApp app, @QueryParameter String value) throws IOException {
             return CNFormFieldValidator.projectCheck(app,value);
         }
 
@@ -137,7 +136,6 @@ public abstract class AbstractTeamForgeNotifier extends Notifier {
          */
         public ComboBoxModel doFillProjectItems(CollabNetApp cna) {
             ComboBoxModel projects = ComboBoxUpdater.getProjectList(cna);
-            CNHudsonUtil.logoff(cna);
             return projects;
         }
     }
