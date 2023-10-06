@@ -48,7 +48,7 @@ public class CTFPackage extends CTFFolder {
         Response response = helper.request(end_point, app.getSessionId(), requestPayload.toString(), HttpMethod.POST, null);
         String result = response.readEntity(String.class);
         int statusCode = response.getStatus();
-        if (statusCode == 200) {
+        if (statusCode == 201) {
             JSONObject data = null;
             try {
                 data = (JSONObject) new JSONParser().parse(result);
@@ -73,8 +73,29 @@ public class CTFPackage extends CTFFolder {
         }
         for (CTFRelease p : getReleases())
             if (p.getTitle().equals(relTitle))
-                return p;
+                return getReleaseById(p.getId());
         return null;
+    }
+
+
+    public CTFRelease getReleaseById(String releaseId) throws IOException {
+        CTFRelease ctfRelease = null;
+        String end_point = app.getServerUrl() + CTFConstants.RELEASE_URL + releaseId;
+        Response response = helper.request(end_point, app.getSessionId(), null, HttpMethod.GET, null);
+        String result = response.readEntity(String.class);
+        int status = response.getStatus();
+        if (status == 200) {
+            JSONObject data = null;
+            try {
+                data = (JSONObject) new JSONParser().parse(result);
+                ctfRelease = new CTFRelease(this, data);
+            } catch (ParseException e) {
+                logger.log(Level.WARNING, "Unable to parse the json content in getReleasetById() - " + e.getLocalizedMessage(), e);
+            }
+        } else {
+            logger.log(Level.WARNING, "Error getting the release details - " + status  + ", Error Msg - " + result);
+        }
+        return  ctfRelease;
     }
 
     public CTFList<CTFRelease> getReleases() throws IOException {

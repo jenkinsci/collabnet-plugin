@@ -413,7 +413,7 @@ public class CollabNetApp {
                 data = (JSONObject) new JSONParser().parse(result);
                 ctfProject = new CTFProject(this, data);
             } catch (ParseException e) {
-                logger.log(Level.WARNING, "Unable to parse the json content in getProjectByI() - " + e.getLocalizedMessage(), e);
+                logger.log(Level.WARNING, "Unable to parse the json content in getProjectById() - " + e.getLocalizedMessage(), e);
             }
         } else {
             logger.log(Level.WARNING, "Error getting the project details - " + status  + ", Error Msg - " + result);
@@ -426,6 +426,7 @@ public class CollabNetApp {
         String end_point =  url + CTFConstants.FOUNDATION_URL + "projects";
         Map<String, String> queryParam = new HashMap<>();
         queryParam.put("fetchHierarchyPath", "false");
+        queryParam.put("count", "-1");
         Response response = helper.request(end_point, sessionId, null, HttpMethod.GET, queryParam);
         String result = response.readEntity(String.class);
         int status = response.getStatus();

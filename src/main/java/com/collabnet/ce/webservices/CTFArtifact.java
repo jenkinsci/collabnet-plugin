@@ -110,9 +110,10 @@ public class CTFArtifact extends CTFObject {
         createdDate = getDateValue(artifactData.get("createdDate"));
         customer = getStringValue(artifactData.get("customer"));
         description = getStringValue(artifactData.get("description"));
+        title  = getStringValue(artifactData.get("title"));
         folderId = getStringValue(artifactData.get("folderId"));
-        group = getStringValue(artifactData.get("folderId"));
-        id = getStringValue(artifactData.get("folderId"));
+        group = getStringValue(artifactData.get("group"));
+        id = getStringValue(artifactData.get("id"));
         lastModifiedDate = getDateValue(artifactData.get("lastModifiedDate"));
         priority = getIntValue(artifactData.get("priority"));
         status = getStringValue(artifactData.get("status"));

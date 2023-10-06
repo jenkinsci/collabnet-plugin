@@ -101,7 +101,9 @@ public class CTFProject extends CTFObject implements ObjectWithTitle {
     public CTFList<CTFTracker> getTrackers() throws IOException {
         CTFList<CTFTracker> r = new CTFList<CTFTracker>();
         String end_point = app.getServerUrl() + CTFConstants.TRACKER_PRJ_URL + getId() + "/trackers";
-        Response response = helper.request(end_point, app.getSessionId(), null, HttpMethod.GET, null);
+        Map<String, String> queryParam = new HashMap<>();
+        queryParam.put("count", "-1");
+        Response response = helper.request(end_point, app.getSessionId(), null, HttpMethod.GET, queryParam);
         String result = response.readEntity(String.class);
         int status = response.getStatus();
         if (status == 200) {

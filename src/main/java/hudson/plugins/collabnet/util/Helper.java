@@ -322,6 +322,12 @@ public class Helper {
         Response response = null;
         try {
             WebTarget webTarget = client.target(url);
+            if (queryParam != null && queryParam.size() > 0) {
+                for (String key: queryParam.keySet()) {
+                    String value = queryParam.get(key);
+                    webTarget = webTarget.queryParam(key, value);
+                }
+            }
             Invocation.Builder builder = webTarget.request(MediaType.APPLICATION_JSON)
                     .accept(MediaType.APPLICATION_JSON);
             if (StringUtils.isNotEmpty(tfSessionId)) {
@@ -338,12 +344,6 @@ public class Helper {
                         .property(HttpUrlConnectorProvider.SET_METHOD_WORKAROUND, true);
                 response = builder.method(HttpMethod.PATCH, Entity.json(requestContent));
             } else if (HttpMethod.GET.equals(method)) {
-                if (queryParam != null && queryParam.size() > 0) {
-                    for (String key: queryParam.keySet()) {
-                        String value = queryParam.get(key);
-                        webTarget = webTarget.queryParam(key, value);
-                    }
-                }
                 response = builder.get();
            } else if (HttpMethod.DELETE.equals(method)) {
                 response = builder.delete();

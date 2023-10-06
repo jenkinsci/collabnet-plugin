@@ -355,9 +355,6 @@
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
           <forkMode>never</forkMode>
-          <excludes>
-            <exclude>**/PblUploadTest.java</exclude>
-          </excludes>
           <systemProperties>
             <property>
               <name>project.build.directory</name>
@@ -385,40 +382,6 @@
               <value>hudsonReadUser</value>
             </property>
             <!-- end properties for project auth -->
-            <!-- properties for pbl test -->
-            <property>
-              <name>lm_url</name>
-              <value>LAB_MANAGMENT_URL</value>
-            </property>
-            <property>
-              <name>lm_user</name>
-              <value>grue</value>
-            </property>
-            <property>
-              <name>key</name>
-              <value>SET_LAB_MAMANGEMENT_KEY</value>
-            </property>
-            <property>
-              <name>lm_project</name>
-              <value>zork</value>
-            </property>
-            <property>
-              <name>pub_or_priv</name>
-              <value>pub</value>
-            </property>
-            <property>
-              <name>pbl_filename</name>
-              <value>test.txt</value>
-            </property>
-            <property>
-              <name>pbl_path</name>
-              <value>hudsonTest/${BUILD_ID}</value>
-            </property>
-            <property>
-              <name>pbl_force</name>
-              <value>false</value>
-            </property>
-            <!-- end properties for pbl test -->
             <!-- properties for tracker test -->
             <property>
               <name>tracker</name>
