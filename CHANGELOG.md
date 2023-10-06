@@ -1,5 +1,11 @@
 # Changelog:
 
+**Version 2.0.9:** Released 08/17/2022.
+
+- [Fix security issue](https://issues.jenkins.io/browse/SECURITY-2157)
+- Remove log4j dependency
+- Remove support for EventQ 
+
 **Version 2.0.8:** Released 08/08/2021.
 
 - Fix for CollabNet Security Realm bug in Jenkins-v2.266

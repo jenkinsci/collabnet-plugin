@@ -31,7 +31,7 @@ public class Helper {
     static Logger logger = Logger.getLogger(Helper.class.getName());
 
     /** Prefix for messages appearing in the console log, for readability */
-    private static String LOG_MESSAGE_PREFIX = "TeamForge/EventQ Build Notifier - ";
+    private static String LOG_MESSAGE_PREFIX = "TeamForge Build Notifier - ";
     
     public static String getToken(URL ctfUrl, String ctfUserName, String ctfPassword) throws IOException {
         String end_point = ctfUrl.toString()+"/oauth/auth/token";

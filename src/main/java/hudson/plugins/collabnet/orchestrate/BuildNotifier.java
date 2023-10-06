@@ -36,22 +36,10 @@ import java.util.logging.Logger;
 import static org.apache.commons.lang.StringUtils.isBlank;
 
 /**
- * Notifies EventQ when a build is complete. This is job-specific
+ * Notifies TeamForge when a build is complete. This is job-specific
  * configuration.
  */
 public class BuildNotifier extends Notifier {
-
-    /** The root URL to the EventQ or MQ server. */
-    private String serverUrl;
-
-    /** The username for authentication against the EventQ or MQ server */
-    private String serverUsername;
-
-    /** The password for authentication against the EventQ or MQ server */
-    private Secret serverPassword;
-
-    /** The key to the source to publish the build to. */
-    private String sourceKey;
 
     /** The CTF project and credentials for traceability */
     private String ctfUrl;
@@ -60,21 +48,14 @@ public class BuildNotifier extends Notifier {
 
     private PushNotification pushNotification;
 
-    /** Converts builds. */
-    private transient BuildToOrchestrateAPI converter;
-
-    /** Communicates with the EventQ server. */
-    private transient OrchestrateClient orchestrateClient;
-
     /** Prefix for messages appearing in the console log, for readability */
-    private static String LOG_MESSAGE_PREFIX = "TeamForge EventQ Build Notifier - ";
+    private static String LOG_MESSAGE_PREFIX = "TeamForge Build Notifier - ";
 
     private String url;
     private String username;
     private Secret password;
     private boolean override_auth = true;
     private boolean useAssociationView = false;
-    private boolean supportEventQ = false;
     private boolean supportWebhook = false;
     private String webhookUrl;
     private String webhookUsername;
@@ -84,27 +65,14 @@ public class BuildNotifier extends Notifier {
      * Creates a new BuildNotifier. Arguments are automatically supplied when
      * the job configuration is read from the configuration file.
      *
-     * @param serverUrl
-     *            the root of the EventQ application or MQ
-     * @param serverUsername
-     *            the username for authentication against the EventQ or MQ
-     *            server
-     * @param serverPassword
-     *            the password for authentication against the EventQ or MQ
-     *            server
-     * @param sourceKey
-     *            the association key for the source to publish to
-     * @param ctfUrl
-     *            The project homepage URL
-     * @param ctfUser
-     *            User id with traceability API access
-     * @param ctfPassword
-     *            Password for the user
+     * @param associationView 
+     *            The Association View
+     * @param webhook
+     *            The TeamForge webhook info
      */
-
     @DataBoundConstructor
     public BuildNotifier(OptionalAssociationView associationView,
-                         OptionalWebhook webhook, OptionalEventQ eventQ) {
+                         OptionalWebhook webhook) {
         if (associationView != null) {
             ConnectionFactory connectionFactory =
                 associationView.connectionFactory;
@@ -121,13 +89,6 @@ public class BuildNotifier extends Notifier {
         } else {
             this.ctfUrl = null;
             this.setUseAssociationView(false);
-        }
-        if(eventQ != null) {
-            this.serverUrl = eventQ.serverUrl;
-            this.serverUsername = eventQ.serverUsername;
-            this.serverPassword = eventQ.serverPassword;
-            this.sourceKey = eventQ.sourceKey;
-            this.setSupportEventQ(true);
         }
         if(webhook != null){
             this.webhookUrl = webhook.webhookUrl;
@@ -151,23 +112,6 @@ public class BuildNotifier extends Notifier {
         @DataBoundConstructor
         public OptionalAssociationView(ConnectionFactory connectionFactory) {
             this.connectionFactory = connectionFactory;
-        }
-    }
-
-    public static class OptionalEventQ{
-
-        private final String serverUrl;
-        private final String serverUsername;
-        private final Secret serverPassword;
-        private final String sourceKey;
-
-        @DataBoundConstructor
-        public OptionalEventQ(String serverUrl, String serverUsername, Secret serverPassword,
-                              String sourceKey){
-            this.serverUrl = serverUrl;
-            this.serverUsername = serverUsername;
-            this.serverPassword = serverPassword;
-            this.sourceKey = sourceKey;
         }
     }
 
@@ -269,63 +213,6 @@ public class BuildNotifier extends Notifier {
     }
 
     /**
-     * Reads the server URL to contact. Used by Jelly to render the UI template.
-     *
-     * @return the server URL
-     */
-    public String getServerUrl() {
-        return serverUrl;
-    }
-
-    /**
-     * Sets the server URL field.
-     *
-     * @param serverUrl
-     */
-    public void setServerUrl(String serverUrl) {
-        this.serverUrl = serverUrl;
-    }
-
-    /**
-     * Reads the server authentication username field
-     *
-     * @return String
-     */
-    public String getServerUsername() {
-        return serverUsername;
-    }
-
-    /**
-     * Reads the server authentication password field in plain text
-     *
-     * @return String
-     */
-    public String getServerPassword() {
-        String plainTextPassword = Secret.toString(this.serverPassword);
-        return (StringUtils.isBlank(plainTextPassword)) ? null
-            : plainTextPassword;
-    }
-
-    /**
-     * Reads the source key that identifies this server. Used by Jelly to render
-     * the UI template.
-     *
-     * @return the source key
-     */
-    public String getSourceKey() {
-        return sourceKey;
-    }
-
-    /**
-     * Sets the source key field
-     *
-     * @param sourceKey
-     */
-    public void setSourceKey(String sourceKey) {
-        this.sourceKey = sourceKey;
-    }
-
-    /**
      * Reads the ctf project URL
      *
      * @return the CTF project URL
@@ -391,35 +278,7 @@ public class BuildNotifier extends Notifier {
         // logging setup
         PrintStream consoleLogger = listener.getLogger();
 
-        if(getSupportEventQ() == true && getSupportWebhook() == true){
-            Helper.markUnstable(
-                    build,
-                    consoleLogger,
-                    "Build information NOT sent: Can't send notification to TeamForge and EventQ at the same" +
-                            " time." +
-                            "Please use either TeamForge/EventQ.", getClass().getName());
-            return true;
-        }
-
         try {
-            if(getSupportEventQ() == true) {
-                if (isBlank(getServerUrl())) {
-                    Helper.markUnstable(
-                            build,
-                            consoleLogger,
-                            "Build information NOT sent: the URL to the TeamForge EventQ server is missing.", getClass().getName());
-                    return true;
-                }
-                if (isBlank(getSourceKey())) {
-                    Helper.markUnstable(
-                            build,
-                            consoleLogger,
-                            "Build information NOT sent: the source key for the TeamForge EventQ build source is " +
-                                    "missing.", getClass().getName());
-                    return true;
-                }
-                notifyEventQ(build, consoleLogger);
-            }
             if(getSupportWebhook() == true){
                 pushNotification = new PushNotification();
                 pushNotification.handle(build, getWebhook(), listener,
@@ -438,65 +297,6 @@ public class BuildNotifier extends Notifier {
             e.printStackTrace(consoleLogger);
         }
         return true;
-    }
-
-    private void notifyEventQ(AbstractBuild build, PrintStream consoleLogger)
-            throws URISyntaxException, IOException {
-        initialize();
-        Helper.log("Sending build information using "
-                        + orchestrateClient.getClass().getSimpleName(),
-                consoleLogger);
-        String json = converter.toOrchestrateAPI(build, getSourceKey()
-                .trim());
-        orchestrateClient.postBuild(getServerUrl().trim(),
-                getServerUsername(), getServerPassword(),
-                json);
-        Helper.log("Build information sent", consoleLogger);
-    }
-
-    /**
-     * Jenkins (un)helpfully wipes out any initialization done in constructors
-     * or class definitions before executing this #perform method. So we need to
-     * initialize it in case it wasn't already.
-     */
-    private void initialize() throws URISyntaxException {
-        if (converter == null) {
-            converter = new DefaultBuildToOrchestrateAPI(
-                new DefaultBuildToJSON());
-        }
-
-        if (orchestrateClient == null) {
-            orchestrateClient = new AmqpOrchestrateClient();
-        }
-    }
-
-    /**
-     * Sets the converter to use.
-     * 
-     * @param newConverter
-     *            the new converter
-     */
-    public void setConverter(BuildToOrchestrateAPI newConverter) {
-        this.converter = newConverter;
-    }
-
-    /**
-     * Sets the Orchestrate client to use.
-     *
-     * @param client
-     *            the new client
-     */
-    public void setOrchestrateClient(OrchestrateClient client) {
-        this.orchestrateClient = client;
-    }
-
-    /**
-     * Returns the Orchestrate client
-     *
-     * @return an orchestrateClient instance
-     */
-    public OrchestrateClient getOrchestrateClient() {
-        return this.orchestrateClient;
     }
 
     /**
@@ -520,14 +320,6 @@ public class BuildNotifier extends Notifier {
 
     public String getWebhookUrl() {
         return webhookUrl;
-    }
-
-    public boolean getSupportEventQ() {
-        return supportEventQ;
-    }
-
-    public void setSupportEventQ(boolean supportEventQ) {
-        this.supportEventQ = supportEventQ;
     }
 
     public boolean getSupportWebhook() {

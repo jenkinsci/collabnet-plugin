@@ -169,7 +169,7 @@ public class BuildEvent {
     }
 
     /**
-     * Build a status JSON object from the given EventQ status name or type
+     * Build a status JSON object from the given status name or type
      *
      * @param statusName string
      * @return JSONObject containing the type and name
