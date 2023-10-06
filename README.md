@@ -43,7 +43,7 @@ Following individual component can be configured within each Jenkins job
 
         You'll need to add the server's certificate to your java keystore on the Jenkins server.  First dowload the certificate to your Jenkins server.            You should be able to get it by opening a browser window on the TeamForge server, viewing the certificate associated with that page, and          exporting the certificate file.  Then, you'll need to run something like "sudo keytool -keystore $JAVA\_HOME/jre/lib/security/cacerts -                   import -file teamforge.cert".  (On Windows, replace $JAVA\_HOME with %JAVA\_HOME%).  If you haven't changed your java keystore's                    password, it will be "changeit".  After you've imported the cert to the java instance that Jenkins is using, it should be able to upload.
 
-   3.  I'm having problems with login and logout when using Digital.ai Authentication.   It seems to be redirecting to an unex pected site.
+   3.  I'm having problems with login and logout when using Digital.ai Authentication. It seems to be redirecting to an unexpected site.
 
         Go to the Jenkins configure page and look in the Email Notification section. The Digital.ai plugin uses the value of the Jenkins URL set                 here for redirection. If it's wrong, logins will go astray. Check that it's set to the real Jenkins URL. 
 
