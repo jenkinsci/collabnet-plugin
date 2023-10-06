@@ -3,6 +3,7 @@ package hudson.plugins.collabnet.util;
 import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
 import com.cloudbees.plugins.credentials.domains.URIRequirementBuilder;
+import com.collabnet.ce.webservices.CTFArtifact;
 import com.collabnet.ce.webservices.CTFConstants;
 import com.collabnet.ce.webservices.TrustAllSocketFactory;
 import hudson.model.Item;
@@ -25,6 +26,7 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.util.EntityUtils;
 import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
 
 import javax.ws.rs.HttpMethod;
 import javax.ws.rs.client.Client;
@@ -56,7 +58,9 @@ public class Helper {
 
     private static final String EMPTY_STRING = "";
 
-    /** Prefix for messages appearing in the console log, for readability */
+    /**
+     * Prefix for messages appearing in the console log, for readability
+     */
     private static String LOG_MESSAGE_PREFIX = "TeamForge Build Notifier - ";
 
     public Helper() {
@@ -64,7 +68,7 @@ public class Helper {
     }
 
     public static String getToken(URL ctfUrl, String ctfUserName, String ctfPassword) throws IOException {
-        String end_point = ctfUrl.toString()+"/oauth/auth/token";
+        String end_point = ctfUrl.toString() + "/oauth/auth/token";
         CloseableHttpClient httpClient = null;
         CloseableHttpResponse response = null;
         String ctfSessionId = null;
@@ -91,7 +95,7 @@ public class Helper {
         } catch (Exception e) {
             throw new IOException("Invalid username or credentials");
         } finally {
-            if(response != null) {
+            if (response != null) {
                 response.close();
             }
             if (httpClient != null) {
@@ -103,6 +107,7 @@ public class Helper {
 
     /**
      * Gets OneTimeToken  for given acess token
+     *
      * @param accessToken the access token
      */
     public static String getOneTimeToken(URL ctfUrl, String accessToken) throws IOException {
@@ -122,7 +127,7 @@ public class Helper {
         } catch (Exception e) {
             logger.log(Level.WARNING,"Error getting the oneTimeToken for the access token  - " + e.getLocalizedMessage(), e);
         } finally {
-            if(response != null) {
+            if (response != null) {
                 response.close();
             }
             if (httpClient != null) {
@@ -134,7 +139,8 @@ public class Helper {
 
     /**
      * Get session id  for given OneTimeToken
-     * @param ctfUrl the ctf url
+     *
+     * @param ctfUrl       the ctf url
      * @param oneTimeToken the one time token
      */
     public static String getSessionId(URL ctfUrl, String oneTimeToken) throws IOException {
@@ -150,9 +156,9 @@ public class Helper {
             JSONObject data = (JSONObject) new JSONParser().parse(result);
             sessionId = data.get("sessionId").toString();
         } catch (Exception e) {
-            logger.log(Level.WARNING,"Error getting the sessionId  for the oneTimeToken  - " + e.getLocalizedMessage(), e);
+            logger.log(Level.WARNING, "Error getting the sessionId  for the oneTimeToken  - " + e.getLocalizedMessage(), e);
         } finally {
-            if(response != null) {
+            if (response != null) {
                 response.close();
             }
             if (httpClient != null) {
@@ -177,28 +183,28 @@ public class Helper {
             httpPost.setHeader("Accept", "application/json");
             httpPost.setHeader("Content-type", "application/json");
             response = client.execute(httpPost);
-            if(response.getStatusLine().getStatusCode() == 200) {
+            if (response.getStatusLine().getStatusCode() == 200) {
                 String result = EntityUtils.toString(response.getEntity());
                 JSONObject data = ((JSONObject) new JSONParser().parse(result));
                 token = ((JSONObject) data.get("Response")).get("SessionToken").toString();
             }
-        }catch (IOException e) {
+        } catch (IOException e) {
             String errMsg = e.getMessage();
             logMsg(errMsg, listener, logger, e);
         } catch (Exception e) {
-            logger.log(Level.WARNING,"TeamForge Associations - " + e.getLocalizedMessage(), e);
+            logger.log(Level.WARNING, "TeamForge Associations - " + e.getLocalizedMessage(), e);
         } finally {
-            if(response != null) {
+            if (response != null) {
                 response.close();
             }
-            if(client != null) {
+            if (client != null) {
                 client.close();
             }
         }
         return token;
     }
 
-    public static void logMsg(String errMsg, TaskListener listener, Logger logger, Exception e){
+    public static void logMsg(String errMsg, TaskListener listener, Logger logger, Exception e) {
         if (errMsg
                 .startsWith("; nested exception is: \n\tjavax.net.ssl.SSLHandshakeException: ")) {
             listener.getLogger().println("SSL configuration error. Please check your SSL certificate and retry.");
@@ -226,7 +232,7 @@ public class Helper {
     }
 
     private static JSONObject getLoginData(String webhookUsername, String webhookPassword) {
-        JSONObject webrLoginData  = new JSONObject();
+        JSONObject webrLoginData = new JSONObject();
         webrLoginData.put("Username", webhookUsername);
         webrLoginData.put("Password", webhookPassword);
         return webrLoginData;
@@ -235,16 +241,13 @@ public class Helper {
     /**
      * Marks the build as unstable and logs a message.
      *
-     * @param build
-     *            the build to mark unstable
-     * @param consoleLogger
-     *            the logger to log to
-     * @param message
-     *            the message to log
+     * @param build         the build to mark unstable
+     * @param consoleLogger the logger to log to
+     * @param message       the message to log
      */
     public static void markUnstable(Run build,
                                     PrintStream consoleLogger, String message, String className) {
-        if(consoleLogger !=null ){
+        if (consoleLogger != null) {
             log(message, consoleLogger);
             Logger logger = Logger.getLogger(className);
             logger.warning(message);
@@ -287,7 +290,7 @@ public class Helper {
 
     public static JSONObject getUserData(String url, String sessionId, String username) throws IOException {
         JSONObject data = null;
-        String end_point =  url + CTFConstants.FOUNDATION_URL + "users/by-username/" + username;
+        String end_point = url + CTFConstants.FOUNDATION_URL + "users/by-username/" + username;
         CloseableHttpClient httpClient = null;
         CloseableHttpResponse response = null;
         try {
@@ -307,7 +310,7 @@ public class Helper {
         } catch (Exception e) {
             throw new IOException("No user found");
         } finally {
-            if(response != null) {
+            if (response != null) {
                 response.close();
             }
             if (httpClient != null) {
@@ -323,7 +326,7 @@ public class Helper {
         try {
             WebTarget webTarget = client.target(url);
             if (queryParam != null && queryParam.size() > 0) {
-                for (String key: queryParam.keySet()) {
+                for (String key : queryParam.keySet()) {
                     String value = queryParam.get(key);
                     webTarget = webTarget.queryParam(key, value);
                 }
@@ -345,7 +348,7 @@ public class Helper {
                 response = builder.method(HttpMethod.PATCH, Entity.json(requestContent));
             } else if (HttpMethod.GET.equals(method)) {
                 response = builder.get();
-           } else if (HttpMethod.DELETE.equals(method)) {
+            } else if (HttpMethod.DELETE.equals(method)) {
                 response = builder.delete();
             } else if (HttpMethod.PUT.equals(method)) {
                 response = builder.put(Entity.entity(requestContent, MediaType.APPLICATION_JSON));
@@ -355,5 +358,16 @@ public class Helper {
             throw new IOException(message, e);
         }
         return response;
+    }
+
+    public static String getErrorMessage(String messageJson) {
+        String message = null;
+        try {
+            JSONObject data = (JSONObject) new JSONParser().parse(messageJson);
+            message = data.get("message") != null ? data.get("message").toString() : null;
+        } catch (ParseException e) {
+            logger.log(Level.WARNING, "Unable to parse the json content in createArtifact() - " + e.getLocalizedMessage(), e);
+        }
+        return message;
     }
 }

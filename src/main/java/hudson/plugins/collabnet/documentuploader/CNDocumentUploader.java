@@ -90,7 +90,7 @@ public class CNDocumentUploader extends AbstractTeamForgeNotifier {
      */
     private void logConsole(String message) {
         if (this.listener != null) {
-            message = "CollabNet Document Uploader: " + message;
+            message = "Digital.ai Document Uploader: " + message;
             this.listener.getLogger().println(message);
         }
     }
@@ -105,7 +105,7 @@ public class CNDocumentUploader extends AbstractTeamForgeNotifier {
      */
     private void logConsole(String message, Exception exception) {
         if (this.listener != null) {
-            message = "CollabNet Document Uploader: " + message;
+            message = "Digital.ai Document Uploader: " + message;
             this.listener.getLogger().println(message);
 
             // now print the stack trace
@@ -218,7 +218,7 @@ public class CNDocumentUploader extends AbstractTeamForgeNotifier {
     }
 
     private Action createAction(int numUploaded, CTFDocumentFolder folder) {
-        String displaymsg = "Download from CollabNet Documents";
+        String displaymsg = "Download from Digital.ai Documents";
         return new CnduResultAction(displaymsg, 
                                     IMAGE_URL + "CollabNetDocuments.png", 
                                     "console",
@@ -269,7 +269,7 @@ public class CNDocumentUploader extends AbstractTeamForgeNotifier {
                                                    build);
                     this.logConsole("Uploaded " + uploadFilePath.getName() + " -> " + doc.getURL());
                     numUploaded++;
-                } catch (RemoteException re) {
+                } catch (IOException re) {
                     logConsole("Upload file failed: " + re.getMessage());
                     this.log("updateOrCreateDoc", re);
                 }
@@ -525,7 +525,7 @@ public class CNDocumentUploader extends AbstractTeamForgeNotifier {
          */
         @Override
         public String getDisplayName() {
-            return "CollabNet Document Uploader";
+            return "Digital.ai Document Uploader";
         }
 
         /**

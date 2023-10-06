@@ -193,7 +193,7 @@ public class CNAuthorizationStrategy extends AuthorizationStrategy {
          */
         @Override
         public String getDisplayName() {
-            return "CollabNet Authorization";
+            return "Digital.ai Authorization";
         }
 
         /**

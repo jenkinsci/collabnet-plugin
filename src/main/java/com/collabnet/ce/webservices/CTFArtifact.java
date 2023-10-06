@@ -139,6 +139,7 @@ public class CTFArtifact extends CTFObject {
             }
         } else {
             logger.log(Level.WARNING, "Error updating the artifact details - " + status  + ", Error Msg - " + result);
+            throw new IOException("Error updating the artifact details - " + status + ", Error Msg - " + helper.getErrorMessage(result));
         }
         needsRefill = false;
     }
@@ -198,6 +199,7 @@ public class CTFArtifact extends CTFObject {
             }
         } else {
             logger.log(Level.WARNING,"Updating the artifact data failed - " + status);
+            throw new IOException("Error updating the artifact data failed - " + status + ", Error Msg - " + helper.getErrorMessage(result));
         }
     }
 

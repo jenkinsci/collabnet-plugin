@@ -42,6 +42,7 @@ public class CTFRelease extends CTFFolder {
         String result = response.readEntity(String.class);
         if (status != 200) {
             logger.log(Level.WARNING, "Error while deleting a package - " + status + ", Error Msg - " + result);
+            throw new IOException("Error while deleting a package - " + status + ", Error Msg - " + helper.getErrorMessage(result));
         }
     }
 
@@ -75,6 +76,7 @@ public class CTFRelease extends CTFFolder {
             }
         } else {
             logger.log(Level.WARNING,"Error getting the file release lists - " + status + ", Error Msg - " + result);
+            throw new IOException("Error getting the file release lists - " + status + ", Error Msg - " + helper.getErrorMessage(result));
         }
         return r;
     }
@@ -100,6 +102,7 @@ public class CTFRelease extends CTFFolder {
             }
         } else {
             logger.log(Level.WARNING,"Error adding a file to the file release - " + statusCode +  ", Error Msg - " + result);
+            throw new IOException("Error adding a file to the file release - " + statusCode + ", Error Msg - " + helper.getErrorMessage(result));
         }
         return ctfReleaseFile;
     }

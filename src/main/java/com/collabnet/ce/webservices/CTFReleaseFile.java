@@ -56,6 +56,7 @@ public class CTFReleaseFile extends CTFItem {
         int status = response.getStatus();
         if (status != 204) {
             logger.log(Level.WARNING, "Error while deleting a release file - " + status +  ", Error Msg - " + result);
+            throw new IOException("Error while deleting a release file - " + status + ", Error Msg - " + helper.getErrorMessage(result));
         }
     }
 }

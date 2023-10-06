@@ -55,6 +55,7 @@ public class CTFDocumentFolder extends CTFFolder {
             }
         } else {
             logger.log(Level.WARNING, "Error getting the document folders - " + status  + ", Error Msg - " + result);
+            throw new IOException("Error getting a document folders - " + status + ", Error Msg - " + helper.getErrorMessage(result));
         }
         return r;
     }
@@ -76,7 +77,8 @@ public class CTFDocumentFolder extends CTFFolder {
                 logger.log(Level.WARNING,"Unable to parse the json content in createFolder() - " + e.getLocalizedMessage(), e);
             }
         } else {
-            logger.log(Level.WARNING,"Error creating a document folder " + status  + ", Error Msg - " + result);
+            logger.log(Level.WARNING,"Error creating a document folder - " + status  + ", Error Msg - " + result);
+            throw new IOException("Error creating a document folder - " + status + ", Error Msg - " + helper.getErrorMessage(result));
         }
         return null;
     }
@@ -107,6 +109,7 @@ public class CTFDocumentFolder extends CTFFolder {
             }
         } else {
             logger.log(Level.WARNING, "Error getting the documents list - " + status  + ", Error Msg - " + result);
+            throw new IOException("Error getting a documents list - " + status + ", Error Msg - " + helper.getErrorMessage(result));
         }
         return r;
     }
@@ -141,12 +144,13 @@ public class CTFDocumentFolder extends CTFFolder {
                 logger.log(Level.WARNING,"Unable to parse the json content in createDocument()  - " + e.getLocalizedMessage(), e);
             }
         } else {
-            logger.log(Level.WARNING,"Error creating a document " + statusCode  + ", Error Msg - " + result);
+            logger.log(Level.WARNING,"Error creating a document - " + statusCode  + ", Error Msg - " + result);
+            throw new IOException("Error creating a document - " + status + ", Error Msg - " + helper.getErrorMessage(result));
         }
         return null;
     }
 
     public String getURL() {
-        return app.getServerUrl() + "/ctf/documents/home/" + getPath();
+        return app.getServerUrl() + "/ctf/documents/list/" + getPath();
     }
 }

@@ -23,6 +23,7 @@ import hudson.plugins.collabnet.util.CommonUtil;
 import hudson.tasks.BuildStepMonitor;
 import hudson.util.ComboBoxModel;
 import hudson.util.FormValidation;
+import io.jenkins.cli.shaded.org.apache.commons.lang.ArrayUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 
@@ -109,9 +110,9 @@ public class CNTracker extends AbstractTeamForgeNotifier {
      *
      * @param message to print to the console.
      */
-    private void log(String message) {
+    private void  log(String message) {
         if (this.listener != null) {
-            message = "CollabNet Tracker: " + message;
+            message = "Digital.ai Tracker: " + message;
             this.listener.getLogger().println(message);
         }
     }
@@ -123,7 +124,7 @@ public class CNTracker extends AbstractTeamForgeNotifier {
      * @param re RemoteException that occurred.
      */
     private void log(String methodName, IOException re) {
-        this.log(methodName + " failed due to " + re.getClass().getName() + 
+        this.log(methodName + " failed due to " +
                  ": " + re.getMessage());
     }
 
@@ -368,7 +369,7 @@ public class CNTracker extends AbstractTeamForgeNotifier {
         String title = this.getInterpreted(build, this.getTitle());
         CTFRelease release = CNHudsonUtil.getProjectReleaseId(t.getProject(),this.getRelease());
         String releaseId =  release != null ? release.getId() : null;
-        String[] releaseIds = new String[] {releaseId};
+        String[] releaseIds = releaseId != null ? new String[] {releaseId} : ArrayUtils.EMPTY_STRING_ARRAY;
         try {
             CTFArtifact asd = t.createArtifact(title,
                                               description, null, null, status,
@@ -381,7 +382,7 @@ public class CNTracker extends AbstractTeamForgeNotifier {
                      + "' on behalf of '" + this.getUsername() + "' at " 
                      + asd.getURL() + ".");
             return asd;
-        } catch (RemoteException re) {
+        } catch (IOException re) {
             this.log("createNewTrackerArtifact", re);
             return null;
         }
@@ -481,7 +482,7 @@ public class CNTracker extends AbstractTeamForgeNotifier {
         } catch (RemoteException re) {
             this.log("updateSucceedingBuild", re); 
         } catch (IOException ioe) {
-            this.log("updateSuccedingBuild failed due to IOException:" + 
+            this.log("updateSucceding Build failed due to IOException:" +
                      ioe.getMessage());
         }
     }
@@ -589,7 +590,7 @@ public class CNTracker extends AbstractTeamForgeNotifier {
          */
         @Override
         public String getDisplayName() {
-            return "CollabNet Tracker";
+            return "Digital.ai Tracker";
         }
 
         /**

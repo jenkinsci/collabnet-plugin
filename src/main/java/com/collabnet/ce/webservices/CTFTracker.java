@@ -66,7 +66,8 @@ public class CTFTracker extends CTFFolder {
                 logger.log(Level.WARNING,"Unable to parse the json content in getArtifactsByTitle() - " + e.getLocalizedMessage(), e);
             }
         } else {
-            logger.log(Level.WARNING,"Error getting the artifact details by title - " + statusCode + "Error Msg - " + result);
+            logger.log(Level.WARNING,"Error getting the artifact details by title - " + statusCode + ", Error Msg - " + result);
+            throw new IOException("Error getting the artifact details by title -" + statusCode + ", Error Msg - " + helper.getErrorMessage(result));
         }
         return r;
     }
@@ -152,7 +153,8 @@ public class CTFTracker extends CTFFolder {
                 logger.log(Level.WARNING,"Unable to parse the json content in createArtifact() - " + e.getLocalizedMessage(), e);
             }
         } else {
-            logger.log(Level.WARNING,"Error creating an artifact - " + statusCode + "Error Msg - " + result);
+            logger.log(Level.WARNING,"Error creating an artifact - " + statusCode + ", Error Msg - " + result);
+            throw new IOException("Error creating an artifact - " + statusCode + ", Error Msg - " + helper.getErrorMessage(result));
         }
         return ctfArtifact;
     }

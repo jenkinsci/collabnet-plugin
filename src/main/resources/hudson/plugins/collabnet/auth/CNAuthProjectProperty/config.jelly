@@ -5,17 +5,17 @@
 
   <f:block>
     <fieldset style="margin-bottom:1em">
-      <legend>Authorization from CollabNet TeamForge</legend>
+      <legend>Authorization from Digital.ai TeamForge</legend>
       <table width="100%">
         <f:block>
-          This Jenkins instance has been configured to use the CollabNet
+          This Jenkins instance has been configured to use the Digital.ai
           TeamForge site <a href="${descriptor.getCollabNetUrl()}">
             ${descriptor.getCollabNetUrl()}
           </a>
           for authentication.
         </f:block>
 
-        <f:entry title="CollabNet TeamForge Project" field="project">
+        <f:entry title="Digital.ai TeamForge Project" field="project">
           <f:combobox />
         </f:entry>
 
@@ -26,7 +26,7 @@
 
         <f:entry field="createRoles">
           <f:checkbox />
-          <label class="attach-previous">Create Jenkins roles in CollabNet TeamForge for this project.</label>
+          <label class="attach-previous">Create Jenkins roles in Digital.ai TeamForge for this project.</label>
         </f:entry>
 
         <f:entry field="grantDefaultRoles">

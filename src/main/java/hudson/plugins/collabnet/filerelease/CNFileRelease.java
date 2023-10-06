@@ -88,7 +88,7 @@ public class CNFileRelease extends AbstractTeamForgeNotifier {
      */
     private void logConsole(String message) {
         if (this.listener != null) {
-            message = "CollabNet FileRelease: " + message;
+            message = "Digital.ai FileRelease: " + message;
             this.listener.getLogger().println(message);
         }
     }
@@ -179,7 +179,7 @@ public class CNFileRelease extends AbstractTeamForgeNotifier {
      * @return CnfrResultAction.
      */
     public CnfrResultAction createAction(int numUploaded, CTFRelease release) {
-        String displaymsg = "Download from CollabNet File Release System";
+        String displaymsg = "Download from Digital.ai File Release System";
         return new CnfrResultAction(displaymsg,
                 IMAGE_URL + "CollabNetFrs.png",
                 "console",
@@ -400,7 +400,7 @@ public class CNFileRelease extends AbstractTeamForgeNotifier {
          */
         @Override
         public String getDisplayName() {
-            return "CollabNet File Release";
+            return "Digital.ai File Release";
         }
         /**
          * Form validation for package.

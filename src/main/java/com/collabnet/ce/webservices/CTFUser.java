@@ -53,6 +53,7 @@ public class CTFUser extends CTFObject implements ObjectWithTitle {
                 }
             } else {
                 logger.log(Level.WARNING, "Error getting the user data - " + status + ", Error Msg - " + result);
+                throw new IOException("Error getting the user data - " + status + ", Error Msg - " + helper.getErrorMessage(result));
             }
         }
         return userData;
@@ -169,6 +170,7 @@ public class CTFUser extends CTFObject implements ObjectWithTitle {
             }
         } else {
             logger.log(Level.WARNING,"Error getting the group list - " + status + ", Error Msg - " + result);
+            throw new IOException("Error getting the group list - " + status + ", Error Msg - " + helper.getErrorMessage(result));
         }
         return groups;
     }

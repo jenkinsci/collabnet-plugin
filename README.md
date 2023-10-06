@@ -3,7 +3,6 @@ Older versions of this plugin may not be safe to use. Please review the followin
 -   [Plugin globally disables SSL/TLS certification validation in Jenkins](https://jenkins.io/security/advisory/2018-06-25/#SECURITY-941)
 
 The Digital.ai Plugin is an integration with [Digital.ai TeamForge](https://digital.ai/products/teamforge/ "Digital.ai TeamForge"). Don't
-have TeamForge yet?  Try our [free 90-day trial](http://www.open.collab.net/products/sfee/tryit.html "free 30-day trial").
 
 Provided features include:
 
@@ -33,10 +32,6 @@ Following individual component can be configured within each Jenkins job
 ## [Tracker](https://github.com/jenkinsci/collabnet-plugin/blob/master/docs/TRACKER.md)
 
 ## [SCMViewer for Subversion](https://github.com/jenkinsci/collabnet-plugin/blob/master/docs/SCM.md)
-
-# Help/Support:
-
-Please submit any questions to the [TeamForge forum](http://forums.open.collab.net/ds/viewForumSummary.do?dsForumId=736 "TeamForge forum").
 
 # FAQ:
 

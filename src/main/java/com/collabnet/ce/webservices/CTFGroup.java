@@ -60,6 +60,7 @@ public class CTFGroup extends CTFObject implements ObjectWithTitle {
             }
         } else {
             logger.log(Level.WARNING, "Error while adding a member to the group - " + status + ", Error Msg - " + result);
+            throw new IOException("Error while adding a member to the group - " + status + ", Error Msg - " + helper.getErrorMessage(result));
         }
     }
 }

@@ -67,6 +67,7 @@ public class CTFDocument extends CTFItem {
             }
         } else {
             logger.log(Level.WARNING, "Error getting the document details - " + status + ", Error Msg - " + result);
+            throw new IOException("Error getting the document details - " + status + ", Error Msg - " + helper.getErrorMessage(result));
         }
     }
 

@@ -67,6 +67,7 @@ public class CTFProject extends CTFObject implements ObjectWithTitle {
             }
         } else {
             logger.log(Level.WARNING,"Error creating a package " + statusCode  + ", Error Msg - " + result);
+            throw new IOException("Error creating a package - " + statusCode + ", Error Msg - " + helper.getErrorMessage(result));
         }
         return null;
     }
@@ -94,6 +95,7 @@ public class CTFProject extends CTFObject implements ObjectWithTitle {
             }
         } else {
             logger.log(Level.WARNING,"Error getting the packages - " + status + ", Error Msg - " + result);
+            throw new IOException("Error getting the packages - " + status + ", Error Msg - " + helper.getErrorMessage(result));
         }
         return r;
     }
@@ -123,6 +125,7 @@ public class CTFProject extends CTFObject implements ObjectWithTitle {
             }
         } else {
             logger.log(Level.WARNING,"Error getting the trackers of a project - " + status + ", Error Msg - " + result);
+            throw new IOException("Error getting the trackers of a project - " + status + ", Error Msg - " + helper.getErrorMessage(result));
         }
         return r;
     }
@@ -146,6 +149,7 @@ public class CTFProject extends CTFObject implements ObjectWithTitle {
             }
         } else {
             logger.log(Level.WARNING,"Error creating a tracker " + statusCode + ", Error Msg - " + result);
+            throw new IOException("Error creating a tracker - " + statusCode + ", Error Msg - " + helper.getErrorMessage(result));
         }
         return null;
     }
@@ -173,6 +177,7 @@ public class CTFProject extends CTFObject implements ObjectWithTitle {
             }
         } else {
             logger.log(Level.WARNING,"Error getting the scm repositories of a project - " + status + ", Error Msg - " + result);
+            throw new IOException("Error getting the scm repositories of a project - " + status + ", Error Msg - " + helper.getErrorMessage(result));
         }
         return r;
     }
@@ -204,6 +209,7 @@ public class CTFProject extends CTFObject implements ObjectWithTitle {
             }
         } else {
             logger.log(Level.WARNING,"Error getting the members of a project - " + status + ", Error Msg - " + result);
+            throw new IOException("Error getting the members of a project - " + status + ", Error Msg - " + helper.getErrorMessage(result));
         }
         return r;
     }
@@ -234,6 +240,7 @@ public class CTFProject extends CTFObject implements ObjectWithTitle {
             }
         } else {
             logger.log(Level.WARNING,"Error getting the administrator of a project - " + status + ", Error Msg - " + result);
+            throw new IOException("Error getting the administrator of a project - " + status + ", Error Msg - " + helper.getErrorMessage(result));
         }
         return r;
     }
@@ -252,6 +259,7 @@ public class CTFProject extends CTFObject implements ObjectWithTitle {
             }
         } else {
             logger.log(Level.WARNING, "Error while adding a member to the project - " + status + ", Error Msg - " + result);
+            throw new IOException("Error adding a member to the project - " + status + ", Error Msg - " + helper.getErrorMessage(result));
         }
     }
 
@@ -293,6 +301,7 @@ public class CTFProject extends CTFObject implements ObjectWithTitle {
             }
         } else {
             logger.log(Level.WARNING,"Error getting the roles of a project - " + status + ", Error Msg - " + result);
+            throw new IOException("Error getting the roles of a project - " + status + ", Error Msg - " + helper.getErrorMessage(result));
         }
         return r;
     }
@@ -318,6 +327,7 @@ public class CTFProject extends CTFObject implements ObjectWithTitle {
             }
         } else {
             logger.log(Level.WARNING,"Error creating a role " + statusCode  + ", Error Msg - " + result);
+            throw new IOException("Error creating a role - " + statusCode + ", Error Msg - " + helper.getErrorMessage(result));
         }
         return null;
     }
@@ -352,6 +362,7 @@ public class CTFProject extends CTFObject implements ObjectWithTitle {
             }
         } else {
             logger.log(Level.WARNING,"Error getting the roles of an user - " + status + ", Error Msg - " + result);
+            throw new IOException("Error getting the roles of a project - " + status + ", Error Msg - " + helper.getErrorMessage(result));
         }
         return r;
     }
@@ -373,7 +384,8 @@ public class CTFProject extends CTFObject implements ObjectWithTitle {
                 logger.log(Level.WARNING, "Unable to parse the json content in getRootFolder() - " + e.getLocalizedMessage(), e);
             }
         } else {
-            logger.log(Level.WARNING,"getRootFolder for projectId " + title + " failed to find any folders " + status + ", Error Msg - " + result);
+            logger.log(Level.WARNING,"Error getting the  rootFolder for projectId " + title + " failed to find any folders " + status + ", Error Msg - " + result);
+            throw new IOException("Error getting the rootFolder for projectId - " + status + ", Error Msg - " + helper.getErrorMessage(result));
         }
         return null;
     }

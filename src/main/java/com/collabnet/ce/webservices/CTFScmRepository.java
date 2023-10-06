@@ -57,6 +57,7 @@ public class CTFScmRepository extends CTFFolder {
                 }
             } else {
                 logger.log(Level.WARNING, "Error getting the repository data - " + status + ", Error Msg - " + result);
+                throw new IOException("Error getting the repository data - " + status + ", Error Msg - " + helper.getErrorMessage(result));
             }
         }
         return scmData;

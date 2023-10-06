@@ -222,6 +222,8 @@ public class CollabNetApp {
      */
     public CTFFile upload(File src) throws IOException {
         String end_point =  url + CTFConstants.FILE_STORAGE_URL;
+        int status = 0;
+        String result =null;
         try {
             Client client = ClientBuilder.newBuilder().
                     register(MultiPartFeature.class).build();
@@ -234,15 +236,17 @@ public class CollabNetApp {
             FileDataBodyPart pdfBodyPart = new FileDataBodyPart("file", src,
                     MediaType.APPLICATION_OCTET_STREAM_TYPE);
             multiPart.bodyPart(pdfBodyPart);
-            Response responsec = builder
+            Response response = builder
                     .post(Entity.entity(multiPart, MediaType.MULTIPART_FORM_DATA));
-            if (responsec.getStatus() == 200) {
-                String respnse = responsec.readEntity(String.class);
-                JSONObject data = (JSONObject) new JSONParser().parse(respnse);
+            status = response.getStatus();
+            result = response.readEntity(String.class);
+            if (status == 200) {
+                JSONObject data = (JSONObject) new JSONParser().parse(result);
                 return new CTFFile(this, data.get("guid").toString());
             }
         } catch (Exception e) {
             logger.log(Level.WARNING, "Error uploading a file" + e.getLocalizedMessage(), e);
+            throw new IOException("Error uploading a file - " + status + ", Error Msg - " + helper.getErrorMessage(result));
         }
         return null;
     }
@@ -290,6 +294,7 @@ public class CollabNetApp {
             }
         } else {
             logger.log(Level.WARNING, "Error getting the group lists - " + status  + ", Error Msg - " + result);
+            throw new IOException("Error getting the group lists - " + status + ", Error Msg - " + helper.getErrorMessage(result));
         }
         return r;
     }
@@ -316,6 +321,7 @@ public class CollabNetApp {
             }
         } else {
             logger.log(Level.WARNING,"Error creating an user group - " + status  + ", Error Msg - " + result);
+            throw new IOException("Error creating an user group - " + status + ", Error Msg - " + helper.getErrorMessage(result));
         }
         return null;
     }
@@ -351,6 +357,7 @@ public class CollabNetApp {
             }
         } else {
             logger.log(Level.WARNING,"Error creating a project - " + status  + ", Error Msg - " + result);
+            throw new IOException("Error creating a project - " + status + ", Error Msg - " + helper.getErrorMessage(result));
         }
         return projectId;
     }
@@ -387,6 +394,7 @@ public class CollabNetApp {
             }
         } else {
             logger.log(Level.WARNING, "Error getting the active members of the group - " + status + ", Error Msg - " + result);
+            throw new IOException("Error getting the active members of the group - " + status + ", Error Msg - " + helper.getErrorMessage(result));
         }
         return users;
     }
@@ -417,6 +425,7 @@ public class CollabNetApp {
             }
         } else {
             logger.log(Level.WARNING, "Error getting the project details - " + status  + ", Error Msg - " + result);
+            throw new IOException("Error getting the project details - " + status + ", Error Msg - " + helper.getErrorMessage(result));
         }
         return ctfProject;
     }
@@ -447,6 +456,7 @@ public class CollabNetApp {
             }
         } else {
             logger.log(Level.WARNING, "Error getting the projects - " + status + ", Error Msg - " + result);
+            throw new IOException("Error getting the projects - " + status + ", Error Msg - " + helper.getErrorMessage(result));
         }
         return r;
     }
@@ -514,6 +524,7 @@ public class CollabNetApp {
             }
         } else {
             logger.log(Level.WARNING,"Error creating an user " + status  + ", Error Msg - " + result);
+            throw new IOException("Error creating an user - " + status + ", Error Msg - " + helper.getErrorMessage(result));
         }
         return  ctfUser;
     }

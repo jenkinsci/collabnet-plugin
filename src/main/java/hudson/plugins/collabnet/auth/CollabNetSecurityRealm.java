@@ -84,7 +84,7 @@ public class CollabNetSecurityRealm extends SecurityRealm {
          */
         @Override
         public String getDisplayName() {
-            return "CollabNet Security Realm";
+            return "Digital.ai Security Realm";
         }
 
         /**

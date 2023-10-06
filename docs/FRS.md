@@ -1,14 +1,14 @@
 ## Setup Jenkins build which uploads file to File Release System
 
-To upload build results to a file release in CollabNet SourceForge Enterprise or CollabNet Teamforge, configure the file release component as a post-build action in Jenkins.
+To upload build results to a file release in Digital.ai Teamforge, configure the file release component as a post-build action in Jenkins.
 
-Before you set up the CollabNet plugin, make sure that the CollabNet SorceForge or Teamforge project contains valid package and file release folders. 
+Before you set up the Digital.ai plugin, make sure that the Teamforge project contains valid package and file release folders. 
 
 1.  In the Hudson interface for the job, click **Configure**.
-2.  In the **Post-build Actions** section, select **CollabNet File Release**.
-3.  Enter the URL of the CollabNet site. For example, [https://forge.collab.net](https://forge.collab.net/).
-4.  Enter the username and password of the CollabNet project member who will upload the files.
-5.  Enter the name of the CollabNet project, the package and the file release where you want the build files added.
+2.  In the **Post-build Actions** section, select **Digital.ai File Release**.
+3.  Enter the URL of the Digital.ai site. For example, [https://forge.collab.net](https://forge.collab.net/).
+4.  Enter the username and password of the Digital.ai Teamforge project member who will upload the files.
+5.  Enter the name of the Digital.ai Teamforge project, the package and the file release where you want the build files added.
 6.  Specify whether you want existing files with the same name to be overwritten.
 7.  Specify a file pattern so that files that match the pattern are uploaded. You may use Hudson environmental variables in your file patterns. For example, pkg/subversion-r $ {SVN\_REVISION).tar.gz, in a job to build Subversion source code.
 8.  Click **Save**.

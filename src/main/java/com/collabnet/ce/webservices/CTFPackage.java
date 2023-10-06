@@ -22,6 +22,10 @@ public class CTFPackage extends CTFFolder {
 
     Helper helper = new Helper();
 
+    private static final String RELEASE_STATUS_ACTIVE = "active";
+    private static final String MATURITY_NONE = "";
+    private String description = "";
+
     CTFPackage(CTFObject parent, JSONObject data) {
         super(parent, data, data.get("id").toString(), data.get("parentFolderId").toString());
     }
@@ -33,8 +37,10 @@ public class CTFPackage extends CTFFolder {
         String end_point =  app.getServerUrl() + CTFConstants.PACKAGE_URL + getId();
         Response response = helper.request(end_point, app.getSessionId(), null, HttpMethod.DELETE, null);
         int status = response.getStatus();
+        String result = response.readEntity(String.class);
         if (status != 200) {
-                logger.log(Level.WARNING, "Error while deleting a package - " + status);
+            logger.log(Level.WARNING, "Error while deleting a package - " + status);
+            throw new IOException("Error while deleting a package - " + status + ", Error Msg - " + helper.getErrorMessage(result));
         }
     }
 
@@ -58,6 +64,7 @@ public class CTFPackage extends CTFFolder {
             }
         } else {
             logger.log(Level.WARNING,"Error creating a release - " + statusCode + "Error Msg - " + result);
+            throw new IOException("Error creating a release - " + status + ", Error Msg - " + helper.getErrorMessage(result));
         }
         return null;
     }
@@ -71,10 +78,11 @@ public class CTFPackage extends CTFFolder {
             String val[] = title.split("/");
             relTitle = val[val.length -1 ];
         }
-        for (CTFRelease p : getReleases())
+        for (CTFRelease p : getReleases()) {
             if (p.getTitle().equals(relTitle))
                 return getReleaseById(p.getId());
-        return null;
+        }
+        return createRelease(title, description, RELEASE_STATUS_ACTIVE, MATURITY_NONE);
     }
 
 
@@ -121,6 +129,7 @@ public class CTFPackage extends CTFFolder {
             }
         } else {
             logger.log(Level.WARNING,"Error getting a release " + status + "Error Msg - " + result);
+            throw new IOException("Error getting a release - " + status + ", Error Msg - " + helper.getErrorMessage(result));
         }
         return r;
     }

@@ -65,6 +65,7 @@ public class CTFRole extends CTFObject implements ObjectWithTitle {
             }
         } else {
             logger.log(Level.WARNING,"Error getting the members of a role - " + status + ", Error Msg - " + result);
+            throw new IOException("Error getting the members of a role - " + status + ", Error Msg - " + helper.getErrorMessage(result));
         }
         return r;
     }
@@ -86,6 +87,7 @@ public class CTFRole extends CTFObject implements ObjectWithTitle {
             }
         } else {
             logger.log(Level.WARNING, "Error while adding a member to the role - " + status +  ", Error Msg - " + result);
+            throw new IOException("Error while adding a member to the role - " + status + ", Error Msg - " + helper.getErrorMessage(result));
         }
     }
 
