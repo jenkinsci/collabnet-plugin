@@ -86,7 +86,7 @@ public class CNFileReleaseTest extends CNHudsonTestCase {
     /**
      * Verify that an upload of the test file was successful.
      */
-    public void verifyFRUpload(CTFRelease r) throws RemoteException {
+    public void verifyFRUpload(CTFRelease r) throws IOException {
         CTFReleaseFile f = r.getFileByTitle(FILE);
         assertTrue(f.getId()!=null);
     }

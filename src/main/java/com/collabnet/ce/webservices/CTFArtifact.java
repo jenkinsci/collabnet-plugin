@@ -1,55 +1,167 @@
 package com.collabnet.ce.webservices;
 
-import com.collabnet.ce.soap60.types.SoapFieldValues;
-import com.collabnet.ce.soap60.webservices.tracker.ArtifactSoapDO;
-import com.collabnet.ce.soap60.webservices.tracker.ArtifactSoapRow;
+import hudson.plugins.collabnet.util.Helper;
+import org.json.simple.JSONObject;
+import org.json.simple.JSONArray;
+import org.apache.http.client.utils.DateUtils;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
 
-import java.rmi.RemoteException;
+import javax.ws.rs.HttpMethod;
+import javax.ws.rs.core.Response;
+import java.io.IOException;
 import java.util.Date;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * @author Kohsuke Kawaguchi
  */
 public class CTFArtifact extends CTFObject {
-    private ArtifactSoapDO data;
+
+    static Logger logger = Logger.getLogger(CTFArtifact.class.getName());
+    Helper helper = new Helper();
+    public String title;
+    public String id;
+    public String path;
+    public String description;
+    public String category;
+    public String group;
+    public String status;
+    public String statusClass;
+    public String customer;
+    public String folderId;
+    public int priority;
+    public int estimatedEffort;
+    public int actualEffort;
+    public int remainingEffort;
+    public int points;
+    public int version;
+    public Date closeDate;
+    public Date createdDate;
+    public Date lastModifiedDate;
+    public String assignedTo;
+    public String createdBy;
+    public String lastModifiedBy;
+    public String reportedReleaseId;
+    public String resolvedReleaseId;
+    public String planningFolderId;
+    public boolean autosumming;
+    public CTFFlexField[] flexFields;
+
+    public int getEstimatedEffort() {
+        return estimatedEffort;
+    }
+
+    public void setEstimatedEffort(int estimatedEffort) {
+        this.estimatedEffort = estimatedEffort;
+    }
+
+    public int getRemainingEffort() {
+        return remainingEffort;
+    }
+
+    public void setRemainingEffort(int remainingEffort) {
+        this.remainingEffort = remainingEffort;
+    }
+
+    public int getPoints() {
+        return points;
+    }
+
+    public void setPoints(int points) {
+        this.points = points;
+    }
+
+    public void setLastModifiedBy(String lastModifiedBy) {
+        this.lastModifiedBy = lastModifiedBy;
+    }
+
+    public String getPlanningFolderId() {
+        return planningFolderId;
+    }
+
+    public void setPlanningFolderId(String planningFolderId) {
+        this.planningFolderId = planningFolderId;
+    }
+
+    public boolean isAutosumming() {
+        return autosumming;
+    }
+
+    public void setAutosumming(boolean autosumming) {
+        this.autosumming = autosumming;
+    }
+
     /**
-     * If true, we need to fetch the full {@link ArtfifactSoapDO} before we update.
+     * If true, we need to fetch the full artifact details before we update.
      */
     private boolean needsRefill;
 
-    CTFArtifact(CTFObject parent, ArtifactSoapRow src) {
-        super(parent, src.getId());
+    CTFArtifact(CTFObject parent, JSONObject artifactData) {
+        super(parent, artifactData.get("id").toString());
         needsRefill = true;
-        this.data = new ArtifactSoapDO();
-        data.setActualEffort(src.getActualEffort());
-        data.setAssignedTo(src.getAssignedToUsername());
-        data.setCategory(src.getCategory());
-        data.setCloseDate(src.getCloseDate());
-        data.setCreatedBy(src.getSubmittedByUsername());
-        data.setCreatedDate(src.getSubmittedDate());
-        data.setCustomer(src.getCustomer());
-        data.setDescription(src.getDescription());
-        data.setEstimatedEffort(src.getEstimatedEffort());
-        data.setFolderId(src.getFolderId());
-        data.setGroup(src.getArtifactGroup());
-        data.setId(src.getId());
-        data.setLastModifiedDate(src.getLastModifiedDate());
-        data.setPriority(src.getPriority());
-        data.setStatus(src.getStatus());
-        data.setStatusClass(src.getStatusClass());
-    }
-
-    CTFArtifact(CTFObject parent, ArtifactSoapDO data) {
-        super(parent, data.getId());
-        this.data = data;
+        actualEffort = getIntValue(artifactData.get("actualEffort"));
+        estimatedEffort = getIntValue(artifactData.get("estimatedEffort"));
+        assignedTo = getStringValue(artifactData.get("assignedTo"));
+        category = getStringValue(artifactData.get("category"));
+        closeDate = getDateValue(artifactData.get("closeDate"));
+        createdBy = getStringValue(artifactData.get("createdBy"));
+        createdDate = getDateValue(artifactData.get("createdDate"));
+        customer = getStringValue(artifactData.get("customer"));
+        description = getStringValue(artifactData.get("description"));
+        title  = getStringValue(artifactData.get("title"));
+        folderId = getStringValue(artifactData.get("folderId"));
+        group = getStringValue(artifactData.get("group"));
+        id = getStringValue(artifactData.get("id"));
+        lastModifiedDate = getDateValue(artifactData.get("lastModifiedDate"));
+        priority = getIntValue(artifactData.get("priority"));
+        status = getStringValue(artifactData.get("status"));
+        statusClass = getStringValue(artifactData.get("statusClass"));
+        path = getStringValue(artifactData.get("path"));
     }
 
     /**
      * Obtains all the fields, not just those ones that are made available to us during the search.
      */
-    public void refill() throws RemoteException {
-        data = app.getTrackerSoap().getArtifactData(app.getSessionId(),getId());
+    public void refill() throws IOException {
+        String end_point =  app.getServerUrl() + CTFConstants.ARTIFACT_URL + getId();
+        Response response = helper.request(end_point, app.getSessionId(), null, HttpMethod.GET, null);
+        String result = response.readEntity(String.class);
+        int status = response.getStatus();
+        if (status == 200) {
+            JSONObject artfData = null;
+            try {
+                artfData = (JSONObject) new JSONParser().parse(result);
+                setExistingArtfData(artfData);
+            } catch (ParseException e) {
+                logger.log(Level.WARNING, "Unable to parse the json content in setArtifact() - " + e.getLocalizedMessage(), e);
+            }
+        } else {
+            logger.log(Level.WARNING, "Error updating the artifact details - " + status  + ", Error Msg - " + result);
+            throw new IOException("Error updating the artifact details - " + status + ", Error Msg - " + helper.getErrorMessage(result));
+        }
         needsRefill = false;
+    }
+
+    public void setExistingArtfData(JSONObject currArtfData) {
+        actualEffort = getIntValue(currArtfData.get("actualEffort"));
+        estimatedEffort = getIntValue(currArtfData.get("estimatedEffort"));
+        assignedTo = getStringValue(currArtfData.get("assignedTo"));
+        category = getStringValue(currArtfData.get("category"));
+        closeDate = getDateValue(currArtfData.get("closeDate"));
+        createdBy = getStringValue(currArtfData.get("createdBy"));
+        createdDate = getDateValue(currArtfData.get("createdDate"));
+        customer = getStringValue(currArtfData.get("customer"));
+        description = getStringValue(currArtfData.get("description"));
+        folderId = getStringValue(currArtfData.get("folderId"));
+        group = getStringValue(currArtfData.get("group"));
+        id = getStringValue(currArtfData.get("id"));
+        lastModifiedDate = getDateValue(currArtfData.get("lastModifiedDate"));
+        priority = getIntValue(currArtfData.get("priority"));
+        status = getStringValue(currArtfData.get("status"));
+        statusClass = getStringValue(currArtfData.get("statusClass"));
+        path = getStringValue(currArtfData.get("path"));
     }
 
     public String getURL() {
@@ -57,165 +169,213 @@ public class CTFArtifact extends CTFObject {
 
     }
 
-    public void update(String comment) throws RemoteException {
+    public void update(String comment) throws IOException {
         update(comment,null,null,null);
     }
 
-    public void update(String comment, String fileName, String fileMimeType, CTFFile file) throws RemoteException {
+    public void update(String comment, String fileName, String fileMimeType, CTFFile file) throws IOException {
         if (needsRefill)
             throw new IllegalStateException("CTFArtifact needs to be filled before it can be updated");
-        app.getTrackerSoap().setArtifactData(app.getSessionId(), data, comment, fileName, fileMimeType, file!=null?file.getId():null);
+        String end_point =  app.getServerUrl() + CTFConstants.ARTIFACT_URL + getId();
+        JSONObject attachmentObj = new JSONObject();
+        attachmentObj.put("fileName",fileName);
+        attachmentObj.put("mimeType", fileMimeType);
+        attachmentObj.put("fileId", file!=null?file.getId():null);
+        JSONArray attachArray = new JSONArray();
+        attachArray.add(attachmentObj);
+        JSONObject requestPayload = new JSONObject();
+        requestPayload.put("comment", comment);
+        requestPayload.put("attachments", attachArray);
+        requestPayload.put("status", getStatus());
+        Response response = helper.request(end_point, app.getSessionId(), requestPayload.toString(), HttpMethod.PATCH, null);
+        String result = response.readEntity(String.class);
+        int status = response.getStatus();
+        if (status == 200) {
+            JSONObject data = null;
+            try {
+                data = (JSONObject) new JSONParser().parse(result);
+            } catch (ParseException e) {
+                logger.log(Level.WARNING,"Unable to parse the json content in update()");
+            }
+        } else {
+            logger.log(Level.WARNING,"Updating the artifact data failed - " + status);
+            throw new IOException("Error updating the artifact data failed - " + status + ", Error Msg - " + helper.getErrorMessage(result));
+        }
+    }
+
+    private String getStringValue(Object value) {
+        return value == null ?  null : value.toString();
+    }
+
+    private int getIntValue(Object value) {
+        return value == null ?  0 : Integer.parseInt(value.toString());
+    }
+
+    private Date getDateValue(Object value) {
+        return value == null ? null : DateUtils.parseDate(value.toString());
     }
 
     public String getDescription() {
-        return data.getDescription();
+        return this.description;
     }
 
     public void setDescription(String description) {
-        data.setDescription(description);
+        this.description = description;
     }
 
     public String getCategory() {
-        return data.getCategory();
+        return this.category;
     }
 
     public void setCategory(String category) {
-        data.setCategory(category);
+        this.category = category;
     }
 
     public String getGroup() {
-        return data.getGroup();
+        return this.group;
     }
 
     public void setGroup(String group) {
-        data.setGroup(group);
+        this.group = group;
     }
 
     public String getStatus() {
-        return data.getStatus();
+        return this.status;
     }
 
     public void setStatus(String status) {
-        data.setStatus(status);
+        this.status = status;
     }
 
     public String getStatusClass() {
-        return data.getStatusClass();
+        return this.statusClass;
     }
 
     public void setStatusClass(String statusClass) {
-        data.setStatusClass(statusClass);
+        this.statusClass = statusClass;
     }
 
     public String getCustomer() {
-        return data.getCustomer();
+        return this.customer;
     }
 
     public void setCustomer(String customer) {
-        data.setCustomer(customer);
+        this.customer = customer;
     }
 
     public int getPriority() {
-        return data.getPriority();
+        return this.priority;
     }
 
     public void setPriority(int priority) {
-        data.setPriority(priority);
+        this.priority = priority;
     }
 
     public int getEstimatedHours() {
-        return data.getEstimatedEffort();
+        return this.estimatedEffort;
     }
 
     public void setEstimatedHours(int estimatedHours) {
-        data.setEstimatedEffort(estimatedHours);
+        this.estimatedEffort = estimatedHours;
     }
 
     public int getActualHours() {
-        return data.getActualEffort();
+        return this.actualEffort;
     }
 
     public void setActualHours(int actualHours) {
-        data.setActualEffort(actualHours);
+        this.actualEffort = actualHours;
     }
 
     public Date getCloseDate() {
-        return data.getCloseDate();
+        return this.closeDate;
     }
 
     public void setCloseDate(Date closeDate) {
-        data.setCloseDate(closeDate);
+        this.closeDate = closeDate;
     }
 
     public String getAssignedTo() {
-        return data.getAssignedTo();
+        return this.assignedTo;
     }
 
     public void setAssignedTo(String assignedTo) {
-        data.setAssignedTo(assignedTo);
+        this.assignedTo = assignedTo;
     }
 
     public String getReportedReleaseId() {
-        return data.getReportedReleaseId();
+        return this.reportedReleaseId;
     }
 
     public void setReportedReleaseId(String reportedReleaseId) {
-        data.setReportedReleaseId(reportedReleaseId);
+        this.reportedReleaseId = reportedReleaseId;
     }
 
     public String getResolvedReleaseId() {
-        return data.getResolvedReleaseId();
+        return this. resolvedReleaseId;
     }
 
     public void setResolvedReleaseId(String resolvedReleaseId) {
-        data.setResolvedReleaseId(resolvedReleaseId);
+        this.resolvedReleaseId = resolvedReleaseId;
     }
 
-    public SoapFieldValues getFlexFields() {
-        return data.getFlexFields();
+    public CTFFlexField[] getFlexFields() {
+        return this.flexFields;
     }
 
-    public void setFlexFields(SoapFieldValues flexFields) {
-        data.setFlexFields(flexFields);
+    public void setFlexFields(CTFFlexField[] flexFields) {
+        this.flexFields = flexFields;
+    }
+
+    public void setPath(String path) {
+        this.path = path;
     }
 
     public String getPath() {
-        return data.getPath();
+        return this.path;
     }
 
     public String getTitle() {
-        return data.getTitle();
+        return this.title;
     }
 
     public void setTitle(String title) {
-        data.setTitle(title);
+        this.title = title;
     }
 
     public String getFolderId() {
-        return data.getFolderId();
+        return this.folderId;
     }
 
     public void setFolderId(String folderId) {
-        data.setFolderId(folderId);
+        this.folderId = folderId;
     }
 
     public int getVersion() {
-        return data.getVersion();
+        return this.version;
     }
 
     public String getCreatedBy() {
-        return data.getCreatedBy();
+        return this.createdBy;
     }
 
     public String getLastModifiedBy() {
-        return data.getLastModifiedBy();
+        return this.lastModifiedBy;
     }
 
     public Date getCreatedDate() {
-        return data.getCreatedDate();
+        return this.createdDate;
     }
 
     public Date getLastModifiedDate() {
-        return data.getLastModifiedDate();
+        return this.lastModifiedDate;
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
     }
 }

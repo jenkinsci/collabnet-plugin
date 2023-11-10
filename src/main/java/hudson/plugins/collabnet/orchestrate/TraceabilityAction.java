@@ -1,7 +1,5 @@
 package hudson.plugins.collabnet.orchestrate;
 
-import com.collabnet.ce.soap60.webservices.ClientSoapStubFactory;
-import com.collabnet.ce.soap60.webservices.cemain.ICollabNetSoap;
 import hudson.model.AbstractBuild;
 import hudson.model.Action;
 import hudson.plugins.collabnet.util.Helper;
@@ -12,7 +10,6 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.rmi.RemoteException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -135,7 +132,7 @@ public class TraceabilityAction implements Action {
             addErrorMsg(INVALID_TFURL);
             logger.log(Level.INFO, INVALID_TFURL, e);
             return EMPTY_STRING;
-        } catch (RemoteException e) {
+        } catch (IOException e) {
             String errMsg = e.getMessage();
             if (errMsg.startsWith("(301)Moved Permanently")) {
                 addErrorMsg("Connection refused. Please check the configuration.");
@@ -173,14 +170,8 @@ public class TraceabilityAction implements Action {
     }
 
     private String getCtfSession(URL ctfUrl, String ctfUserName,
-            String ctfPassword) throws RemoteException {
-
-        ICollabNetSoap cnWebService = (ICollabNetSoap) ClientSoapStubFactory
-                .getSoapStub(ICollabNetSoap.class, String.format(
-                        "%s://%s/ce-soap60/services/CollabNet",
-                        ctfUrl.getProtocol(), ctfUrl.getHost()));
-
-        return cnWebService.login(ctfUserName, ctfPassword);
+            String ctfPassword) throws IOException {
+        return Helper.getToken(ctfUrl, ctfUserName, ctfPassword);
     }
 
     private void validateCtfUrl(URL ctfUrl) throws URISyntaxException {

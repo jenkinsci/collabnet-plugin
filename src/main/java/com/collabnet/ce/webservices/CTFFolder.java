@@ -1,9 +1,8 @@
 package com.collabnet.ce.webservices;
 
-import com.collabnet.ce.soap60.webservices.cemain.FolderSoapDO;
-import com.collabnet.ce.soap60.webservices.cemain.FolderSoapRow;
+import org.json.simple.JSONObject;
 
-import java.rmi.RemoteException;
+import java.io.IOException;
 
 /**
  * Folder-like container object.
@@ -18,24 +17,14 @@ public abstract class CTFFolder extends CTFObject implements ObjectWithTitle {
     private String title;
     private String description;
 
-    protected CTFFolder(CTFObject parent, FolderSoapDO data) {
-        super(parent,data.getId());
-        this.id = data.getId();
-        this.projectId = data.getProjectId();
-        this.parentFolderId = data.getParentFolderId();
-        this.path = data.getPath();
-        this.title = data.getTitle();
-        this.description = data.getDescription();
-    }
-
-    protected CTFFolder(CTFObject parent, FolderSoapRow data) {
-        super(parent,data.getId());
-        this.id = data.getId();
-        this.projectId = data.getProjectId();
-        this.parentFolderId = data.getParentFolderId();
-        this.path = data.getPath();
-        this.title = data.getTitle();
-        this.description = data.getDescription();
+    protected CTFFolder(CTFObject parent, JSONObject data, String id, String parentId) {
+        super(parent, id);
+        this.id = id;
+        this.projectId = data.get("projectId").toString();
+        this.parentFolderId = parentId;
+        this.path = data.get("path").toString();
+        this.title = data.get("title").toString();
+        this.description = data.get("description")==null? null : data.get("description").toString();
     }
 
     public String getId() {
@@ -45,13 +34,8 @@ public abstract class CTFFolder extends CTFObject implements ObjectWithTitle {
     /**
      * Gets the project that this belongs to.
      */
-    public CTFProject getProject() throws RemoteException {
+    public CTFProject getProject() throws IOException {
         return app.getProjectById(projectId);
-    }
-
-    public CTFFolder getParentFolder() {
-//        return app.getFolderById(parentFolderId);
-        throw new UnsupportedOperationException();
     }
 
     public String getPath() {
@@ -64,5 +48,9 @@ public abstract class CTFFolder extends CTFObject implements ObjectWithTitle {
 
     public String getDescription() {
         return description;
+    }
+
+    public String getParentFolderId() {
+        return parentFolderId;
     }
 }

@@ -3,10 +3,10 @@
   <parent>
     <groupId>org.jenkins-ci.plugins</groupId>
     <artifactId>plugin</artifactId>
-    <version>1.645</version>
+    <version>4.54</version>
   </parent>
   <artifactId>collabnet</artifactId>
-  <version>2.0.10-snapshot</version>
+  <version>2.0.11-snapshot</version>
   <name>CollabNet Plugins</name>
   <description>CollabNet packages</description>
   <url>https://github.com/jenkinsci/collabnet-plugin</url>
@@ -20,7 +20,7 @@
   </developers>
 
   <properties>
-    <compile.java.version>1.8</compile.java.version>
+    <compile.java.version>11</compile.java.version>
     <hudson.plugin.version>1.23</hudson.plugin.version>
   </properties>
 
@@ -51,7 +51,17 @@
            <artifactId>sisu-guice</artifactId>
          </exclusion>
        </exclusions>
-      </dependency>  
+      </dependency>
+    <dependency>
+      <groupId>com.google.guava</groupId>
+      <artifactId>guava</artifactId>
+      <version>13.0.1</version>
+    </dependency>
+    <dependency>
+      <groupId>com.rabbitmq</groupId>
+      <artifactId>amqp-client</artifactId>
+      <version>3.6.5</version>
+    </dependency>
     <dependency>
          <groupId>org.easymock</groupId>
          <artifactId>easymock</artifactId>
@@ -66,12 +76,17 @@
     <dependency>
          <groupId>org.jenkins-ci.plugins</groupId>
          <artifactId>junit</artifactId>
-         <version>1.24</version>
+         <version>1.4</version>
     </dependency>
     <dependency>
          <groupId>org.apache.httpcomponents</groupId>
          <artifactId>httpclient</artifactId>
-         <version>4.5.13</version>
+         <version>4.5.2</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.httpcomponents</groupId>
+      <artifactId>httpmime</artifactId>
+      <version>4.5.2</version>
     </dependency>
     <dependency>
           <groupId>commons-validator</groupId>
@@ -156,15 +171,20 @@
       <artifactId>subversion</artifactId>
       <version>1.23</version>
     </dependency>
+    <dependency>
+      <groupId>log4j</groupId>
+      <artifactId>log4j</artifactId>
+      <version>1.2.14</version>
+    </dependency>
     <dependency><!-- commons-httpclient brings in 1.3 but core wants 1.4 -->
       <groupId>commons-codec</groupId>
       <artifactId>commons-codec</artifactId>
-      <version>1.4</version>
+      <version>1.15</version>
     </dependency>
     <dependency>
-      <groupId>javax.servlet</groupId>
-      <artifactId>servlet-api</artifactId>
-      <version>2.5</version>
+      <groupId>jakarta.servlet</groupId>
+      <artifactId>jakarta.servlet-api</artifactId>
+      <version>4.0.4</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
@@ -175,12 +195,12 @@
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-annotations</artifactId>
-      <version>2.6.5</version>
+      <version>2.12.6</version>
     </dependency>
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-core</artifactId>
-      <version>2.6.5</version>
+      <version>2.12.6</version>
     </dependency>
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
@@ -190,7 +210,7 @@
     <dependency>
       <groupId>org.projectlombok</groupId>
       <artifactId>lombok</artifactId>
-      <version>1.16.10</version>
+      <version>1.18.2</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
@@ -201,7 +221,7 @@
     <dependency>
       <groupId>org.jenkins-ci.plugins.workflow</groupId>
       <artifactId>workflow-cps</artifactId>
-      <version>2.65</version>
+      <version>2.8</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -209,7 +229,105 @@
       <artifactId>credentials</artifactId>
       <version>2.6.1.1</version>
     </dependency>
+    <dependency>
+      <groupId>org.springframework.security.oauth</groupId>
+      <artifactId>spring-security-oauth2</artifactId>
+      <version>2.3.8.RELEASE</version>
+    </dependency>
+    <dependency>
+      <groupId>com.googlecode.json-simple</groupId>
+      <artifactId>json-simple</artifactId>
+      <version>1.1</version>
+    </dependency>
+    <dependency>
+      <groupId>org.jenkins-ci.main</groupId>
+      <artifactId>jenkins-test-harness-htmlunit</artifactId>
+      <version>141.v740721146265</version>
+      <scope>compile</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.glassfish.jersey.media</groupId>
+      <artifactId>jersey-media-multipart</artifactId>
+      <version>2.40</version>
+    </dependency>
+    <dependency>
+      <groupId>org.glassfish.jersey.core</groupId>
+      <artifactId>jersey-client</artifactId>
+      <version>2.40</version>
+    </dependency>
+    <dependency>
+      <groupId>com.googlecode.json-simple</groupId>
+      <artifactId>json-simple</artifactId>
+      <version>1.1.1</version>
+    </dependency>
+    <dependency>
+      <groupId>org.jenkins-ci.main</groupId>
+      <artifactId>cli</artifactId>
+      <version>2.361</version>
+    </dependency>
   </dependencies>
+
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>org.sonatype.aether</groupId>
+        <artifactId>aether.util</artifactId>
+        <version>1.11</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.maven</groupId>
+        <artifactId>maven-compat</artifactId>
+        <version>3.1.1</version>
+        <scope>provided</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.maven</groupId>
+        <artifactId>maven-core</artifactId>
+        <version>3.1.1</version>
+      </dependency>
+      <dependency>
+        <groupId>org.sonatype.aether</groupId>
+        <artifactId>aether-spi</artifactId>
+        <version>1.13</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.maven.wagon</groupId>
+        <artifactId>wagon-provider-api</artifactId>
+        <version>2.4</version>
+        <scope>provided</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.maven</groupId>
+        <artifactId>maven-aether-provider</artifactId>
+        <version>3.1.1</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.maven</groupId>
+        <artifactId>maven-artifact</artifactId>
+        <version>3.1.1</version>
+      </dependency>
+      <dependency>
+        <groupId>commons-codec</groupId>
+        <artifactId>commons-codec</artifactId>
+        <version>1.9</version>
+      </dependency>
+      <dependency>
+        <groupId>jakarta.activation</groupId>
+        <artifactId>jakarta.activation-api</artifactId>
+        <version>2.0.1</version>
+      </dependency>
+      <dependency>
+        <groupId>io.jenkins.cli</groupId>
+        <artifactId>shaded-jakarta-activation</artifactId>
+        <version>1.0</version>
+      </dependency>
+      <dependency>
+        <groupId>commons-io</groupId>
+        <artifactId>commons-io</artifactId>
+        <version>2.11.0</version> <!-- Use the latest version -->
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
 
   <distributionManagement>
     <repository>
@@ -237,9 +355,6 @@
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
           <forkMode>never</forkMode>
-          <excludes>
-            <exclude>**/PblUploadTest.java</exclude>
-          </excludes>
           <systemProperties>
             <property>
               <name>project.build.directory</name>
@@ -267,40 +382,6 @@
               <value>hudsonReadUser</value>
             </property>
             <!-- end properties for project auth -->
-            <!-- properties for pbl test -->
-            <property>
-              <name>lm_url</name>
-              <value>LAB_MANAGMENT_URL</value>
-            </property>
-            <property>
-              <name>lm_user</name>
-              <value>grue</value>
-            </property>
-            <property>
-              <name>key</name>
-              <value>SET_LAB_MAMANGEMENT_KEY</value>
-            </property>
-            <property>
-              <name>lm_project</name>
-              <value>zork</value>
-            </property>
-            <property>
-              <name>pub_or_priv</name>
-              <value>pub</value>
-            </property>
-            <property>
-              <name>pbl_filename</name>
-              <value>test.txt</value>
-            </property>
-            <property>
-              <name>pbl_path</name>
-              <value>hudsonTest/${BUILD_ID}</value>
-            </property>
-            <property>
-              <name>pbl_force</name>
-              <value>false</value>
-            </property>
-            <!-- end properties for pbl test -->
             <!-- properties for tracker test -->
             <property>
               <name>tracker</name>
@@ -341,7 +422,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-release-plugin</artifactId>
-        <version>2.5.1</version>
+        <version>3.0.0-M1</version>
         <dependencies>
           <!-- workaround for mvn.bat to mvn.cmd rename. see https://issues.apache.org/jira/browse/MRELEASE-902 for details -->
           <dependency>
@@ -354,11 +435,23 @@
         <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-compiler-plugin</artifactId>
+            <version>3.8.0</version>
             <configuration>
-                <source>${compile.java.version}</source>
-                <target>${compile.java.version}</target>
+<!--                <source>${compile.java.version}</source>-->
+<!--                <target>${compile.java.version}</target>-->
+              <release>11</release>
             </configuration>
         </plugin>
+      <plugin>
+        <groupId>org.jenkins-ci.tools</groupId>
+        <artifactId>maven-hpi-plugin</artifactId>
+        <version>3.46</version>
+        <configuration>
+          <httpConnector>
+            <port>8088</port> <!-- Change this to your desired port -->
+          </httpConnector>
+        </configuration>
+      </plugin>
     </plugins>
   </build>
 

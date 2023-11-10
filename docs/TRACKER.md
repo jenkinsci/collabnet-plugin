@@ -1,16 +1,16 @@
-## Set up a Jenkins build to generate CollabNet tracker artifacts
+## Set up a Jenkins build to generate Digital.ai tracker artifacts
 
 *General instructions on how to setup the Tracker component*
 
-Before you set up the plugin, make sure the following are in place in the CollabNet project:
+Before you set up the plugin, make sure the following are in place in the Digital.ai project:
 
 -   A valid tracker where artifacts can be created or updated
 -   A user who is a project member, and has view, submit and edit permissions for the tracker\# In the Jenkins interface for the job, click **Configure**.
 
 1.  In the Jenkins interface for the job, click **Configure**.
-2.  In the **Post-build Actions** section, select **CollabNet Tracker**.
-3.  Enter the URL of the CollabNet site. For example, [https://forge.collab.net](https://forge.collab.net/).
-4.  Enter the username and password of the SourceForge or Teamforge project member responsible for creating and updating tracker artifacts in the project.
+2.  In the **Post-build Actions** section, select **Digital.ai Tracker**.
+3.  Enter the URL of the Digital.ai  site. For example, [https://forge.collab.net](https://forge.collab.net/).
+4.  Enter the username and password of the Teamforge project member responsible for creating and updating tracker artifacts in the project.
 5.  Enter the name of the project containing the tracker.  **Note**: If the user specified is not a member of this project, the plugin will not be able to locate the project.      
 6.  Enter the name of the tracker where artifacts will be created or updated.
     **Note**: If the user specified does not have the requisite permissions in this tracker, the plugin will not be able to identify the tracker.

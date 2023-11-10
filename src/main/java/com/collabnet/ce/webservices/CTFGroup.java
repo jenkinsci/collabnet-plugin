@@ -1,9 +1,15 @@
 package com.collabnet.ce.webservices;
 
-import com.collabnet.ce.soap60.webservices.cemain.UserGroupSoapRow;
-import com.collabnet.ce.soap60.webservices.cemain.UserGroupSoapDO;
+import hudson.plugins.collabnet.util.Helper;
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
 
-import java.rmi.RemoteException;
+import javax.ws.rs.HttpMethod;
+import javax.ws.rs.core.Response;
+import java.io.IOException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * @author Kohsuke Kawaguchi
@@ -11,16 +17,14 @@ import java.rmi.RemoteException;
 public class CTFGroup extends CTFObject implements ObjectWithTitle {
     private final String fullName, description;
 
-    CTFGroup(CollabNetApp app, UserGroupSoapRow data) {
-        super(app,data.getId());
-        this.fullName = data.getFullName();
-        this.description = data.getDescription();
-    }
+    static Logger logger = Logger.getLogger(CTFGroup.class.getName());
 
-    CTFGroup(CollabNetApp app, UserGroupSoapDO data) {
-        super(app,data.getId());
-        this.fullName = data.getFullName();
-        this.description = data.getDescription();
+    Helper helper = new Helper();
+
+    CTFGroup(CollabNetApp app, JSONObject data) {
+        super(app,data.get("id").toString());
+        this.fullName = data.get("fullname").toString();
+        this.description = data.get("description").toString();
     }
 
     public String getFullName() {
@@ -42,7 +46,21 @@ public class CTFGroup extends CTFObject implements ObjectWithTitle {
     /**
      * Adds the user to the this group.
      */
-    public void addMember(CTFUser u) throws RemoteException {
-        app.icns.addUserGroupMember(app.getSessionId(),getId(),u.getUserName());
+    public void addMember(CTFUser u) throws IOException {
+        String end_point =  app.getServerUrl() + CTFConstants.ROLE_URL+ getId() + "/members/" + u.getUserName();
+        Response response = helper.request(end_point, app.getSessionId(), null, HttpMethod.PUT, null);
+        String result = response.readEntity(String.class);
+        int status = response.getStatus();
+        if (status == 200) {
+            JSONObject memberData = null;
+            try {
+                memberData = (JSONObject) new JSONParser().parse(result);
+            } catch (ParseException e) {
+                logger.log(Level.WARNING, "Unable to parse the json content in addMember() - " + e.getLocalizedMessage(), e);
+            }
+        } else {
+            logger.log(Level.WARNING, "Error while adding a member to the group - " + status + ", Error Msg - " + result);
+            throw new IOException("Error while adding a member to the group - " + status + ", Error Msg - " + helper.getErrorMessage(result));
+        }
     }
 }

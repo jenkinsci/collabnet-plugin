@@ -1,10 +1,13 @@
 package com.collabnet.ce.webservices;
 
-import com.collabnet.ce.soap60.webservices.cemain.ItemSoapDO;
-import com.collabnet.ce.soap60.webservices.frs.FrsFileSoapDO;
-import com.collabnet.ce.soap60.webservices.frs.FrsFileSoapRow;
+import hudson.plugins.collabnet.util.Helper;
+import org.json.simple.JSONObject;
 
-import java.rmi.RemoteException;
+import javax.ws.rs.HttpMethod;
+import javax.ws.rs.core.Response;
+import java.io.IOException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * @author Kohsuke Kawaguchi
@@ -13,28 +16,17 @@ public class CTFReleaseFile extends CTFItem {
     private final String description, mimeType, filename;
     private final long size;
 
-    protected CTFReleaseFile(CTFObject parent, FrsFileSoapDO data) {
-        super(parent,data);
-        this.description = data.getDescription();
-        this.mimeType = data.getMimeType();
-        this.filename = data.getFilename();
-        this.size = data.getSize();
-    }
+    static Logger logger = Logger.getLogger(CTFReleaseFile.class.getName());
 
-    protected CTFReleaseFile(CTFObject parent, FrsFileSoapRow data) {
-        super(parent, toItemSoapDO(data));
-        this.description = data.getDescription();
-        this.mimeType = data.getMimeType();
-        this.filename = data.getFilename();
-        this.size = data.getFileSize();
-    }
+    Helper helper = new Helper();
 
-    private static ItemSoapDO toItemSoapDO(FrsFileSoapRow data) {
-        ItemSoapDO r = new ItemSoapDO();
-        r.setTitle(data.getTitle());
-        r.setId(data.getId());
-        // not sure how the rest of the parameters match up
-        return r;
+    protected CTFReleaseFile(CTFObject parent, JSONObject data) {
+        super(parent, data);
+        this.description = data.get("description")!= null ? data.
+                get("description").toString() : null;
+        this.mimeType = data.get("mimeType").toString();
+        this.filename = data.get("filename").toString();
+        this.size = Integer.parseInt(data.get("size").toString());
     }
 
     public String getDescription() {
@@ -57,7 +49,14 @@ public class CTFReleaseFile extends CTFItem {
         return app.getServerUrl() + "/sf/frs/do/downloadFile/" + getPath();
     }
 
-    public void delete() throws RemoteException {
-        app.getFrsAppSoap().deleteFrsFile(app.getSessionId(),getId());
+    public void delete() throws IOException {
+        String end_point =  app.getServerUrl() + CTFConstants.RELEASE_FILE_URL + getId();
+        Response response = helper.request(end_point, app.getSessionId(), null, HttpMethod.DELETE, null);
+        String result = response.readEntity(String.class);
+        int status = response.getStatus();
+        if (status != 204) {
+            logger.log(Level.WARNING, "Error while deleting a release file - " + status +  ", Error Msg - " + result);
+            throw new IOException("Error while deleting a release file - " + status + ", Error Msg - " + helper.getErrorMessage(result));
+        }
     }
 }

@@ -92,7 +92,7 @@ public class Util {
         for (DomNode sibling : siblings) {
             if (sibling instanceof HtmlLabel) {
                 HtmlLabel label = (HtmlLabel) sibling;
-                if (label.getReferencedElement().equals(node)) {
+                if (label.getLabeledElement().equals(node)) {
                     return label.getTextContent();
                 }
             }
@@ -107,7 +107,8 @@ public class Util {
         WebAssert.assertElementPresent(page, id);
         DomElement elem = page.getElementById(id);
         assert(elem instanceof HtmlPasswordInput);
-        return ((HtmlPasswordInput) elem).setValueAttribute(text);
+        ((HtmlPasswordInput) elem).setValueAttribute(text);
+        return null;
     }
 
     /**
@@ -127,7 +128,8 @@ public class Util {
         WebAssert.assertElementPresent(page, id);
         DomElement elem = page.getElementById(id);
         assert(elem instanceof HtmlTextInput);
-        return ((HtmlTextInput) elem).setValueAttribute(text);
+        ((HtmlTextInput) elem).setValueAttribute(text);
+        return null;
     }
 
     /**
@@ -147,7 +149,8 @@ public class Util {
     public static Page setTextByName(HtmlPage page, String name, String text) {
         DomElement elem = getFirstHtmlElementByName(page, name);
         assert(elem instanceof HtmlTextInput);
-        return ((HtmlTextInput) elem).setValueAttribute(text);
+        ((HtmlTextInput) elem).setValueAttribute(text);
+        return null;
     }
 
     /**

@@ -6,6 +6,7 @@ import com.collabnet.ce.webservices.CollabNetApp;
 import hudson.plugins.collabnet.CNHudsonTestCase;
 import hudson.plugins.collabnet.TestParam;
 
+import java.io.IOException;
 import java.rmi.RemoteException;
 
 /**
@@ -57,7 +58,7 @@ public abstract class AbstractSecurityTestCase extends CNHudsonTestCase {
         rg.addMember(rgm);
     }
 
-    public CTFUser createUser(CollabNetApp cna, String name) throws RemoteException {
+    public CTFUser createUser(CollabNetApp cna, String name) throws IOException {
         return cna.createUser(name, name +"@example.org", name,"en","PST",false,false, name);
     }
 

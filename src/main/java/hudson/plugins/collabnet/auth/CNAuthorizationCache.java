@@ -7,7 +7,7 @@ import hudson.model.Hudson;
 import hudson.security.AuthorizationStrategy;
 import hudson.security.Permission;
 
-import java.rmi.RemoteException;
+import java.io.IOException;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -63,7 +63,7 @@ public class CNAuthorizationCache {
                 for (CollabNetRole role : userRoles) {
                     userPermSet.addAll(role.getPermissions());
                 }
-            } catch (RemoteException e) {
+            } catch (IOException e) {
                 LOGGER.log(Level.WARNING, "Failed to retrieve permissions for the user "+username+" on "+projectId);
                 // fall back to zero permission
             }

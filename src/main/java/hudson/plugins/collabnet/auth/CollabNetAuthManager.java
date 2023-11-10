@@ -1,5 +1,6 @@
 package hudson.plugins.collabnet.auth;
 
+import java.io.IOException;
 import java.rmi.RemoteException;
 
 import org.acegisecurity.Authentication;
@@ -30,7 +31,7 @@ public class CollabNetAuthManager implements AuthenticationManager {
         try {
             CollabNetApp cna = new CollabNetApp(this.getCollabNetUrl(), username, password);
             return new CNAuthentication(authentication.getName(), cna);
-        } catch (RemoteException re) {
+        } catch (IOException re) {
             throw new BadCredentialsException("Failed to log into " + 
                                               this.getCollabNetUrl() + ": " + 
                                               re.getMessage());

@@ -10,7 +10,6 @@ import hudson.plugins.collabnet.util.CNHudsonUtil;
 import hudson.security.SecurityRealm;
 import hudson.util.FormValidation;
 import hudson.util.VersionNumber;
-import hudson.util.spring.BeanBuilder;
 import jenkins.model.Jenkins;
 
 import org.kohsuke.stapler.DataBoundConstructor;
@@ -39,18 +38,6 @@ public class CollabNetSecurityRealm extends SecurityRealm {
         this.collabNetUrl = CNHudsonUtil.sanitizeCollabNetUrl(collabNetUrl);
         this.mEnableSSOAuthFromCTF = enableSSOAuthFromCTF;
         this.mEnableSSOAuthToCTF = enableSSOAuthToCTF;
-
-        CollabNetApp cn = new CollabNetApp(this.collabNetUrl);
-        try {
-            VersionNumber apiVersion = new VersionNumber(cn.getApiVersion());
-            if (apiVersion.compareTo(new VersionNumber("5.3.0.0")) >= 0) {
-                // starting with CTF 5.3, redirect no longer works after login
-                mEnableSSORedirect = false;
-            }
-        } catch (RemoteException re) {
-            // ignore
-            LOGGER.log(Level.WARNING, "Failed to retrieve the CTF version from "+this.collabNetUrl,re);
-        }
     }
 
     public String getCollabNetUrl() {
@@ -97,7 +84,7 @@ public class CollabNetSecurityRealm extends SecurityRealm {
          */
         @Override
         public String getDisplayName() {
-            return "CollabNet Security Realm";
+            return "Digital.ai Security Realm";
         }
 
         /**

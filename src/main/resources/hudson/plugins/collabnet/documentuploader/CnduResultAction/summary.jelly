@@ -3,10 +3,10 @@
   <t:summary icon="${it.getSummaryIcon()}">
     <j:choose>
       <j:when test="${it.isSuccess()==true}">
-        Successfully uploaded ${it.getNumFiles()} file(s) to <a href="${it.getCnduUrlName()}">CollabNet Documents</a>.
+        Successfully uploaded ${it.getNumFiles()} file(s) to <a href="${it.getCnduUrlName()}">Digital.ai Documents</a>.
       </j:when>
       <j:otherwise>
-        CollabNet Document Uploader: Failed to upload any files.
+        Digital.ai Document Uploader: Failed to upload any files.
       </j:otherwise>
       (See <a href="${it.getResultUrlName()}">console</a> for details.)
      </j:choose>

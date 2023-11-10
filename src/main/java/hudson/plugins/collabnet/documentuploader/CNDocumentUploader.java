@@ -20,11 +20,11 @@ import hudson.remoting.VirtualChannel;
 import hudson.tasks.BuildStepMonitor;
 import hudson.util.FormValidation;
 
+import io.jenkins.cli.shaded.jakarta.activation.MimetypesFileTypeMap;
 import org.jenkinsci.remoting.RoleChecker;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 
-import javax.activation.MimetypesFileTypeMap;
 import java.io.File;
 import java.io.IOException;
 import java.rmi.RemoteException;
@@ -90,7 +90,7 @@ public class CNDocumentUploader extends AbstractTeamForgeNotifier {
      */
     private void logConsole(String message) {
         if (this.listener != null) {
-            message = "CollabNet Document Uploader: " + message;
+            message = "Digital.ai Document Uploader: " + message;
             this.listener.getLogger().println(message);
         }
     }
@@ -105,7 +105,7 @@ public class CNDocumentUploader extends AbstractTeamForgeNotifier {
      */
     private void logConsole(String message, Exception exception) {
         if (this.listener != null) {
-            message = "CollabNet Document Uploader: " + message;
+            message = "Digital.ai Document Uploader: " + message;
             this.listener.getLogger().println(message);
 
             // now print the stack trace
@@ -120,7 +120,7 @@ public class CNDocumentUploader extends AbstractTeamForgeNotifier {
      * @param methodName in progress on when this exception occurred.
      * @param re The RemoteException that was thrown.
      */
-    private void log(String methodName, RemoteException re) {
+    private void log(String methodName, IOException re) {
         CommonUtil.logRE(logger, methodName, re);
     }
 
@@ -218,7 +218,7 @@ public class CNDocumentUploader extends AbstractTeamForgeNotifier {
     }
 
     private Action createAction(int numUploaded, CTFDocumentFolder folder) {
-        String displaymsg = "Download from CollabNet Documents";
+        String displaymsg = "Download from Digital.ai Documents";
         return new CnduResultAction(displaymsg, 
                                     IMAGE_URL + "CollabNetDocuments.png", 
                                     "console",
@@ -269,7 +269,7 @@ public class CNDocumentUploader extends AbstractTeamForgeNotifier {
                                                    build);
                     this.logConsole("Uploaded " + uploadFilePath.getName() + " -> " + doc.getURL());
                     numUploaded++;
-                } catch (RemoteException re) {
+                } catch (IOException re) {
                     logConsole("Upload file failed: " + re.getMessage());
                     this.log("updateOrCreateDoc", re);
                 }
@@ -360,7 +360,7 @@ public class CNDocumentUploader extends AbstractTeamForgeNotifier {
         } else {
             return folder.createDocument(fileName,
                                this.getInterpreted(build, this.getDescription()),
-                               "", "final", false, fileName,
+                               "", "Final", false, fileName,
                                mimeType, file, null, null);
         }
     }
@@ -421,8 +421,8 @@ public class CNDocumentUploader extends AbstractTeamForgeNotifier {
         }
         try {
             return cna.upload(build.getLogFile());
-        } catch (RemoteException re) {
-            this.log("uploadBuildLog", re);
+        } catch (IOException e) {
+            this.log("uploadBuildLog", e);
             return null;
         }
     }
@@ -525,7 +525,7 @@ public class CNDocumentUploader extends AbstractTeamForgeNotifier {
          */
         @Override
         public String getDisplayName() {
-            return "CollabNet Document Uploader";
+            return "Digital.ai Document Uploader";
         }
 
         /**

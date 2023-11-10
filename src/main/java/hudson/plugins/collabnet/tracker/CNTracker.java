@@ -23,9 +23,9 @@ import hudson.plugins.collabnet.util.CommonUtil;
 import hudson.tasks.BuildStepMonitor;
 import hudson.util.ComboBoxModel;
 import hudson.util.FormValidation;
+import io.jenkins.cli.shaded.org.apache.commons.lang.ArrayUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
-import org.kohsuke.stapler.StaplerRequest;
 
 import java.io.IOException;
 import java.rmi.RemoteException;
@@ -110,9 +110,9 @@ public class CNTracker extends AbstractTeamForgeNotifier {
      *
      * @param message to print to the console.
      */
-    private void log(String message) {
+    private void  log(String message) {
         if (this.listener != null) {
-            message = "CollabNet Tracker: " + message;
+            message = "Digital.ai Tracker: " + message;
             this.listener.getLogger().println(message);
         }
     }
@@ -123,8 +123,8 @@ public class CNTracker extends AbstractTeamForgeNotifier {
      * @param methodName in progress when the exception occurred.
      * @param re RemoteException that occurred.
      */
-    private void log(String methodName, RemoteException re) {
-        this.log(methodName + " failed due to " + re.getClass().getName() + 
+    private void log(String methodName, IOException re) {
+        this.log(methodName + " failed due to " +
                  ": " + re.getMessage());
     }
 
@@ -368,11 +368,13 @@ public class CNTracker extends AbstractTeamForgeNotifier {
         String assignTo = this.getValidAssignUser(t.getProject());
         String title = this.getInterpreted(build, this.getTitle());
         CTFRelease release = CNHudsonUtil.getProjectReleaseId(t.getProject(),this.getRelease());
+        String releaseId =  release != null ? release.getId() : null;
+        String[] releaseIds = releaseId != null ? new String[] {releaseId} : ArrayUtils.EMPTY_STRING_ARRAY;
         try {
             CTFArtifact asd = t.createArtifact(title,
                                               description, null, null, status,
                                               null, this.priority, 0, 
-                                              assignTo, release!=null?release.getId():null, null,
+                                              assignTo, releaseIds, null,
                                               build.getLogFile().getName(), 
                                               "text/plain", buildLog);
             this.log("Created tracker artifact '" + title + "' in tracker '" 
@@ -380,7 +382,7 @@ public class CNTracker extends AbstractTeamForgeNotifier {
                      + "' on behalf of '" + this.getUsername() + "' at " 
                      + asd.getURL() + ".");
             return asd;
-        } catch (RemoteException re) {
+        } catch (IOException re) {
             this.log("createNewTrackerArtifact", re);
             return null;
         }
@@ -390,7 +392,7 @@ public class CNTracker extends AbstractTeamForgeNotifier {
      * @return the assigned user, if that user is a member of the project.
      *         Otherwise, null.
      */
-    private String getValidAssignUser(CTFProject p) throws RemoteException {
+    private String getValidAssignUser(CTFProject p) throws IOException {
         if (!p.hasMember(this.assign_user)) {
             this.log("User (" + this.assign_user + ") is not a member of " +
                      "the project (" + this.getProject() + ").  " + "Instead " +
@@ -480,7 +482,7 @@ public class CNTracker extends AbstractTeamForgeNotifier {
         } catch (RemoteException re) {
             this.log("updateSucceedingBuild", re); 
         } catch (IOException ioe) {
-            this.log("updateSuccedingBuild failed due to IOException:" + 
+            this.log("updateSucceding Build failed due to IOException:" +
                      ioe.getMessage());
         }
     }
@@ -554,7 +556,7 @@ public class CNTracker extends AbstractTeamForgeNotifier {
         }
         try {
             return cna.upload(build.getLogFile());
-        } catch (RemoteException re) {
+        } catch (IOException re) {
             this.log("uploadBuildLog", re);
         }
         return null;
@@ -588,14 +590,14 @@ public class CNTracker extends AbstractTeamForgeNotifier {
          */
         @Override
         public String getDisplayName() {
-            return "CollabNet Tracker";
+            return "Digital.ai Tracker";
         }
 
         /**
          * Form validation for the tracker field.
          */
         public FormValidation doCheckTracker(CollabNetApp cna, 
-                @QueryParameter String project, @QueryParameter String tracker) throws RemoteException {
+                @QueryParameter String project, @QueryParameter String tracker) throws IOException {
             return CNFormFieldValidator.trackerCheck(cna, project, tracker);
         }
         
@@ -603,7 +605,7 @@ public class CNTracker extends AbstractTeamForgeNotifier {
          * Form validation for "assign issue to".
          */
         public FormValidation doCheckAssignUser(CollabNetApp cna, 
-                @QueryParameter String project, @QueryParameter String assignUser) throws RemoteException {
+                @QueryParameter String project, @QueryParameter String assignUser) throws IOException {
             return CNFormFieldValidator.assignCheck(cna, project, assignUser);
         }
         
@@ -622,7 +624,7 @@ public class CNTracker extends AbstractTeamForgeNotifier {
          * Form validation for the release field.
          */
         public FormValidation doCheckRelease(CollabNetApp cna, @QueryParameter String project,
-                                @QueryParameter("package") String rpackage, @QueryParameter String release) throws RemoteException {
+                                @QueryParameter("package") String rpackage, @QueryParameter String release) throws IOException {
             return CNFormFieldValidator.releaseCheck(cna,project,rpackage,release,false);
         }
 
@@ -634,7 +636,7 @@ public class CNTracker extends AbstractTeamForgeNotifier {
          * Gets a list of trackers to choose from and write them as a 
          * JSON string into the response data.
          */
-        public ComboBoxModel doFillTrackerItems(CollabNetApp cna, @QueryParameter String project) throws RemoteException {
+        public ComboBoxModel doFillTrackerItems(CollabNetApp cna, @QueryParameter String project) throws IOException {
             return ComboBoxUpdater.getTrackerList((cna == null) ? null : cna.getProjectByTitle(project));
         }
 
@@ -652,7 +654,7 @@ public class CNTracker extends AbstractTeamForgeNotifier {
          * JSON string into the response data.
          */
         public ComboBoxModel doFillReleaseItems(CollabNetApp cna,
-                @QueryParameter String project, @QueryParameter("package") String _package) throws RemoteException {
+                @QueryParameter String project, @QueryParameter("package") String _package) throws IOException {
             return ComboBoxUpdater.getReleases(cna,project,_package);
         }
     }

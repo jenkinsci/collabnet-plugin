@@ -6,7 +6,7 @@
     <j:when test="${descriptor.canInheritAuth()}">
       <f:nested>
         <table style="width:100%">
-          <f:optionalProperty title="Override the Global CollabNet Configuration" field="connectionFactory" />
+          <f:optionalProperty title="Override the Global Digital.ai Configuration" field="connectionFactory" />
         </table>
       </f:nested>
     </j:when>
