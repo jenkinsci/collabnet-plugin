@@ -5,7 +5,6 @@ import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredenti
 import com.cloudbees.plugins.credentials.domains.URIRequirementBuilder;
 import com.collabnet.ce.webservices.CTFArtifact;
 import com.collabnet.ce.webservices.CTFConstants;
-import com.collabnet.ce.webservices.TrustAllSocketFactory;
 import hudson.model.Item;
 import hudson.model.Result;
 import hudson.model.Run;
@@ -40,11 +39,20 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
+import java.security.KeyManagementException;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
+import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
 
 public class Helper {
 
@@ -64,7 +72,30 @@ public class Helper {
     private static String LOG_MESSAGE_PREFIX = "TeamForge Build Notifier - ";
 
     public Helper() {
-        client = ClientBuilder.newBuilder().sslContext(TrustAllSocketFactory.get()).build();
+        client = ClientBuilder.newBuilder().sslContext(getContext()).build();
+    }
+
+    private  static SSLContext getContext() {
+        SSLContext sslContext = null;
+        try {
+            sslContext = SSLContext.getInstance("TLS");
+            sslContext.init(null, new TrustManager[]{new X509TrustManager() {
+                public void checkClientTrusted(X509Certificate[] x509Certificates, String s) throws CertificateException {
+                }
+
+                public void checkServerTrusted(X509Certificate[] x509Certificates, String s) throws CertificateException {
+                }
+
+                public X509Certificate[] getAcceptedIssuers() {
+                    return new X509Certificate[0];
+                }
+            }}, new SecureRandom());
+        } catch (NoSuchAlgorithmException e) {
+            throw new Error(e);
+        } catch (KeyManagementException e) {
+            throw new Error(e);
+        }
+        return sslContext;
     }
 
     public static String getToken(URL ctfUrl, String ctfUserName, String ctfPassword) throws IOException {

@@ -1,7 +1,5 @@
 package hudson.plugins.collabnet.auth;
 
-import com.collabnet.ce.webservices.CollabNetApp;
-import groovy.lang.Binding;
 import hudson.Extension;
 import hudson.model.Descriptor;
 import hudson.model.Hudson;
@@ -9,16 +7,11 @@ import hudson.plugins.collabnet.util.CNFormFieldValidator;
 import hudson.plugins.collabnet.util.CNHudsonUtil;
 import hudson.security.SecurityRealm;
 import hudson.util.FormValidation;
-import hudson.util.VersionNumber;
 import jenkins.model.Jenkins;
 
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 
-import javax.servlet.Filter;
-import javax.servlet.FilterConfig;
-import java.rmi.RemoteException;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 
@@ -108,9 +101,8 @@ public class CollabNetSecurityRealm extends SecurityRealm {
          * @return returns true if we can get a wsdl from the url, which
          *         indicates that it's a working CollabNet server.
          */
-        private FormValidation checkSoapUrl(String collabNetUrl) {
-            String soapURL = collabNetUrl + CollabNetApp.SOAP_SERVICE + "CollabNet?wsdl";
-            return CNFormFieldValidator.checkUrl(soapURL);
+        public FormValidation checkSoapUrl(String collabNetUrl) {
+            return CNFormFieldValidator.checkSoapUrl(collabNetUrl);
         }    
     }
 

@@ -1,6 +1,6 @@
 package hudson.plugins.collabnet.auth;
 
-import com.gargoylesoftware.htmlunit.FailingHttpStatusCodeException;
+import org.htmlunit.FailingHttpStatusCodeException;
 import hudson.model.Descriptor;
 import hudson.model.Hudson;
 import hudson.plugins.collabnet.util.Util;

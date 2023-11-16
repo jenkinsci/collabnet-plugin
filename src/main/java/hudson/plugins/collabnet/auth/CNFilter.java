@@ -112,7 +112,7 @@ public class CNFilter implements Filter {
             try {
                 ca.loginWithToken(token);
                 auth = new CNAuthentication(username, ca);
-            } catch (IOException re) {
+            } catch (Exception re) {
                 // login failed, but continue
                 log.severe("Login failed with RemoteException: " + 
                            re.getMessage());

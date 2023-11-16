@@ -6,12 +6,10 @@ import com.collabnet.ce.webservices.CTFRelease;
 import com.collabnet.ce.webservices.CTFScmRepository;
 import com.collabnet.ce.webservices.CTFTracker;
 import com.collabnet.ce.webservices.CollabNetApp;
-import com.collabnet.cubit.api.CubitConnector;
 import hudson.plugins.collabnet.auth.CNAuthentication;
 import hudson.plugins.collabnet.CtfSoapHttpSender;
 import hudson.util.FormValidation;
 import hudson.util.Secret;
-import org.apache.axis.utils.StringUtils;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.CloseableHttpClient;
@@ -25,7 +23,6 @@ import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.regex.Matcher;
@@ -132,12 +129,11 @@ public abstract class CNFormFieldValidator {
      * the name of what is being set (used for error msg).
      */
     public static FormValidation requiredCheck(String value, String name) {
-        value = StringUtils.strip(value);
         if (CommonUtil.unset(name)) {
             // ideally this should be set
             name = "above value";
         }
-        if (CommonUtil.unset(value)) {
+        if (CommonUtil.isEmpty(value)) {
             return FormValidation.error("The " + name + " is required.");
         }
         return FormValidation.ok();
@@ -209,8 +205,8 @@ public abstract class CNFormFieldValidator {
      * @param collabNetUrl for the CollabNet server
      * @return returns the validation result of the URL.
      */
-    private static FormValidation checkSoapUrl(String collabNetUrl) {
-        String soapURL = collabNetUrl + CollabNetApp.SOAP_SERVICE + "CollabNet?wsdl";
+    public static FormValidation checkSoapUrl(String collabNetUrl) {
+        String soapURL = collabNetUrl + "/ce-soap60/services/CollabNet?wsdl";
         return checkUrl(soapURL);
     }
 
@@ -408,8 +404,7 @@ public abstract class CNFormFieldValidator {
      * project, and assign (which is the username).
      */
     public static FormValidation assignCheck(CollabNetApp cna, String project, String assign) throws IOException {
-        assign = StringUtils.strip(assign);
-        if (CommonUtil.unset(assign)) {
+        if (CommonUtil.isEmpty(assign)) {
             return FormValidation.ok();
         }
         try {
@@ -558,73 +553,6 @@ public abstract class CNFormFieldValidator {
             }
         }
         return FormValidation.ok();
-    }
-
-
-    /**
-     * Class to check if a CUBiT key has the proper format and allows
-     * login.  Expects a StaplerRequest with value (key), hostURL, and user
-     * set.
-     */
-    public static FormValidation cubitKeyCheck(String hostUrl, String user, String key) {
-        Secret decryptkey = Secret.decrypt(key);
-        if (decryptkey != null) {
-            key = Secret.toString(decryptkey);
-        }
-        if (CommonUtil.unset(key)) {
-            return FormValidation.error("The user API key is required.");
-        }
-        if (!key.matches("\\p{XDigit}{8}-\\p{XDigit}{4}"
-                         + "-\\p{XDigit}{4}-\\p{XDigit}{4}"
-                         + "-\\p{XDigit}{12}")) {
-            if (key.startsWith(" ")) {
-                return FormValidation.error("The key's format is invalid.  "
-                      + "There is a leading space.");
-            } else if (key.endsWith(" ")) {
-                return FormValidation.error("The key's format is invalid.  "
-                      + "There is a trailing space.");
-            } else {
-                return FormValidation.error("The key's format is invalid.");
-            }
-        }
-        if (!CommonUtil.unset(hostUrl) && !CommonUtil.unset(user)) {
-            boolean success;
-            try {
-                success = signedStatus(hostUrl, user, key);
-            } catch (IllegalArgumentException iae) {
-                // failure
-                success = false;
-            }
-            if (!success) {
-                return FormValidation.warning("This host URL, username, and user API "
-                        + "key combination cannot successfully "
-                        + "sign in.");
-            }
-        }
-        return FormValidation.ok();
-    }
-
-    /**
-     * Utility function to check that host, user, and key work.
-     *
-     * @param host URL.
-     * @param user to login as.
-     * @param key to login with.
-     * @return true if the status is good.
-     */
-    private static boolean signedStatus(String host, String user, String key) {
-        key = key.toLowerCase();
-        CubitConnector conn = new CubitConnector(host, user, key);
-        String status;
-        try {
-            status = conn.callCubitApi("status_signed",
-                                          new HashMap<String, String>(),
-                                          true);
-        } catch (IOException e) {
-            return false;
-        }
-        Pattern pat = Pattern.compile(".*OK.*", Pattern.DOTALL);
-        return pat.matcher(status).matches();
     }
 
     /**

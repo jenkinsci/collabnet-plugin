@@ -20,7 +20,7 @@ import hudson.remoting.VirtualChannel;
 import hudson.tasks.BuildStepMonitor;
 import hudson.util.FormValidation;
 
-import io.jenkins.cli.shaded.jakarta.activation.MimetypesFileTypeMap;
+import jakarta.activation.MimetypesFileTypeMap;
 import org.jenkinsci.remoting.RoleChecker;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;

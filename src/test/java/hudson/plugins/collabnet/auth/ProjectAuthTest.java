@@ -4,12 +4,11 @@ import com.collabnet.ce.webservices.CTFList;
 import com.collabnet.ce.webservices.CTFProject;
 import com.collabnet.ce.webservices.CTFRole;
 import com.collabnet.ce.webservices.CollabNetApp;
-import com.gargoylesoftware.htmlunit.FailingHttpStatusCodeException;
-import com.gargoylesoftware.htmlunit.Page;
-import com.gargoylesoftware.htmlunit.html.HtmlForm;
-import com.gargoylesoftware.htmlunit.html.HtmlInput;
-import com.gargoylesoftware.htmlunit.html.HtmlPage;
-
+import org.htmlunit.FailingHttpStatusCodeException;
+import org.htmlunit.Page;
+import org.htmlunit.html.HtmlForm;
+import org.htmlunit.html.HtmlInput;
+import org.htmlunit.html.HtmlPage;
 import hudson.model.FreeStyleProject;
 
 import hudson.plugins.collabnet.TestParam;
