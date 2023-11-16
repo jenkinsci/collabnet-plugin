@@ -18,10 +18,6 @@
 
   <repositories>
     <repository>
-      <id>collabnet-libs</id>
-      <url>file:${project.basedir}/lib</url>
-    </repository>
-    <repository>
       <id>repo.jenkins-ci.org</id>
       <url>https://repo.jenkins-ci.org/public/</url>
     </repository>
@@ -243,8 +239,6 @@
             <artifactId>maven-compiler-plugin</artifactId>
             <version>3.10.1</version>
             <configuration>
-<!--                <source>${compile.java.version}</source>-->
-<!--                <target>${compile.java.version}</target>-->
               <release>11</release>
             </configuration>
         </plugin>
