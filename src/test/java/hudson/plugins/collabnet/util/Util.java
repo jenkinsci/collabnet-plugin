@@ -107,7 +107,7 @@ public class Util {
         WebAssert.assertElementPresent(page, id);
         DomElement elem = page.getElementById(id);
         assert(elem instanceof HtmlPasswordInput);
-        ((HtmlPasswordInput) elem).setValueAttribute(text);
+        ((HtmlPasswordInput) elem).setValue(text);
         return null;
     }
 
@@ -118,7 +118,7 @@ public class Util {
         WebAssert.assertElementPresent(page, id);
         DomElement elem = page.getElementById(id);
         assert(elem instanceof HtmlPasswordInput);
-        assert(text.equals(((HtmlPasswordInput) elem).getValueAttribute()));
+        assert(text.equals(((HtmlPasswordInput) elem).getValue()));
     }
 
     /**
@@ -128,7 +128,7 @@ public class Util {
         WebAssert.assertElementPresent(page, id);
         DomElement elem = page.getElementById(id);
         assert(elem instanceof HtmlTextInput);
-        ((HtmlTextInput) elem).setValueAttribute(text);
+        ((HtmlTextInput) elem).setValue(text);
         return null;
     }
 
@@ -139,7 +139,7 @@ public class Util {
         WebAssert.assertElementPresent(page, id);
         DomElement elem = page.getElementById(id);
         assert(elem instanceof HtmlTextInput);
-        assert(text.equals(((HtmlTextInput) elem).getValueAttribute()));
+        assert(text.equals(((HtmlTextInput) elem).getValue()));
     }
 
     /**
@@ -149,7 +149,7 @@ public class Util {
     public static Page setTextByName(HtmlPage page, String name, String text) {
         DomElement elem = getFirstHtmlElementByName(page, name);
         assert(elem instanceof HtmlTextInput);
-        ((HtmlTextInput) elem).setValueAttribute(text);
+        ((HtmlTextInput) elem).setValue(text);
         return null;
     }
 
@@ -160,7 +160,7 @@ public class Util {
     public static void checkTextByName(HtmlPage page, String name, String text) {
         DomElement elem = getFirstHtmlElementByName(page, name);
         assert(elem instanceof HtmlTextInput);
-        assert(text.equals(((HtmlTextInput) elem).getValueAttribute()));
+        assert(text.equals(((HtmlTextInput) elem).getValue()));
     }
 
     /**
@@ -174,7 +174,7 @@ public class Util {
         HtmlInput radioToClick = null;
         for(DomElement radio: radios) {
             assert(radio instanceof HtmlInput);
-            if (((HtmlInput)radio).getValueAttribute().equals(value)) {
+            if (((HtmlInput)radio).getValue().equals(value)) {
                 radioToClick = (HtmlInput) radio;
                 break;
             }
@@ -193,7 +193,7 @@ public class Util {
         HtmlInput radioWithValue = null;
         for(DomElement radio: radios) {
             assert(radio instanceof HtmlInput);
-            if (((HtmlInput)radio).getValueAttribute().equals(value)) {
+            if (((HtmlInput)radio).getValue().equals(value)) {
                 radioWithValue = (HtmlInput) radio;
                 break;
             }
