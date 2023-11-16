@@ -1,7 +1,6 @@
 package hudson.plugins.collabnet;
 
 import com.collabnet.ce.webservices.CollabNetApp;
-import com.collabnet.ce.webservices.TrustAllSocketFactory;
 import hudson.model.FreeStyleProject;
 import hudson.plugins.collabnet.share.TeamForgeShare;
 import hudson.tasks.Publisher;
@@ -88,7 +87,6 @@ public abstract class CNHudsonTestCase extends HudsonTestCase {
     }
 
     protected CollabNetApp connect() throws IOException {
-        TrustAllSocketFactory.install();
         return new CollabNetApp(teamforge_url, admin_user, password);
     }
 

@@ -1,9 +1,5 @@
 package com.collabnet.ce.webservices;
 
-import com.collabnet.ce.soap60.webservices.ClientSoapStub;
-import com.collabnet.ce.soap60.webservices.ClientSoapStubFactory;
-import com.collabnet.ce.soap60.webservices.cemain.ICollabNetSoap;
-
 import hudson.RelativePath;
 import hudson.plugins.collabnet.CollabNetPlugin;
 import hudson.plugins.collabnet.CtfSoapHttpSender;
@@ -12,11 +8,6 @@ import hudson.plugins.collabnet.util.CNHudsonUtil;
 import hudson.plugins.collabnet.util.CommonUtil;
 import hudson.plugins.collabnet.util.Helper;
 import hudson.util.Secret;
-
-import org.apache.axis.EngineConfiguration;
-import org.apache.axis.SimpleTargetedChain;
-import org.apache.axis.configuration.SimpleProvider;
-
 import org.glassfish.jersey.media.multipart.MultiPart;
 import org.glassfish.jersey.media.multipart.MultiPartFeature;
 import org.glassfish.jersey.media.multipart.file.FileDataBodyPart;
@@ -36,6 +27,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.io.File;
 import java.io.IOException;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.rmi.RemoteException;
 import java.util.ArrayList;
@@ -60,19 +52,10 @@ public class CollabNetApp {
     private String sessionId;
     private String username;
     private String url;
-    protected final ICollabNetSoap icns;
-    private transient Integer soapTimeout;
 
     static Logger logger = Logger.getLogger(CollabNetApp.class.getName());
 
     Helper helper = new Helper();
-
-    static {
-        EngineConfiguration engCfg = getEngineConfiguration();
-        if (engCfg != null) {
-            ClientSoapStubFactory.setConfig(engCfg);
-        }
-    }
 
     /**
      * Creates a new session to the server at the given url.
@@ -118,18 +101,7 @@ public class CollabNetApp {
      */
     public CollabNetApp(String url) {
         this.url = url;
-        this.icns = null;
     }
-
-    private <T> T createProxy(Class<T> type, String wsdlLoc) {
-        int to = -1;
-        if (soapTimeout == null) {
-            soapTimeout = getSoapTimeout();
-        }
-        to = soapTimeout.intValue();
-        return createProxy(type, getServerUrl(), wsdlLoc, to);
-    }
-
     /**
      * Returns the user name that this connection is set up with.
      */
@@ -151,22 +123,6 @@ public class CollabNetApp {
         return this.url;
     }
     
-    /**
-     * Creates ClientSoapStub for the requested type
-     * @param type TeamForge soap application type
-     * @param serverUrl TeamForge URL
-     * @param wsdlLoc wsdl location
-     * @param timeout soap timeout in milliseconds
-     * @return
-     */
-    private static <T> T createProxy(Class<T> type, String serverUrl, String wsdlLoc, int timeout) {
-        String soapUrl = serverUrl + CollabNetApp.SOAP_SERVICE + wsdlLoc + "?wsdl";
-        ClientSoapStub s = (timeout <= 0 ?
-                ClientSoapStubFactory.getSoapStub(type, soapUrl) :
-                    ClientSoapStubFactory.getSoapStub(type, soapUrl, timeout));
-        return type.cast(s);
-    }
-
     /**
      * Login is only done in the constructor.  If you need to
      * re-login, you should get a new CollabNetApp object.
@@ -201,9 +157,9 @@ public class CollabNetApp {
      * @return sessionId
      * @throws RemoteException
      */
-    public void loginWithToken(String token) 
-        throws RemoteException {
-        this.sessionId = icns.loginWithToken(this.username, token);
+    public void loginWithToken(String token)
+            throws IOException, MalformedURLException, RemoteException {
+        this.sessionId = helper.getSessionId(new URL(this.url), token);
     }
     
     /**
@@ -496,7 +452,8 @@ public class CollabNetApp {
      * @param timeZone
      *      User's time zone. The ID for a TimeZone, either an abbreviation such as "PST", a full name such as "America/Los_Angeles", or a custom ID such as "GMT-8:00".
      */
-    public CTFUser createUser(String username, String email, String fullName, String locale, String timeZone, boolean isSuperUser, boolean isRestrictedUser, String password) throws IOException {
+    public CTFUser createUser(String username, String email, String fullName, String locale, String timeZone,
+                                   boolean isSuperUser, boolean isRestrictedUser, String password) throws IOException {
     	String organization = null;
     	String licenseType = "ALM";
         CTFUser ctfUser = null;
@@ -564,22 +521,7 @@ public class CollabNetApp {
         return CNHudsonUtil.getCollabNetApp(url, username, password);
     }
 
-    public static EngineConfiguration getEngineConfiguration() {
-        SimpleProvider config = null;
-        if (CollabNetApp.areSslErrorsIgnored()) {
-            config = new SimpleProvider();
-            config.deployTransport("https", new SimpleTargetedChain(new CtfSoapHttpSender())); //$NON-NLS-1$
-            config.deployTransport("http", new SimpleTargetedChain(new CtfSoapHttpSender())); //$NON-NLS-1$
-        }
-        return config;
-    }
-
     public static boolean areSslErrorsIgnored() {
         return Boolean.getBoolean(CollabNetPlugin.class.getName() + ".skipSslValidation");
-    }
-
-    public static int getSoapTimeout() {
-        return Integer.getInteger(
-                CollabNetPlugin.class.getName() + ".soapTimeout", -1).intValue();
     }
 }

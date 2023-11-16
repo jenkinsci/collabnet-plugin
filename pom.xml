@@ -12,15 +12,7 @@
   <url>https://github.com/jenkinsci/collabnet-plugin</url>
   <packaging>hpi</packaging>
 
-  <developers>
-    <developer>
-      <id>kohsuke</id>
-      <name>Kohsuke Kawaguchi</name>
-    </developer>
-  </developers>
-
   <properties>
-    <compile.java.version>11</compile.java.version>
     <hudson.plugin.version>1.23</hudson.plugin.version>
   </properties>
 
@@ -36,11 +28,6 @@
   </repositories>
 
   <dependencies>
-    <dependency>
-       <groupId>org.eclipse.aether</groupId>
-       <artifactId>aether-api</artifactId>
-       <version>1.1.0</version>
-     </dependency>
      <dependency>
        <groupId>org.jenkins-ci.lib</groupId>
        <artifactId>lib-jenkins-maven-embedder</artifactId>
@@ -50,18 +37,20 @@
            <groupId>org.sonatype.sisu</groupId>
            <artifactId>sisu-guice</artifactId>
          </exclusion>
+         <exclusion>
+           <groupId>org.sonatype.plexus</groupId>
+           <artifactId>plexus-sec-dispatcher</artifactId>
+         </exclusion>
+         <exclusion>
+           <groupId>org.sonatype.sisu</groupId>
+           <artifactId>sisu-inject-plexus</artifactId>
+         </exclusion>
+         <exclusion>
+           <groupId>org.sonatype.aether</groupId>
+           <artifactId>aether-connector-wagon</artifactId>
+         </exclusion>
        </exclusions>
       </dependency>
-    <dependency>
-      <groupId>com.google.guava</groupId>
-      <artifactId>guava</artifactId>
-      <version>13.0.1</version>
-    </dependency>
-    <dependency>
-      <groupId>com.rabbitmq</groupId>
-      <artifactId>amqp-client</artifactId>
-      <version>3.6.5</version>
-    </dependency>
     <dependency>
          <groupId>org.easymock</groupId>
          <artifactId>easymock</artifactId>
@@ -79,87 +68,9 @@
          <version>1.4</version>
     </dependency>
     <dependency>
-         <groupId>org.apache.httpcomponents</groupId>
-         <artifactId>httpclient</artifactId>
-         <version>4.5.2</version>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.httpcomponents</groupId>
-      <artifactId>httpmime</artifactId>
-      <version>4.5.2</version>
-    </dependency>
-    <dependency>
           <groupId>commons-validator</groupId>
           <artifactId>commons-validator</artifactId>
           <version>1.4.0</version>
-    </dependency>
-    <dependency>
-          <groupId>axis</groupId>
-          <artifactId>axis</artifactId>
-          <version>1.4</version>
-          <scope>runtime</scope>
-    </dependency>
-    <dependency>
-      <groupId>com.google.code.findbugs</groupId>
-      <artifactId>annotations</artifactId>
-      <version>2.0.1</version>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.maven</groupId>
-      <artifactId>maven-embedder</artifactId>
-      <version>3.1.1</version>
-      <exclusions>
-         <exclusion>
-           <groupId>org.sonatype.sisu</groupId>
-           <artifactId>sisu-guice</artifactId>
-         </exclusion>
-      </exclusions>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.commons</groupId>
-      <artifactId>commons-lang3</artifactId>
-      <version>3.0</version>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.axis</groupId>    
-      <artifactId>axis</artifactId>
-      <version>1.4</version>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.axis</groupId>    
-      <artifactId>axis-jaxrpc</artifactId>
-      <version>1.4</version>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.axis</groupId>    
-      <artifactId>axis-saaj</artifactId>
-      <version>1.4</version>
-    </dependency>
-    <dependency>
-      <groupId>commons-httpclient</groupId>
-      <artifactId>commons-httpclient</artifactId>
-      <version>[3.0,4.0)</version>
-      <exclusions>
-        <exclusion>
-          <groupId>junit</groupId>
-          <artifactId>junit</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
-    <dependency>
-      <groupId>com.collabnet.contrib</groupId>
-      <artifactId>httpclient-contrib-ssl</artifactId>
-      <version>1.0</version>
-    </dependency>
-    <dependency>
-      <groupId>com.collabnet.cubit.api</groupId>
-      <artifactId>cubit-rest-connector</artifactId>
-      <version>1.0</version>
-    </dependency>
-    <dependency>
-      <groupId>com.collabnet.ce.soap60.webservices</groupId>
-      <artifactId>sf_soap60_sdk</artifactId>
-      <version>1.1</version>
     </dependency>
     <dependency>
       <groupId>org.jvnet.hudson.plugins</groupId>
@@ -171,47 +82,10 @@
       <artifactId>subversion</artifactId>
       <version>1.23</version>
     </dependency>
-    <dependency>
-      <groupId>log4j</groupId>
-      <artifactId>log4j</artifactId>
-      <version>1.2.14</version>
-    </dependency>
     <dependency><!-- commons-httpclient brings in 1.3 but core wants 1.4 -->
       <groupId>commons-codec</groupId>
       <artifactId>commons-codec</artifactId>
-      <version>1.15</version>
-    </dependency>
-    <dependency>
-      <groupId>jakarta.servlet</groupId>
-      <artifactId>jakarta.servlet-api</artifactId>
-      <version>4.0.4</version>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.mockito</groupId>
-      <artifactId>mockito-core</artifactId>
-      <version>2.2.0</version>
-    </dependency>
-    <dependency>
-      <groupId>com.fasterxml.jackson.core</groupId>
-      <artifactId>jackson-annotations</artifactId>
-      <version>2.12.6</version>
-    </dependency>
-    <dependency>
-      <groupId>com.fasterxml.jackson.core</groupId>
-      <artifactId>jackson-core</artifactId>
-      <version>2.12.6</version>
-    </dependency>
-    <dependency>
-      <groupId>com.fasterxml.jackson.core</groupId>
-      <artifactId>jackson-databind</artifactId>
-      <version>2.12.6.1</version>
-    </dependency>
-    <dependency>
-      <groupId>org.projectlombok</groupId>
-      <artifactId>lombok</artifactId>
-      <version>1.18.2</version>
-      <scope>provided</scope>
+      <version>1.16.0</version>
     </dependency>
     <dependency>
       <groupId>org.jenkins-ci.plugins.workflow</groupId>
@@ -230,20 +104,15 @@
       <version>2.6.1.1</version>
     </dependency>
     <dependency>
-      <groupId>org.springframework.security.oauth</groupId>
-      <artifactId>spring-security-oauth2</artifactId>
-      <version>2.3.8.RELEASE</version>
-    </dependency>
-    <dependency>
-      <groupId>com.googlecode.json-simple</groupId>
-      <artifactId>json-simple</artifactId>
-      <version>1.1</version>
+      <groupId>org.htmlunit</groupId>
+      <artifactId>htmlunit</artifactId>
+      <version>3.7.0</version>
     </dependency>
     <dependency>
       <groupId>org.jenkins-ci.main</groupId>
-      <artifactId>jenkins-test-harness-htmlunit</artifactId>
-      <version>141.v740721146265</version>
-      <scope>compile</scope>
+      <artifactId>jenkins-test-harness</artifactId>
+      <version>2064.vcd3b_b_8f3f2b_a_</version>
+      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.glassfish.jersey.media</groupId>
@@ -261,85 +130,21 @@
       <version>1.1.1</version>
     </dependency>
     <dependency>
-      <groupId>org.jenkins-ci.main</groupId>
-      <artifactId>cli</artifactId>
-      <version>2.361</version>
+      <groupId>commons-io</groupId>
+      <artifactId>commons-io</artifactId>
+      <version>2.15.0</version> <!-- Use the latest version -->
     </dependency>
+    <dependency>
+      <groupId>org.apache.maven.wagon</groupId>
+      <artifactId>wagon-provider-api</artifactId>
+      <version>2.12</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>jakarta.activation</groupId>
+      <artifactId>jakarta.activation-api</artifactId>
+     </dependency>
   </dependencies>
-
-  <dependencyManagement>
-    <dependencies>
-      <dependency>
-        <groupId>org.sonatype.aether</groupId>
-        <artifactId>aether.util</artifactId>
-        <version>1.11</version>
-      </dependency>
-      <dependency>
-        <groupId>org.apache.maven</groupId>
-        <artifactId>maven-compat</artifactId>
-        <version>3.1.1</version>
-        <scope>provided</scope>
-      </dependency>
-      <dependency>
-        <groupId>org.apache.maven</groupId>
-        <artifactId>maven-core</artifactId>
-        <version>3.1.1</version>
-      </dependency>
-      <dependency>
-        <groupId>org.sonatype.aether</groupId>
-        <artifactId>aether-spi</artifactId>
-        <version>1.13</version>
-      </dependency>
-      <dependency>
-        <groupId>org.apache.maven.wagon</groupId>
-        <artifactId>wagon-provider-api</artifactId>
-        <version>2.4</version>
-        <scope>provided</scope>
-      </dependency>
-      <dependency>
-        <groupId>org.apache.maven</groupId>
-        <artifactId>maven-aether-provider</artifactId>
-        <version>3.1.1</version>
-      </dependency>
-      <dependency>
-        <groupId>org.apache.maven</groupId>
-        <artifactId>maven-artifact</artifactId>
-        <version>3.1.1</version>
-      </dependency>
-      <dependency>
-        <groupId>commons-codec</groupId>
-        <artifactId>commons-codec</artifactId>
-        <version>1.9</version>
-      </dependency>
-      <dependency>
-        <groupId>jakarta.activation</groupId>
-        <artifactId>jakarta.activation-api</artifactId>
-        <version>2.0.1</version>
-      </dependency>
-      <dependency>
-        <groupId>io.jenkins.cli</groupId>
-        <artifactId>shaded-jakarta-activation</artifactId>
-        <version>1.0</version>
-      </dependency>
-      <dependency>
-        <groupId>commons-io</groupId>
-        <artifactId>commons-io</artifactId>
-        <version>2.11.0</version> <!-- Use the latest version -->
-      </dependency>
-    </dependencies>
-  </dependencyManagement>
-
-  <distributionManagement>
-    <repository>
-      <uniqueVersion>false</uniqueVersion>
-      <id>maven.jenkins-ci.org</id>
-      <url>https://repo.jenkins-ci.org/releases/</url>
-    </repository>
-    <snapshotRepository>
-      <id>maven.jenkins-ci.org</id>
-      <url>https://repo.jenkins-ci.org/snapshots/</url>
-    </snapshotRepository>
-  </distributionManagement>
 
   <build>
     <finalName>CollabNet-${project.version}</finalName>
@@ -353,6 +158,7 @@
       </plugin>
       <plugin>
         <artifactId>maven-surefire-plugin</artifactId>
+        <version>3.0.0-M8</version>
         <configuration>
           <forkMode>never</forkMode>
           <systemProperties>
@@ -422,7 +228,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-release-plugin</artifactId>
-        <version>3.0.0-M1</version>
+        <version>3.0.0-M7</version>
         <dependencies>
           <!-- workaround for mvn.bat to mvn.cmd rename. see https://issues.apache.org/jira/browse/MRELEASE-902 for details -->
           <dependency>
@@ -435,28 +241,18 @@
         <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-compiler-plugin</artifactId>
-            <version>3.8.0</version>
+            <version>3.10.1</version>
             <configuration>
 <!--                <source>${compile.java.version}</source>-->
 <!--                <target>${compile.java.version}</target>-->
               <release>11</release>
             </configuration>
         </plugin>
-      <plugin>
-        <groupId>org.jenkins-ci.tools</groupId>
-        <artifactId>maven-hpi-plugin</artifactId>
-        <version>3.46</version>
-        <configuration>
-          <httpConnector>
-            <port>8088</port> <!-- Change this to your desired port -->
-          </httpConnector>
-        </configuration>
-      </plugin>
-    </plugins>
+     </plugins>
   </build>
 
   <scm>
-    <connection>scm:git:git://github.com/jenkinsci/collabnet-plugin.git</connection>
+    <connection>scm:git:https://github.com/jenkinsci/collabnet-plugin.git</connection>
     <developerConnection>scm:git:git@github.com:jenkinsci/collabnet-plugin.git</developerConnection>
     <url>https://github.com/jenkinsci/collabnet-plugin</url>
     <tag>HEAD</tag>
