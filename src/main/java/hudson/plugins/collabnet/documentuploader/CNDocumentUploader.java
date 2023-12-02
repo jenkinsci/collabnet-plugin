@@ -54,12 +54,13 @@ public class CNDocumentUploader extends AbstractTeamForgeNotifier {
     /**
      * Creates a new CNDocumentUploader object.
      *
+     * @param connectionFactory connectionFactory
      * @param project where the build log will be uploaded.
      * @param uploadPath on the CollabNet server, where the build log should
      *                   be uploaded.
-     * @param description
-     * @param filePatterns
-     * @param includeBuildLog
+     * @param description the description of the document
+     * @param filePatterns array of FilePattern objects
+     * @param includeBuildLog boolean flag
      */
     @DataBoundConstructor
     public CNDocumentUploader(ConnectionFactory connectionFactory,

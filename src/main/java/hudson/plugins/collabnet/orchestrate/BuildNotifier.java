@@ -224,7 +224,7 @@ public class BuildNotifier extends Notifier {
     /**
      * Sets the CTF URL
      *
-     * @param ctfUrl
+     * @param ctfUrl ctfUrl
      */
     public void setCtfUrl(String ctfUrl) {
         this.ctfUrl = ctfUrl;
@@ -242,7 +242,7 @@ public class BuildNotifier extends Notifier {
     /**
      * Sets the CTF User
      *
-     * @param ctfUser
+     * @param ctfUser ctfUser
      */
     public void setCtfUser(String ctfUser) {
         this.ctfUser = ctfUser;

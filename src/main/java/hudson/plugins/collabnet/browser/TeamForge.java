@@ -249,7 +249,7 @@ public class TeamForge extends SubversionRepositoryBrowser {
          *
          * @param req contains parameters from 
          *            the config.jelly.
-         * @throws ServletException
+         * @throws IOException If any problem occrus when validating repo request
          */
         public FormValidation doCheckRepo(StaplerRequest req) throws IOException {
             return CNFormFieldValidator.repoCheck(req);
