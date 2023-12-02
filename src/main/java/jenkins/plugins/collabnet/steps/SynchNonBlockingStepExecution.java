@@ -19,7 +19,7 @@ import hudson.util.NamingThreadFactory;
 import jenkins.model.Jenkins;
 
 /**
- * Similar to {@link SynchronousStepExecution} (it executes synchronously too) but it does not block the CPS VM thread.
+ * Similar to SynchronousStepExecution (it executes synchronously too) but it does not block the CPS VM thread.
  * @see StepExecution
  * @param <T> the type of the return value (may be {@link Void})
  */

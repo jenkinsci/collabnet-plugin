@@ -175,7 +175,7 @@ public class CNFileRelease extends AbstractTeamForgeNotifier {
     /**
      * Get the ResultAction for this build.
      *
-     * @param numUploaded
+     * @param numUploaded count
      * @return CnfrResultAction.
      */
     public CnfrResultAction createAction(int numUploaded, CTFRelease release) {
@@ -193,8 +193,8 @@ public class CNFileRelease extends AbstractTeamForgeNotifier {
      * @param build current Jenkins build.
      * @param release where the files will be uploaded.
      * @return the number of files successfully uploaded.
-     * @throws IOException
-     * @throws InterruptedException
+     * @throws IOException If any problem occurs when upload files
+     * @throws InterruptedException If interrupted when upload files
      */
     public int uploadFiles(AbstractBuild<?, ?> build, CTFRelease release) throws IOException, InterruptedException {
         int numUploaded = 0;

@@ -41,7 +41,7 @@ public abstract class CNFormFieldValidator {
      * environmental variables to interpret.
      *
      * @param str the string to test.
-     * @return error message, if any variables are missing, null if all
+     * @throws FormValidation  error message, if any variables are missing, null if all
      *         are found.
      */
     public static void checkInterpretedString(String str) throws FormValidation {

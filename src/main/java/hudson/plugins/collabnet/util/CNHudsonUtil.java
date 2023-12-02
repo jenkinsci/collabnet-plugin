@@ -25,9 +25,9 @@ public class CNHudsonUtil {
     private CNHudsonUtil() {}
 
     /**
-     * @param url
-     * @param username
-     * @param password
+     * @param url the teamforge url
+     * @param username the teamforge username
+     * @param password credential of the user
      * @return collabnet app, if one can be created; null otherwise.
      */
     public static CollabNetApp getCollabNetApp(String url, 
@@ -48,9 +48,9 @@ public class CNHudsonUtil {
     }
 
     /**
-     * @param url
-     * @param username
-     * @param sessionId
+     * @param url the teamforge url
+     * @param username the teamforge username
+     * @param sessionId user sessionId
      * @return collabnet app, if one can be created; null otherwise.
      */
     public static CollabNetApp recreateCollabNetApp(String url, String username, String sessionId) {
@@ -125,7 +125,7 @@ public class CNHudsonUtil {
     /**
      * Get a releaseId, given a projectId and a release title.
      *
-     * @param release
+     * @param release name of the release
      * @return the releaseId in this project which matches the release name
      *         or null if none is found.
      */
@@ -141,7 +141,7 @@ public class CNHudsonUtil {
 
     /**
      * @param cna for accessing the webservice methods.
-     * @param username
+     * @param username username
      * @return true if the user can be found.
      */
     public static boolean isUserValid(CollabNetApp cna, String username) {
@@ -189,8 +189,8 @@ public class CNHudsonUtil {
 
     /**
      * Turn version string into an array, where each version is in its own index/pos.
-     * @param apiVersionStr
-     * @return
+     * @param apiVersionStr apiVersionStr
+     * @return array of version strings in int format
      */
     public static int[] getVersionArray(String apiVersionStr) {
         int[] versionNums = null;
@@ -206,8 +206,9 @@ public class CNHudsonUtil {
 
     /**
      * @param cna for accessing the webservice methods.
-     * @param projectName
-     * @param repoName
+     * @param projectName the project name
+     * @param repoName the repo name
+     * @return system id
      */
     public static String getSystemId(CollabNetApp cna, String projectName, 
                                      String repoName) throws IOException {

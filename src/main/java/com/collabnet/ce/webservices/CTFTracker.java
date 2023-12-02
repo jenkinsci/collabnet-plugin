@@ -88,9 +88,9 @@ public class CTFTracker extends CTFFolder {
      * @param flexFields user-defined fields.
      * @param fileName of the attachment.
      * @param fileMimeType of the attachment.
-     * @param fileId of the attachment (returned when attachment was uploaded).
-     * @return the newly created ArtifactSoapDO.
-     * @throws RemoteException
+     * @param file of the attachment (returned when attachment was uploaded).
+     * @return the newly created Artifact object.
+     * @throws RemoteException if any problems occurs while creating artifact
      */
     public CTFArtifact createArtifact(   String title,
                                                    String description,

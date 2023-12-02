@@ -162,7 +162,7 @@ public class CNAuthentication implements Authentication {
      * If this ever turns out to be insufficient, we could change this
      * method to get the data on the fly.
      *
-     * @param groups
+     * @param groups collection of groups
      * @return true if the user is a member of any of the groups.
      */
     public boolean isMemberOfAny(Collection<String> groups) {

@@ -124,8 +124,7 @@ public abstract class AbstractTeamForgeNotifier extends Notifier {
         /**
          * Form validation for the project field.
          *
-         * @throws IOException
-         * @throws ServletException
+         * @throws IOException if any problems occurs when validation project data
          */
         public FormValidation doCheckProject(CollabNetApp app, @QueryParameter String value) throws IOException {
             return CNFormFieldValidator.projectCheck(app,value);
