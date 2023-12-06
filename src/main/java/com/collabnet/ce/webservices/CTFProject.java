@@ -411,7 +411,9 @@ public class CTFProject extends CTFObject implements ObjectWithTitle {
 
         // create any missing folders
         for (; i < folderNames.length; i++) {
-            cur = cur.createFolder(folderNames[i], folderNames[i]);
+            if (folderNames[i] != null && !folderNames[i].isEmpty()) {
+                cur = cur.createFolder(folderNames[i], folderNames[i]);
+            }
         }
         return cur;
     }
