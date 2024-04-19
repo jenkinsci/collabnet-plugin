@@ -342,20 +342,22 @@ public class CTFProject extends CTFObject implements ObjectWithTitle {
     public CTFList<CTFRole> getUserRoles(String username) throws IOException {
         CTFList<CTFRole> r = new CTFList<CTFRole>();
         String end_point =  app.getServerUrl() + CTFConstants.FOUNDATION_PRJ_URL + getId() + "/roles/by-users" ;
-        Response response = helper.request(end_point, app.getSessionId(), null, HttpMethod.GET, null);
+        JSONObject requestPayload = new JSONObject();
+        JSONArray userNames =  new JSONArray();
+        userNames.add(username);
+        requestPayload.put("userNames", userNames);
+        Response response = helper.request(end_point, app.getSessionId(), requestPayload.toString(), HttpMethod.POST, null);
         String result = response.readEntity(String.class);
         int status = response.getStatus();
         if (status == 200) {
             JSONObject data = null;
             try {
                 data = (JSONObject) new JSONParser().parse(result);
-                if (data != null & data.containsKey("items")) {
-                    JSONArray dataArray = (JSONArray)data.get("items");
-                    Iterator it = dataArray.iterator();
-                    while (it.hasNext()) {
-                        JSONObject jsonObject = (JSONObject) it.next();
-                        r.add(new CTFRole(this, jsonObject));
-                    }
+                JSONObject roleMap = (JSONObject) data.get("userRoleMap");
+                JSONArray roleArray = ((JSONArray) roleMap.get(username));
+                for (int i=0; i< roleArray.size(); i++) {
+                    CTFRole ctfRole = getRoleById(roleArray.get(i).toString());
+                    r.add(ctfRole);
                 }
             } catch (ParseException e) {
                 logger.log(Level.WARNING, "Unable to parse the json content in getUserRoles() - " + e.getLocalizedMessage(), e);
@@ -454,4 +456,24 @@ public class CTFProject extends CTFObject implements ObjectWithTitle {
         }
         return null;
      }
+
+    public CTFRole getRoleById(String roleId) throws IOException {
+        String end_point = app.getServerUrl() + CTFConstants.ROLE_URL + roleId;
+        Response response = helper.request(end_point, app.getSessionId(), null, HttpMethod.GET, null);
+        String result = response.readEntity(String.class);
+        int status = response.getStatus();
+        if (status == 200) {
+            JSONObject data = null;
+            try {
+                data = (JSONObject) new JSONParser().parse(result);
+                return new CTFRole(this, data);
+            } catch (ParseException e) {
+                logger.log(Level.WARNING, "Unable to parse the json content in getPackages() - " + e.getLocalizedMessage(), e);
+            }
+        } else {
+            logger.log(Level.WARNING,"Error getting the packages - " + status + ", Error Msg - " + result);
+            throw new IOException("Error getting the packages - " + status + ", Error Msg - " + helper.getErrorMessage(result));
+        }
+        return null;
+    }
 }

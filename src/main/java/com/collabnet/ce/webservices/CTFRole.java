@@ -78,13 +78,8 @@ public class CTFRole extends CTFObject implements ObjectWithTitle {
         Response response = helper.request(end_point, app.getSessionId(), null, HttpMethod.PUT, null);
         String result = response.readEntity(String.class);
         int status = response.getStatus();
-        if (status == 200) {
-            JSONObject memberData = null;
-            try {
-                memberData = (JSONObject) new JSONParser().parse(result);
-            } catch (ParseException e) {
-                logger.log(Level.WARNING, "Unable to parse the json content in grant() - " + e.getLocalizedMessage(), e);
-            }
+        if (status == 204) {
+            logger.log(Level.INFO, username + "successfully added to the role");
         } else {
             logger.log(Level.WARNING, "Error while adding a member to the role - " + status +  ", Error Msg - " + result);
             throw new IOException("Error while adding a member to the role - " + status + ", Error Msg - " + helper.getErrorMessage(result));
