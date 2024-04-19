@@ -1,5 +1,10 @@
 # Changelog:
 
+**Version 2.0.10:** Released 12/02/2023.
+
+- Replaced TeamForge SOAP APIs usage with TeamForge REST APIs.
+- Removed the soap related classes and its dependencies.
+
 **Version 2.0.9:** Released 08/17/2022.
 
 - [Fix security issue](https://issues.jenkins.io/browse/SECURITY-2157)

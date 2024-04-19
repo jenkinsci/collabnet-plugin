@@ -612,7 +612,7 @@ public class CNTracker extends AbstractTeamForgeNotifier {
         /**
          * Form validation for the comment and description.
          *
-         * @param value
+         * @param value of field
          * @param name of field
          */
         public FormValidation doRequiredInterpretedCheck(

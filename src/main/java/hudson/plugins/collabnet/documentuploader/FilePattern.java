@@ -66,9 +66,6 @@ public class FilePattern extends AbstractDescribableImpl<FilePattern> {
 
         /**
          * Form validation for the file patterns.
-         *
-         * @throws IOException
-         * @throws ServletException
          */
         public FormValidation doCheckValue(@QueryParameter String value) throws FormValidation {
             return CNFormFieldValidator.unrequiredInterpretedCheck(value, "file patterns");

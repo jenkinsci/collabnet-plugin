@@ -151,7 +151,7 @@ public class CNProjectACL extends ACL {
          * that permission (if any).  Returns the first permission granting
          * role found (but we expect only one).
          *
-         * @param permission
+         * @param permission Permission object
          * @return the CollabNet role which would grant that permission, or
          *         null if none would.
          */

@@ -434,7 +434,7 @@ public class CTFProject extends CTFObject implements ObjectWithTitle {
      *
      * @param documentPath string with folders separated by '/'.
      * @return the first missing folder, or null if all are found.
-     * @throws RemoteException
+     * @throws RemoteException if any problems occurs while verifying path
      */
      public String verifyPath(String documentPath) throws IOException {
         documentPath = normalizePath(documentPath);

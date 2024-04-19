@@ -249,7 +249,7 @@ public class CNAuthProjectProperty extends JobProperty<Job<?, ?>> {
         }
         
         /**
-         * @param jobType
+         * @param jobType job type class
          * @return true when the CNAuthorizationStrategy is in effect.
          */
         @Override

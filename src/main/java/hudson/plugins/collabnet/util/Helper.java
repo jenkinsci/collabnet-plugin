@@ -290,8 +290,8 @@ public class Helper {
     /**
      * Logging helper that prepends the log message prefix
      *
-     * @param msg
-     * @param printStream
+     * @param msg log message
+     * @param printStream print stream
      */
     public static void log(String msg, PrintStream printStream) {
         printStream.print(LOG_MESSAGE_PREFIX);

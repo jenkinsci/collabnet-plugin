@@ -45,7 +45,7 @@ public class CommonUtil {
      * Translates a string that may contain  build vars like ${BUILD_VAR} to
      * a string with those vars interpreted.
      * 
-     * @param build the Jenkins build.
+     * @param envVars the Jenkins build env variables map.
      * @param str the string to be interpreted.
      * @return the interpreted string.
      * @throws IllegalArgumentException if the env var is not found.
@@ -73,7 +73,7 @@ public class CommonUtil {
     /**
      * Convenience method to log RemoteExceptions.  
      *
-     * @param log to log this message to.
+     * @param logger to log this message to.
      * @param methodName in progress on when this exception occurred.
      * @param re The RemoteException that was thrown.
      */
@@ -132,7 +132,7 @@ public class CommonUtil {
      * strings, removing unneccessary whitespace.  Also will remove
      * empty values (i.e. only whitespace).
      * 
-     * @param commaStr 
+     * @param commaStr comma-delimited string
      * @return an array of the strings, with leading and trailing 
      *         whitespace removed.
      */

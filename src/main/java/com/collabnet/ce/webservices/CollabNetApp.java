@@ -154,8 +154,9 @@ public class CollabNetApp {
      * Login with a token.
      *
      * @param token one-time token
-     * @return sessionId
-     * @throws RemoteException
+     * @throws IOException if any problems occurs reading/writing file
+     * @throws MalformedURLException if TeamForge URL is invalid
+     * @throws RemoteException If unexpected system error occurs
      */
     public void loginWithToken(String token)
             throws IOException, MalformedURLException, RemoteException {
@@ -165,7 +166,7 @@ public class CollabNetApp {
     /**
      * Logoff for this user and invalidate the sessionId.
      *
-     * @throws RemoteException
+     * @throws RemoteException If unexpected system error occurs
      */
     public void logoff() throws RemoteException {
         this.checkValidSessionId();
@@ -175,6 +176,10 @@ public class CollabNetApp {
     /**
      * Uploads a file. The returned file object can be then used as an input
      * to methods like {@link CTFRelease#addFile(String, String, CTFFile)}.
+     *
+     * @param src The file to upload
+     * @return CTFFile object
+     * @throws IOException if any problems occurs reading/writing file
      */
     public CTFFile upload(File src) throws IOException {
         String end_point =  url + CTFConstants.FILE_STORAGE_URL;
@@ -212,7 +217,7 @@ public class CollabNetApp {
      *
      * @param username to check. 
      * @return true, if the user is found, false otherwise.
-     * @throws RemoteException
+     * @throws IOException if any problems occurs reading/writing file
      */
     public boolean isUsernameValid(String username) throws IOException {
         this.checkValidSessionId();
@@ -224,7 +229,7 @@ public class CollabNetApp {
      * Can only be called by SuperUsers.
      *
      * @return a Map of all group name/ids.
-     * @throws RemoteException 
+     * @throws IOException if any problems occurs reading/writing file
      */
     public CTFList<CTFGroup> getGroups() throws IOException {
         this.checkValidSessionId();
@@ -255,10 +260,25 @@ public class CollabNetApp {
         return r;
     }
 
+    /**
+     * Get the Group for given fullName.
+     *
+     * @param fullName the fullName of group 
+     * @return a CTFGroup object
+     * @throws IOException if any problems occurs reading/writing file
+     */
     public CTFGroup getGroupByTitle(String fullName) throws IOException {
         return getGroups().byTitle(fullName);
     }
 
+    /**
+     * Creates Group.
+     *
+     * @param fullName the fullName of group 
+     * @param description the description of group 
+     * @return Group object.
+     * @throws IOException if any problems occurs reading/writing file
+     */
     public CTFGroup createGroup(String fullName, String description) throws IOException {
         String end_point =  url + CTFConstants.FOUNDATION_URL + "groups";
         JSONObject requestPayload = new JSONObject();
@@ -292,6 +312,8 @@ public class CollabNetApp {
      *      Human readable title of the project that can include whitespace and so on.
      * @param description
      *      Longer human readable description of the project.
+     * @throws IOException if any problems occurs reading/writing file
+     * @return project id
      */
     public String createProject(String name, String title, String description) throws IOException {
         String projectId = null;
@@ -321,9 +343,9 @@ public class CollabNetApp {
     /**
      * Return a collection of users that are active members of the group.
      *
-     * @param groupId
+     * @param groupId groupId
      * @return active users (collection of usernames).
-     * @throws RemoteException
+     * @throws IOException if any problems occurs reading/writing file
      */
     public Collection<String> getGroupUsers(String groupId) 
         throws IOException {
@@ -365,6 +387,13 @@ public class CollabNetApp {
         }
     }
 
+    /**
+     * Returns project object for given projectId 
+     *
+     * @param projectId the teamforge project id or path
+     * @return project object
+     * @throws IOException if any problems occurs reading project data
+     */
     public CTFProject getProjectById(String projectId) throws IOException {
         CTFProject ctfProject = null;
         String end_point =  url + CTFConstants.FOUNDATION_URL + "projects/" + projectId;
@@ -386,6 +415,12 @@ public class CollabNetApp {
         return ctfProject;
     }
 
+    /**
+     * Return a collection of projects
+     *
+     * @return list of projects
+     * @throws IOException if any problems occurs reading projects data
+     */
     public List<CTFProject> getProjects() throws IOException {
         List<CTFProject> r = new ArrayList<CTFProject>();
         String end_point =  url + CTFConstants.FOUNDATION_URL + "projects";
@@ -417,6 +452,13 @@ public class CollabNetApp {
         return r;
     }
 
+    /**
+     * Returns project data for given project title
+     *
+     * @param title project title
+     * @return project data
+     * @throws IOException if any problems occurs reading project data
+     */
     public CTFProject getProjectByTitle(String title) throws IOException {
         for (CTFProject p : getProjects())
             if (p.getTitle().equals(title))
@@ -426,17 +468,30 @@ public class CollabNetApp {
 
     /**
      * Returns the current user that's logged in.
+     *
+     * @return current user data
+     * @throws IOException if any problems occurs reading user data
      */
     public CTFUser getMyself() throws IOException {
         return getUser(username);
     }
 
+    /**
+     * Returns the current user that's logged in.
+     *
+     * @return current user data
+     * @throws IOException if any problems occurs reading user data
+     */
     public CTFUser getMyselfData() throws IOException {
         return new CTFUser(this, helper.getUserData(this.url, this.sessionId, username));
     }
 
     /**
-     * Retrieves the user, or null if no such user exists.
+     * Retrieves the user with the specified username, or null if no such user exists.
+     *
+     * @param username the username for which the user data to be retrived
+     * @return user data for specified username
+     * @throws IOException if any problems occurs reading user data
      */
     public CTFUser getUser(String username) throws IOException {
         try {
@@ -447,10 +502,21 @@ public class CollabNetApp {
     }
 
     /**
+     * Creates new teamforge user
+     * 
+     * @param username the name of the user to be created
+     * @param email the mail id of the user
+     * @param fullName the fullname of the user
      * @param locale
      *      Locale of the new user (currently supported locales are "en" for English, "ja" for Japanese).
      * @param timeZone
-     *      User's time zone. The ID for a TimeZone, either an abbreviation such as "PST", a full name such as "America/Los_Angeles", or a custom ID such as "GMT-8:00".
+     *      User's time zone. The ID for a TimeZone, either an abbreviation such as "PST",
+     *      a full name such as "America/Los_Angeles", or a custom ID such as "GMT-8:00".
+     * @param isSuperUser boolean flag
+     * @param isRestrictedUser boolean flag
+     * @param password the password of the user
+     * @return user data 
+     * @throws IOException if any problems occurs reading/writing user data
      */
     public CTFUser createUser(String username, String email, String fullName, String locale, String timeZone,
                                    boolean isSuperUser, boolean isRestrictedUser, String password) throws IOException {
