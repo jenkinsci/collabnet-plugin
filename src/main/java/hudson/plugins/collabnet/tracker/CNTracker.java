@@ -367,7 +367,7 @@ public class CNTracker extends AbstractTeamForgeNotifier {
         // check assign user validity
         String assignTo = this.getValidAssignUser(t.getProject());
         String title = this.getInterpreted(build, this.getTitle());
-        CTFRelease release = CNHudsonUtil.getProjectReleaseId(t.getProject(),this.getRelease());
+        CTFRelease release = this.getRelease().isEmpty() ? null : CNHudsonUtil.getProjectReleaseId(t.getProject(),this.getRelease());
         String releaseId =  release != null ? release.getId() : null;
         String[] releaseIds = releaseId != null ? new String[] {releaseId} : ArrayUtils.EMPTY_STRING_ARRAY;
         try {
