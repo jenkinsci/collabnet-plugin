@@ -119,10 +119,12 @@ public class CTFTracker extends CTFFolder {
         for (String relId : releaseId) {
             releaseIds.add(relId);
         }
-        filePayload.put("fileName", fileName);
-        filePayload.put("mimeType", fileMimeType);
-        filePayload.put("fileId", file!=null?file.getId():null);
-        attachmentArray.add(filePayload);
+        if (file != null ) {
+            filePayload.put("fileName", fileName);
+            filePayload.put("mimeType", fileMimeType);
+            filePayload.put("fileId", file != null ? file.getId() : null);
+            attachmentArray.add(filePayload);
+        }
         JSONObject requestPayload = new JSONObject();
         requestPayload.put("title", title);
         requestPayload.put("description", description);

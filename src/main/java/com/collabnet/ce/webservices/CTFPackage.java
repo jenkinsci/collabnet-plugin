@@ -82,7 +82,7 @@ public class CTFPackage extends CTFFolder {
             if (p.getTitle().equals(relTitle))
                 return getReleaseById(p.getId());
         }
-        return createRelease(title, description, RELEASE_STATUS_ACTIVE, MATURITY_NONE);
+        return null;
     }
 
 

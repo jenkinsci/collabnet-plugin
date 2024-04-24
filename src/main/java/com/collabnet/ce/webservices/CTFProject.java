@@ -219,7 +219,7 @@ public class CTFProject extends CTFObject implements ObjectWithTitle {
      */
     public List<CTFUser> getAdmins() throws IOException {
         List<CTFUser> r = new ArrayList<CTFUser>();
-        String end_point = app.getServerUrl() + CTFConstants.FOUNDATION_PRJ_URL + getId() + "/members";
+        String end_point = app.getServerUrl() + CTFConstants.FOUNDATION_PRJ_URL + getId() + "/admins";
         Response response = helper.request(end_point, app.getSessionId(), null, HttpMethod.GET, null);
         String result = response.readEntity(String.class);
         int status = response.getStatus();
