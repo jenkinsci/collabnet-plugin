@@ -48,7 +48,7 @@ public class CTFRole extends CTFObject implements ObjectWithTitle {
         Response response = helper.request(end_point, app.getSessionId(), null, HttpMethod.GET, null);
         String result = response.readEntity(String.class);
         int status = response.getStatus();
-        if (status == 200) {
+        if (status < 300) {
             JSONObject data = null;
             try {
                 data = (JSONObject) new JSONParser().parse(result);
@@ -78,8 +78,8 @@ public class CTFRole extends CTFObject implements ObjectWithTitle {
         Response response = helper.request(end_point, app.getSessionId(), null, HttpMethod.PUT, null);
         String result = response.readEntity(String.class);
         int status = response.getStatus();
-        if (status == 204) {
-            logger.log(Level.INFO, username + "successfully added to the role");
+        if (status < 300) {
+            logger.log(Level.INFO, username + " successfully added to the role");
         } else {
             logger.log(Level.WARNING, "Error while adding a member to the role - " + status +  ", Error Msg - " + result);
             throw new IOException("Error while adding a member to the role - " + status + ", Error Msg - " + helper.getErrorMessage(result));

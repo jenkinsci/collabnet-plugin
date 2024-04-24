@@ -38,7 +38,7 @@ public class CTFDocumentFolder extends CTFFolder {
         Response response = helper.request(end_point, app.getSessionId(), null, HttpMethod.GET, queryParam);
         String result = response.readEntity(String.class);
         int status = response.getStatus();
-        if (status == 200) {
+        if (status < 300) {
             JSONObject data = null;
             try {
                 data = (JSONObject) new JSONParser().parse(result);
@@ -68,7 +68,7 @@ public class CTFDocumentFolder extends CTFFolder {
         Response response = helper.request(end_point, app.getSessionId(), requestPayload.toString(), HttpMethod.POST, null);
         String result = response.readEntity(String.class);
         int status = response.getStatus();
-        if (status == 201) {
+        if (status < 300) {
             JSONObject data = null;
             try {
                 data = (JSONObject) new JSONParser().parse(result);
@@ -92,7 +92,7 @@ public class CTFDocumentFolder extends CTFFolder {
         Response response = helper.request(end_point, app.getSessionId(), null, HttpMethod.GET, queryParam);
         String result = response.readEntity(String.class);
         int status = response.getStatus();
-        if (status == 200) {
+        if (status < 300) {
             JSONObject data = null;
             try {
                 data = (JSONObject) new JSONParser().parse(result);
@@ -135,7 +135,7 @@ public class CTFDocumentFolder extends CTFFolder {
         Response response = helper.request(end_point, app.getSessionId(), requestPayload.toString(), HttpMethod.POST, null);
         String result = response.readEntity(String.class);
         int statusCode = response.getStatus();
-        if (statusCode == 201) {
+        if (statusCode < 300) {
             JSONObject data = null;
             try {
                 data = (JSONObject) new JSONParser().parse(result);

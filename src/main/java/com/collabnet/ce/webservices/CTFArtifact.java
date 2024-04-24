@@ -129,7 +129,7 @@ public class CTFArtifact extends CTFObject {
         Response response = helper.request(end_point, app.getSessionId(), null, HttpMethod.GET, null);
         String result = response.readEntity(String.class);
         int status = response.getStatus();
-        if (status == 200) {
+        if (status < 300) {
             JSONObject artfData = null;
             try {
                 artfData = (JSONObject) new JSONParser().parse(result);
@@ -138,8 +138,8 @@ public class CTFArtifact extends CTFObject {
                 logger.log(Level.WARNING, "Unable to parse the json content in setArtifact() - " + e.getLocalizedMessage(), e);
             }
         } else {
-            logger.log(Level.WARNING, "Error updating the artifact details - " + status  + ", Error Msg - " + result);
-            throw new IOException("Error updating the artifact details - " + status + ", Error Msg - " + helper.getErrorMessage(result));
+            logger.log(Level.WARNING, "Error getting the artifact details - " + status  + ", Error Msg - " + result);
+            throw new IOException("Error getting the artifact details - " + status + ", Error Msg - " + helper.getErrorMessage(result));
         }
         needsRefill = false;
     }
@@ -190,7 +190,7 @@ public class CTFArtifact extends CTFObject {
         Response response = helper.request(end_point, app.getSessionId(), requestPayload.toString(), HttpMethod.PATCH, null);
         String result = response.readEntity(String.class);
         int status = response.getStatus();
-        if (status == 200) {
+        if (status < 300) {
             JSONObject data = null;
             try {
                 data = (JSONObject) new JSONParser().parse(result);

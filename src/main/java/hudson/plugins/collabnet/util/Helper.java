@@ -115,7 +115,7 @@ public class Helper {
                     "urn:ctf:services:svn urn:ctf:services:gerrit"));
             post.setEntity(new UrlEncodedFormEntity(params));
             response = httpClient.execute(post);
-            if (response.getStatusLine().getStatusCode() == 200) {
+            if (response.getStatusLine().getStatusCode() < 300) {
                 String result = EntityUtils.toString(response.getEntity());
                 JSONObject data = (JSONObject) new JSONParser().parse(result);
                 String token = data.get("access_token").toString();
@@ -332,7 +332,7 @@ public class Helper {
             get.setHeader("Content-type", "application/json");
             get.setHeader("Authorization", "Bearer " + sessionId);
             response = httpClient.execute(get);
-            if (response.getStatusLine().getStatusCode() == 200) {
+            if (response.getStatusLine().getStatusCode() < 300) {
                 String result = EntityUtils.toString(response.getEntity());
                 data = (JSONObject) new JSONParser().parse(result);
             } else {
