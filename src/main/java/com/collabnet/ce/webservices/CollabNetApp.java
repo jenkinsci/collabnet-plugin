@@ -201,7 +201,7 @@ public class CollabNetApp {
                     .post(Entity.entity(multiPart, MediaType.MULTIPART_FORM_DATA));
             status = response.getStatus();
             result = response.readEntity(String.class);
-            if (status == 200) {
+            if (status < 300) {
                 JSONObject data = (JSONObject) new JSONParser().parse(result);
                 return new CTFFile(this, data.get("guid").toString());
             }
@@ -238,7 +238,7 @@ public class CollabNetApp {
         Response response = helper.request(end_point, sessionId, null, HttpMethod.GET, null);
         String result = response.readEntity(String.class);
         int status = response.getStatus();
-        if (status == 200) {
+        if (status < 300) {
             JSONObject data = null;
             try {
                 data = (JSONObject) new JSONParser().parse(result);
@@ -287,7 +287,7 @@ public class CollabNetApp {
         Response response = helper.request(end_point, sessionId, requestPayload.toString(), HttpMethod.POST, null);
         String result = response.readEntity(String.class);
         int status = response.getStatus();
-        if (status == 200) {
+        if (status < 300) {
             JSONObject data = null;
             try {
                 data = (JSONObject) new JSONParser().parse(result);
@@ -325,7 +325,7 @@ public class CollabNetApp {
         Response response = helper.request(end_point, sessionId, requestPayload.toString(), HttpMethod.POST, null);
         String result = response.readEntity(String.class);
         int status = response.getStatus();
-        if (status == 200) {
+        if (status < 300) {
             JSONObject data = null;
             try {
                 data = (JSONObject) new JSONParser().parse(result);
@@ -355,7 +355,7 @@ public class CollabNetApp {
         Response response = helper.request(end_point, sessionId, null, HttpMethod.GET, null);
         String result = response.readEntity(String.class);
         int status = response.getStatus();
-        if (status == 200) {
+        if (status < 300) {
             JSONObject data = null;
             try {
                 data = (JSONObject) new JSONParser().parse(result);
@@ -400,7 +400,7 @@ public class CollabNetApp {
         Response response = helper.request(end_point, sessionId, null, HttpMethod.GET, null);
         String result = response.readEntity(String.class);
         int status = response.getStatus();
-        if (status == 200) {
+        if (status < 300) {
             JSONObject data = null;
             try {
                 data = (JSONObject) new JSONParser().parse(result);
@@ -430,7 +430,7 @@ public class CollabNetApp {
         Response response = helper.request(end_point, sessionId, null, HttpMethod.GET, queryParam);
         String result = response.readEntity(String.class);
         int status = response.getStatus();
-        if (status == 200) {
+        if (status < 300) {
             JSONObject data = null;
             try {
                 data = (JSONObject) new JSONParser().parse(result);
@@ -537,7 +537,7 @@ public class CollabNetApp {
         Response response = helper.request(end_point, sessionId, requestPayload.toString(), HttpMethod.POST, null);
         String result = response.readEntity(String.class);
         int status = response.getStatus();
-        if (status == 200) {
+        if (status < 300) {
             JSONObject data = null;
             try {
                 data = (JSONObject) new JSONParser().parse(result);

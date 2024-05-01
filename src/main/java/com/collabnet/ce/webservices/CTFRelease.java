@@ -1,3 +1,4 @@
+
 package com.collabnet.ce.webservices;
 
 import hudson.plugins.collabnet.util.Helper;
@@ -40,9 +41,9 @@ public class CTFRelease extends CTFFolder {
         Response response = helper.request(end_point, app.getSessionId(), null, HttpMethod.DELETE, null);
         int status = response.getStatus();
         String result = response.readEntity(String.class);
-        if (status != 200) {
-            logger.log(Level.WARNING, "Error while deleting a package - " + status + ", Error Msg - " + result);
-            throw new IOException("Error while deleting a package - " + status + ", Error Msg - " + helper.getErrorMessage(result));
+        if (status >= 300) {
+            logger.log(Level.WARNING, "Error while deleting a release - " + status + ", Error Msg - " + result);
+            throw new IOException("Error while deleting a release - " + status + ", Error Msg - " + helper.getErrorMessage(result));
         }
     }
 
@@ -59,7 +60,7 @@ public class CTFRelease extends CTFFolder {
         Response response = helper.request(end_point, app.getSessionId(), null, HttpMethod.GET, null);
         String result = response.readEntity(String.class);
         int status = response.getStatus();
-        if (status == 200) {
+        if (status < 300) {
             JSONObject data = null;
             try {
                 data = (JSONObject) new JSONParser().parse(result);
@@ -92,7 +93,7 @@ public class CTFRelease extends CTFFolder {
         Response response = helper.request(end_point, app.getSessionId(), requestPayload.toString(), HttpMethod.POST, null);
         String result = response.readEntity(String.class);
         int statusCode = response.getStatus();
-        if (statusCode == 201) {
+        if (statusCode < 300) {
             JSONObject data = null;
             try {
                 data = (JSONObject) new JSONParser().parse(result);

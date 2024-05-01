@@ -40,7 +40,7 @@ public class CTFDocument extends CTFItem {
         Response response = helper.request(end_point, app.getSessionId(), null, HttpMethod.GET, null);
         String result = response.readEntity(String.class);
         int status = response.getStatus();
-        if (status == 200) {
+        if (status < 300) {
             JSONObject data = null;
             try {
                 data = (JSONObject) new JSONParser().parse(result);

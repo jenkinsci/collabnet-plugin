@@ -57,7 +57,7 @@ public class CTFProject extends CTFObject implements ObjectWithTitle {
         Response response = helper.request(end_point, app.getSessionId(), requestPayload.toString(), HttpMethod.POST, null);
         String result = response.readEntity(String.class);
         int statusCode = response.getStatus();
-        if (statusCode == 200) {
+        if (statusCode < 300) {
             JSONObject data = null;
             try {
                 data = (JSONObject) new JSONParser().parse(result);
@@ -78,7 +78,7 @@ public class CTFProject extends CTFObject implements ObjectWithTitle {
         Response response = helper.request(end_point, app.getSessionId(), null, HttpMethod.GET, null);
         String result = response.readEntity(String.class);
         int status = response.getStatus();
-        if (status == 200) {
+        if (status < 300) {
             JSONObject data = null;
             try {
                 data = (JSONObject) new JSONParser().parse(result);
@@ -108,7 +108,7 @@ public class CTFProject extends CTFObject implements ObjectWithTitle {
         Response response = helper.request(end_point, app.getSessionId(), null, HttpMethod.GET, queryParam);
         String result = response.readEntity(String.class);
         int status = response.getStatus();
-        if (status == 200) {
+        if (status < 300) {
             JSONObject data = null;
             try {
                 data = (JSONObject) new JSONParser().parse(result);
@@ -139,7 +139,7 @@ public class CTFProject extends CTFObject implements ObjectWithTitle {
         Response response = helper.request(end_point, app.getSessionId(), requestPayload.toString(), HttpMethod.POST, null);
         String result = response.readEntity(String.class);
         int statusCode = response.getStatus();
-        if (statusCode == 201) {
+        if (statusCode < 300) {
             JSONObject data = null;
             try {
                 data = (JSONObject) new JSONParser().parse(result);
@@ -160,7 +160,7 @@ public class CTFProject extends CTFObject implements ObjectWithTitle {
         Response response = helper.request(end_point, app.getSessionId(), null, HttpMethod.GET, null);
         String result = response.readEntity(String.class);
         int status = response.getStatus();
-        if (status == 200) {
+        if (status < 300) {
             JSONObject data = null;
             try {
                 data = (JSONObject) new JSONParser().parse(result);
@@ -192,7 +192,7 @@ public class CTFProject extends CTFObject implements ObjectWithTitle {
         Response response = helper.request(end_point, app.getSessionId(), null, HttpMethod.GET, queryParam);
         String result = response.readEntity(String.class);
         int status = response.getStatus();
-        if (status == 200) {
+        if (status < 300) {
             JSONObject data = null;
             try {
                 data = (JSONObject) new JSONParser().parse(result);
@@ -219,11 +219,11 @@ public class CTFProject extends CTFObject implements ObjectWithTitle {
      */
     public List<CTFUser> getAdmins() throws IOException {
         List<CTFUser> r = new ArrayList<CTFUser>();
-        String end_point = app.getServerUrl() + CTFConstants.FOUNDATION_PRJ_URL + getId() + "/members";
+        String end_point = app.getServerUrl() + CTFConstants.FOUNDATION_PRJ_URL + getId() + "/admins";
         Response response = helper.request(end_point, app.getSessionId(), null, HttpMethod.GET, null);
         String result = response.readEntity(String.class);
         int status = response.getStatus();
-        if (status == 200) {
+        if (status < 300) {
             JSONObject data = null;
             try {
                 data = (JSONObject) new JSONParser().parse(result);
@@ -250,13 +250,8 @@ public class CTFProject extends CTFObject implements ObjectWithTitle {
         Response response = helper.request(end_point, app.getSessionId(), null, HttpMethod.PUT, null);
         String result = response.readEntity(String.class);
         int status = response.getStatus();
-        if (status == 200) {
-            JSONObject memberData = null;
-            try {
-                memberData = (JSONObject) new JSONParser().parse(result);
-            } catch (ParseException e) {
-                logger.log(Level.WARNING, "Unable to parse the json content in addMember() - " + e.getLocalizedMessage(), e);
-            }
+        if (status < 300) {
+            logger.log(Level.INFO, userName + " is successfully added as Project Member");
         } else {
             logger.log(Level.WARNING, "Error while adding a member to the project - " + status + ", Error Msg - " + result);
             throw new IOException("Error adding a member to the project - " + status + ", Error Msg - " + helper.getErrorMessage(result));
@@ -284,7 +279,7 @@ public class CTFProject extends CTFObject implements ObjectWithTitle {
         Response response = helper.request(end_point, app.getSessionId(), null, HttpMethod.GET, null);
         String result = response.readEntity(String.class);
         int status = response.getStatus();
-        if (status == 200) {
+        if (status < 300) {
             JSONObject data = null;
             try {
                 data = (JSONObject) new JSONParser().parse(result);
@@ -317,7 +312,7 @@ public class CTFProject extends CTFObject implements ObjectWithTitle {
         Response response = helper.request(end_point, app.getSessionId(), requestPayload.toString(), HttpMethod.POST, null);
         String result = response.readEntity(String.class);
         int statusCode = response.getStatus();
-        if (statusCode == 201) {
+        if (statusCode < 300) {
             JSONObject data = null;
             try {
                 data = (JSONObject) new JSONParser().parse(result);
@@ -349,7 +344,7 @@ public class CTFProject extends CTFObject implements ObjectWithTitle {
         Response response = helper.request(end_point, app.getSessionId(), requestPayload.toString(), HttpMethod.POST, null);
         String result = response.readEntity(String.class);
         int status = response.getStatus();
-        if (status == 200) {
+        if (status < 300) {
             JSONObject data = null;
             try {
                 data = (JSONObject) new JSONParser().parse(result);
@@ -377,7 +372,7 @@ public class CTFProject extends CTFObject implements ObjectWithTitle {
         Response response = helper.request(end_point, app.getSessionId(), null, HttpMethod.GET, queryParam);
         String result = response.readEntity(String.class);
         int status = response.getStatus();
-        if (status == 200) {
+        if (status < 300) {
             JSONObject data = null;
             try {
                 data = (JSONObject) new JSONParser().parse(result);
@@ -386,8 +381,8 @@ public class CTFProject extends CTFObject implements ObjectWithTitle {
                 logger.log(Level.WARNING, "Unable to parse the json content in getRootFolder() - " + e.getLocalizedMessage(), e);
             }
         } else {
-            logger.log(Level.WARNING,"Error getting the  rootFolder for projectId " + title + " failed to find any folders " + status + ", Error Msg - " + result);
-            throw new IOException("Error getting the rootFolder for projectId - " + status + ", Error Msg - " + helper.getErrorMessage(result));
+            logger.log(Level.WARNING,"Error getting the document rootFolder for projectId " + status + " failed to find any folders " + status + ", Error Msg - " + result);
+            throw new IOException("Error getting the document rootFolder for projectId - " + status + ", Error Msg - " + helper.getErrorMessage(result));
         }
         return null;
     }
@@ -462,7 +457,7 @@ public class CTFProject extends CTFObject implements ObjectWithTitle {
         Response response = helper.request(end_point, app.getSessionId(), null, HttpMethod.GET, null);
         String result = response.readEntity(String.class);
         int status = response.getStatus();
-        if (status == 200) {
+        if (status < 300) {
             JSONObject data = null;
             try {
                 data = (JSONObject) new JSONParser().parse(result);
@@ -471,8 +466,8 @@ public class CTFProject extends CTFObject implements ObjectWithTitle {
                 logger.log(Level.WARNING, "Unable to parse the json content in getPackages() - " + e.getLocalizedMessage(), e);
             }
         } else {
-            logger.log(Level.WARNING,"Error getting the packages - " + status + ", Error Msg - " + result);
-            throw new IOException("Error getting the packages - " + status + ", Error Msg - " + helper.getErrorMessage(result));
+            logger.log(Level.WARNING,"Error getting the role details - " + status + ", Error Msg - " + result);
+            throw new IOException("Error getting the role details - " + status + ", Error Msg - " + helper.getErrorMessage(result));
         }
         return null;
     }

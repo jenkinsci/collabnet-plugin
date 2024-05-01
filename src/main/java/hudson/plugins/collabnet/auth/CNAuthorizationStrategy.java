@@ -221,9 +221,9 @@ public class CNAuthorizationStrategy extends AuthorizationStrategy {
         /**
          * Check that the groups are valid.
          */
-        public FormValidation doCheckAdminGroupsStr(@QueryParameter String groups,
+        public FormValidation doCheckAdminGroupsStr(@QueryParameter String value,
                 @QueryParameter String users) throws IOException {
-            return CNFormFieldValidator.groupListCheck(fixNull(groups), fixNull(users));
+            return CNFormFieldValidator.groupListCheck(fixNull(value), fixNull(users));
         } 
 
         public FormValidation doCheckReadGroupsStr(@QueryParameter String value) throws IOException {

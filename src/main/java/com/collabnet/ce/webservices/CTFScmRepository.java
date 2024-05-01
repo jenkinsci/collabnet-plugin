@@ -49,7 +49,7 @@ public class CTFScmRepository extends CTFFolder {
             Response response = helper.request(end_point, app.getSessionId(), null, HttpMethod.GET, queryParam);
             String result = response.readEntity(String.class);
             int status = response.getStatus();
-            if (status == 200) {
+            if (status < 300) {
                 try {
                     scmData = (JSONObject) new JSONParser().parse(result);
                 } catch (ParseException e) {

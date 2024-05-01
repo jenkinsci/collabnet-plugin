@@ -4,6 +4,7 @@ import hudson.Extension;
 import hudson.MarkupText;
 import hudson.MarkupText.SubText;
 import hudson.model.AbstractBuild;
+import hudson.model.Run;
 import hudson.scm.ChangeLogAnnotator;
 import hudson.scm.ChangeLogSet.Entry;
 
@@ -19,8 +20,8 @@ import static hudson.plugins.collabnet.AbstractTeamForgeNotifier.getTeamForgeSha
 @Extension
 public class CNChangeLogAnnotator extends ChangeLogAnnotator {
     @Override
-    public void annotate(AbstractBuild<?, ?> build, Entry change, MarkupText text) {
-        String base = getCollabNetUrl(build);
+    public void annotate(Run<?, ?> build, Entry change, MarkupText text) {
+        String base = getCollabNetUrl((AbstractBuild)build);
         if (base==null) return;
 
         for (SubText t : text.findTokens(OBJECT_IDS))

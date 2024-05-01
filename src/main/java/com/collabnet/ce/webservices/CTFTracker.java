@@ -50,7 +50,7 @@ public class CTFTracker extends CTFFolder {
         Response response = helper.request(end_point, app.getSessionId(), requestPayload.toString(), HttpMethod.POST, null);
         String result = response.readEntity(String.class);
         int statusCode = response.getStatus();
-        if (statusCode == 200) {
+        if (statusCode < 300) {
             JSONObject data = null;
             try {
                 data = (JSONObject) new JSONParser().parse(result);
@@ -119,10 +119,12 @@ public class CTFTracker extends CTFFolder {
         for (String relId : releaseId) {
             releaseIds.add(relId);
         }
-        filePayload.put("fileName", fileName);
-        filePayload.put("mimeType", fileMimeType);
-        filePayload.put("fileId", file!=null?file.getId():null);
-        attachmentArray.add(filePayload);
+        if (file != null ) {
+            filePayload.put("fileName", fileName);
+            filePayload.put("mimeType", fileMimeType);
+            filePayload.put("fileId", file != null ? file.getId() : null);
+            attachmentArray.add(filePayload);
+        }
         JSONObject requestPayload = new JSONObject();
         requestPayload.put("title", title);
         requestPayload.put("description", description);
@@ -144,7 +146,7 @@ public class CTFTracker extends CTFFolder {
         Response response = helper.request(end_point, app.getSessionId(), requestPayload.toString(), HttpMethod.POST, null);
         String result = response.readEntity(String.class);
         int statusCode = response.getStatus();
-        if ( statusCode == 201 ) {
+        if ( statusCode < 300 ) {
             JSONObject data = null;
             try {
                 data = (JSONObject) new JSONParser().parse(result);

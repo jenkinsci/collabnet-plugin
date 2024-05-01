@@ -47,17 +47,13 @@ public class CTFGroup extends CTFObject implements ObjectWithTitle {
      * Adds the user to the this group.
      */
     public void addMember(CTFUser u) throws IOException {
-        String end_point =  app.getServerUrl() + CTFConstants.ROLE_URL+ getId() + "/members/" + u.getUserName();
+        String end_point =  app.getServerUrl() + CTFConstants.FOUNDATION_URL + "users/by-username/" + u.getUserName() +
+                "/groups/" + getId();
         Response response = helper.request(end_point, app.getSessionId(), null, HttpMethod.PUT, null);
         String result = response.readEntity(String.class);
         int status = response.getStatus();
-        if (status == 200) {
-            JSONObject memberData = null;
-            try {
-                memberData = (JSONObject) new JSONParser().parse(result);
-            } catch (ParseException e) {
-                logger.log(Level.WARNING, "Unable to parse the json content in addMember() - " + e.getLocalizedMessage(), e);
-            }
+        if (status < 300) {
+            logger.log(Level.INFO, u.getUserName() + " successfully added to the group");
         } else {
             logger.log(Level.WARNING, "Error while adding a member to the group - " + status + ", Error Msg - " + result);
             throw new IOException("Error while adding a member to the group - " + status + ", Error Msg - " + helper.getErrorMessage(result));

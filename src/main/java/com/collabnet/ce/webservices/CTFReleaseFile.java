@@ -54,7 +54,7 @@ public class CTFReleaseFile extends CTFItem {
         Response response = helper.request(end_point, app.getSessionId(), null, HttpMethod.DELETE, null);
         String result = response.readEntity(String.class);
         int status = response.getStatus();
-        if (status != 204) {
+        if (status >= 300) {
             logger.log(Level.WARNING, "Error while deleting a release file - " + status +  ", Error Msg - " + result);
             throw new IOException("Error while deleting a release file - " + status + ", Error Msg - " + helper.getErrorMessage(result));
         }

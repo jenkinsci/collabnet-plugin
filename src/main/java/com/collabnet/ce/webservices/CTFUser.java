@@ -45,7 +45,7 @@ public class CTFUser extends CTFObject implements ObjectWithTitle {
             Response response = helper.request(end_point, app.getSessionId(), null, HttpMethod.GET, null);
             String result = response.readEntity(String.class);
             int status = response.getStatus();
-            if (status == 200) {
+            if (status < 300) {
                 try {
                     userData = (JSONObject) new JSONParser().parse(result);
                 } catch (ParseException e) {
@@ -153,7 +153,7 @@ public class CTFUser extends CTFObject implements ObjectWithTitle {
         Response response = helper.request(end_point, app.getSessionId(), null, HttpMethod.GET, null);
         String result = response.readEntity(String.class);
         int status = response.getStatus();
-        if (status == 200) {
+        if (status < 300) {
             JSONObject data = null;
             try {
                 data = (JSONObject) new JSONParser().parse(result);
@@ -169,8 +169,8 @@ public class CTFUser extends CTFObject implements ObjectWithTitle {
                 logger.log(Level.WARNING, "Unable to parse the json content in getUserGroupListForUser() - " + e.getLocalizedMessage(), e);
             }
         } else {
-            logger.log(Level.WARNING,"Error getting the group list - " + status + ", Error Msg - " + result);
-            throw new IOException("Error getting the group list - " + status + ", Error Msg - " + helper.getErrorMessage(result));
+            logger.log(Level.WARNING,"Error getting the user group list for an user - " + status + ", Error Msg - " + result);
+            throw new IOException("Error getting the user group list for an user - " + status + ", Error Msg - " + helper.getErrorMessage(result));
         }
         return groups;
     }
