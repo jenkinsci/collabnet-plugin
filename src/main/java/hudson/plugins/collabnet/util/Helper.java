@@ -122,6 +122,7 @@ public class Helper {
                 ctfSessionId = getSessionId(ctfUrl, getOneTimeToken(ctfUrl, token));
             } else {
                 logger.log(Level.WARNING,"Error getting token for  - " + ctfUserName +  " , response code: " + response.getStatusLine().getStatusCode());
+                logger.log(Level.WARNING, "Response value: " + EntityUtils.toString(response.getEntity()));
                 throw new IOException("Invalid username or credentials");
             }
         } catch (Exception e) {
@@ -161,6 +162,7 @@ public class Helper {
             } else {
                 logger.log(Level.WARNING,"Error getting the oneTimeToken for the access code, response code  - " +
                         response.getStatusLine().getStatusCode());
+                logger.log(Level.WARNING, "Response value: " + EntityUtils.toString(response.getEntity()));
             }
         } catch (Exception e) {
             logger.log(Level.WARNING,"Error getting the oneTimeToken for the access token  - " + e.getLocalizedMessage(), e);
@@ -197,6 +199,7 @@ public class Helper {
             } else  {
                 logger.log(Level.WARNING,"Error getting the sessionId for the oneTimeToken response code  - " +
                         response.getStatusLine().getStatusCode());
+                logger.log(Level.WARNING, "Response value: " + EntityUtils.toString(response.getEntity()));
             }
         } catch (Exception e) {
             logger.log(Level.WARNING, "Error getting the sessionId for the oneTimeToken  - " + e.getLocalizedMessage(), e);
