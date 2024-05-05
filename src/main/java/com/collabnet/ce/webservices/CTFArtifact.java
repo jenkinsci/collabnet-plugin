@@ -178,11 +178,13 @@ public class CTFArtifact extends CTFObject {
             throw new IllegalStateException("CTFArtifact needs to be filled before it can be updated");
         String end_point =  app.getServerUrl() + CTFConstants.ARTIFACT_URL + getId();
         JSONObject attachmentObj = new JSONObject();
-        attachmentObj.put("fileName",fileName);
-        attachmentObj.put("mimeType", fileMimeType);
-        attachmentObj.put("fileId", file!=null?file.getId():null);
         JSONArray attachArray = new JSONArray();
-        attachArray.add(attachmentObj);
+        if (file != null) {
+            attachmentObj.put("fileName", fileName);
+            attachmentObj.put("mimeType", fileMimeType);
+            attachmentObj.put("fileId", file != null ? file.getId() : null);
+            attachArray.add(attachmentObj);
+        }
         JSONObject requestPayload = new JSONObject();
         requestPayload.put("comment", comment);
         requestPayload.put("attachments", attachArray);

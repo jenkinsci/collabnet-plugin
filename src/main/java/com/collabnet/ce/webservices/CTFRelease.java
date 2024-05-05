@@ -48,8 +48,10 @@ public class CTFRelease extends CTFFolder {
 
     public CTFReleaseFile getFileByTitle(String title) throws IOException {
         for (CTFReleaseFile f : getFiles())
-            if (f.getTitle().equals(title))
-                return f;
+            if (f != null) {
+                if (f.getTitle().equals(title))
+                    return f;
+            }
         return null;
     }
 
@@ -68,7 +70,9 @@ public class CTFRelease extends CTFFolder {
                     Iterator it = dataArray.iterator();
                     while (it.hasNext()) {
                         JSONObject jsonObject = (JSONObject) it.next();
-                        r.add(new CTFReleaseFile(this, jsonObject));
+                        if (jsonObject != null) {
+                            r.add(new CTFReleaseFile(this, jsonObject));
+                        }
                     }
                 }
             } catch (ParseException e) {

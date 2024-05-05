@@ -47,7 +47,9 @@ public class CTFDocumentFolder extends CTFFolder {
                     Iterator it = dataArray.iterator();
                     while (it.hasNext()) {
                         JSONObject jsonObject = (JSONObject) it.next();
-                        r.add(new CTFDocumentFolder(this, jsonObject));
+                        if (jsonObject != null) {
+                            r.add(new CTFDocumentFolder(this, jsonObject));
+                        }
                     }
                 }
             } catch (ParseException e) {
@@ -101,7 +103,9 @@ public class CTFDocumentFolder extends CTFFolder {
                     Iterator it = dataArray.iterator();
                     while (it.hasNext()) {
                         JSONObject jsonObject = (JSONObject) it.next();
-                        r.add(new CTFDocument(this, jsonObject));
+                        if (jsonObject != null) {
+                            r.add(new CTFDocument(this, jsonObject));
+                        }
                     }
                 }
             } catch (ParseException e) {

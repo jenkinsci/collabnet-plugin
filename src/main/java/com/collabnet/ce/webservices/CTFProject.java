@@ -87,7 +87,9 @@ public class CTFProject extends CTFObject implements ObjectWithTitle {
                     Iterator it = dataArray.iterator();
                     while (it.hasNext()) {
                         JSONObject jsonObject = (JSONObject) it.next();
-                        r.add(new CTFPackage(this, jsonObject));
+                        if (jsonObject != null) {
+                            r.add(new CTFPackage(this, jsonObject));
+                        }
                     }
                 }
             } catch (ParseException e) {
@@ -117,7 +119,9 @@ public class CTFProject extends CTFObject implements ObjectWithTitle {
                     Iterator it = dataArray.iterator();
                     while (it.hasNext()) {
                         JSONObject jsonObject = (JSONObject) it.next();
-                        r.add(new CTFTracker(this,jsonObject));
+                        if (jsonObject != null) {
+                            r.add(new CTFTracker(this, jsonObject));
+                        }
                     }
                 }
             } catch (ParseException e) {
@@ -169,7 +173,9 @@ public class CTFProject extends CTFObject implements ObjectWithTitle {
                     Iterator it = dataArray.iterator();
                     while (it.hasNext()) {
                         JSONObject jsonObject = (JSONObject) it.next();
-                        r.add(new CTFScmRepository(this,jsonObject));
+                        if (jsonObject != null) {
+                            r.add(new CTFScmRepository(this, jsonObject));
+                        }
                     }
                 }
             } catch (ParseException e) {
@@ -201,7 +207,9 @@ public class CTFProject extends CTFObject implements ObjectWithTitle {
                     Iterator it = dataArray.iterator();
                     while (it.hasNext()) {
                         JSONObject jsonObject = (JSONObject) it.next();
-                        r.add(new CTFUser(app, jsonObject));
+                        if (jsonObject != null) {
+                            r.add(new CTFUser(app, jsonObject));
+                        }
                     }
                 }
             } catch (ParseException e) {
@@ -219,7 +227,7 @@ public class CTFProject extends CTFObject implements ObjectWithTitle {
      */
     public List<CTFUser> getAdmins() throws IOException {
         List<CTFUser> r = new ArrayList<CTFUser>();
-        String end_point = app.getServerUrl() + CTFConstants.FOUNDATION_PRJ_URL + getId() + "/members";
+        String end_point = app.getServerUrl() + CTFConstants.FOUNDATION_PRJ_URL + getId() + "/admins";
         Response response = helper.request(end_point, app.getSessionId(), null, HttpMethod.GET, null);
         String result = response.readEntity(String.class);
         int status = response.getStatus();
@@ -232,7 +240,9 @@ public class CTFProject extends CTFObject implements ObjectWithTitle {
                     Iterator it = dataArray.iterator();
                     while (it.hasNext()) {
                         JSONObject jsonObject = (JSONObject) it.next();
-                        r.add(new CTFUser(app, jsonObject));
+                        if (jsonObject != null) {
+                            r.add(new CTFUser(app, jsonObject));
+                        }
                     }
                 }
             } catch (ParseException e) {
@@ -269,8 +279,10 @@ public class CTFProject extends CTFObject implements ObjectWithTitle {
 
     public boolean hasMember(String username) throws IOException {
         for (CTFUser u : getMembers()) {
-            if (u.getUserName().equals(username))
-                return true;
+            if (u != null) {
+                if (u.getUserName().equals(username))
+                    return true;
+            }
         }
         return false;
     }
@@ -293,7 +305,9 @@ public class CTFProject extends CTFObject implements ObjectWithTitle {
                     Iterator it = dataArray.iterator();
                     while (it.hasNext()) {
                         JSONObject jsonObject = (JSONObject) it.next();
-                        r.add(new CTFRole(this, jsonObject));
+                        if (jsonObject != null) {
+                            r.add(new CTFRole(this, jsonObject));
+                        }
                     }
                 }
             } catch (ParseException e) {
@@ -357,7 +371,9 @@ public class CTFProject extends CTFObject implements ObjectWithTitle {
                 JSONArray roleArray = ((JSONArray) roleMap.get(username));
                 for (int i=0; i< roleArray.size(); i++) {
                     CTFRole ctfRole = getRoleById(roleArray.get(i).toString());
-                    r.add(ctfRole);
+                    if (ctfRole != null) {
+                        r.add(ctfRole);
+                    }
                 }
             } catch (ParseException e) {
                 logger.log(Level.WARNING, "Unable to parse the json content in getUserRoles() - " + e.getLocalizedMessage(), e);
@@ -402,8 +418,10 @@ public class CTFProject extends CTFObject implements ObjectWithTitle {
         // find the root folder since the first document path may or may not
         // match this.
         CTFDocumentFolder cur = getRootFolder();
-        if (cur.getTitle().equals(folderNames[i])) {
-            i++;
+        if (cur != null) {
+            if (cur.getTitle().equals(folderNames[i])) {
+                i++;
+            }
         }
         for (; i < folderNames.length; i++) {
             CTFDocumentFolder next = cur.getFolders().byTitle(folderNames[i]);
@@ -443,8 +461,10 @@ public class CTFProject extends CTFObject implements ObjectWithTitle {
         String[] folderNames = documentPath.split("/");
         int i = 0;
         CTFDocumentFolder cur = getRootFolder();
-        if (cur.getTitle().equals(folderNames[i])) {
-            i++;
+        if (cur != null) {
+            if (cur.getTitle().equals(folderNames[i])) {
+                i++;
+            }
         }
         for (; i < folderNames.length; i++) {
             CTFDocumentFolder next = cur.getFolders().byTitle(folderNames[i]);

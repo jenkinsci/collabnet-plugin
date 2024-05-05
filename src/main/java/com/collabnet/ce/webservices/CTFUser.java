@@ -113,8 +113,12 @@ public class CTFUser extends CTFObject implements ObjectWithTitle {
     public Set<String> getGroupNames() throws IOException {
         Set<String> groups = new HashSet<String>();
         CTFList<CTFGroup> groupList = getUserGroupListForUser();
-        for (CTFGroup ctfGroup : groupList) {
-            groups.add(ctfGroup.getFullName());
+        if (groupList != null) {
+            for (CTFGroup ctfGroup : groupList) {
+                if (ctfGroup != null) {
+                    groups.add(ctfGroup.getFullName());
+                }
+            }
         }
         return groups;
     }
@@ -122,8 +126,12 @@ public class CTFUser extends CTFObject implements ObjectWithTitle {
     public CTFList<CTFGroup> getGroups() throws IOException {
         CTFList<CTFGroup> groups = new CTFList<CTFGroup>();
         groups = getUserGroupListForUser();
-        for (CTFGroup ctfGroup : groups) {
-            groups.add(app.getGroupByTitle(ctfGroup.getFullName()));
+        if (groups != null) {
+            for (CTFGroup ctfGroup : groups) {
+                if (ctfGroup != null) {
+                    groups.add(app.getGroupByTitle(ctfGroup.getFullName()));
+                }
+            }
         }
         return groups;
     }
@@ -162,7 +170,9 @@ public class CTFUser extends CTFObject implements ObjectWithTitle {
                     Iterator it = dataArray.iterator();
                     while (it.hasNext()) {
                         JSONObject jsonObject = (JSONObject) it.next();
-                        groups.add(app.getGroupByTitle(jsonObject.get("fullname").toString()));
+                        if (jsonObject != null) {
+                            groups.add(app.getGroupByTitle(jsonObject.get("fullname").toString()));
+                        }
                     }
                 }
             } catch (ParseException e) {
