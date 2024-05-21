@@ -204,6 +204,8 @@ public class CollabNetApp {
             if (status < 300) {
                 JSONObject data = (JSONObject) new JSONParser().parse(result);
                 return new CTFFile(this, data.get("guid").toString());
+            } else {
+                logger.log(Level.WARNING, "Error uploading a file, response code - " + status);
             }
         } catch (Exception e) {
             logger.log(Level.WARNING, "Error uploading a file" + e.getLocalizedMessage(), e);
@@ -247,7 +249,9 @@ public class CollabNetApp {
                     Iterator it = dataArray.iterator();
                     while (it.hasNext()) {
                         JSONObject jsonObject = (JSONObject) it.next();
-                        r.add(new CTFGroup(this, jsonObject));
+                        if (jsonObject != null) {
+                            r.add(new CTFGroup(this, jsonObject));
+                        }
                     }
                 }
             } catch (ParseException e) {
@@ -364,7 +368,9 @@ public class CollabNetApp {
                     Iterator it = dataArray.iterator();
                     while (it.hasNext()) {
                         JSONObject jsonObject = (JSONObject) it.next();
-                        users.add(jsonObject.get("username").toString());
+                        if (jsonObject != null) {
+                            users.add(jsonObject.get("username").toString());
+                        }
                     }
                 }
             } catch (ParseException e) {
@@ -439,7 +445,9 @@ public class CollabNetApp {
                     Iterator it = dataArray.iterator();
                     while (it.hasNext()) {
                         JSONObject jsonObject = (JSONObject) it.next();
-                        r.add(new CTFProject(this, jsonObject));
+                        if (jsonObject != null) {
+                            r.add(new CTFProject(this, jsonObject));
+                        }
                     }
                 }
             } catch (ParseException e) {
@@ -461,8 +469,10 @@ public class CollabNetApp {
      */
     public CTFProject getProjectByTitle(String title) throws IOException {
         for (CTFProject p : getProjects())
-            if (p.getTitle().equals(title))
-                return p;
+            if (p != null) {
+                if (p.getTitle().equals(title))
+                    return p;
+            }
         return null;
     }
 

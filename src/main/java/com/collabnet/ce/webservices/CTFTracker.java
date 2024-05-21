@@ -59,7 +59,9 @@ public class CTFTracker extends CTFFolder {
                     Iterator it = dataArray.iterator();
                     while (it.hasNext()) {
                         JSONObject jsonObject = (JSONObject) it.next();
-                        r.add(new CTFArtifact(this, jsonObject));
+                        if (jsonObject != null) {
+                            r.add(new CTFArtifact(this, jsonObject));
+                        }
                     }
                 }
             } catch (ParseException e) {

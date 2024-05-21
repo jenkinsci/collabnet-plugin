@@ -57,7 +57,9 @@ public class CTFRole extends CTFObject implements ObjectWithTitle {
                     Iterator it = dataArray.iterator();
                     while (it.hasNext()) {
                         JSONObject jsonObject = (JSONObject) it.next();
-                        r.add(new CTFUser(app, jsonObject));
+                        if (jsonObject != null) {
+                            r.add(new CTFUser(app, jsonObject));
+                        }
                     }
                 }
             } catch (ParseException e) {

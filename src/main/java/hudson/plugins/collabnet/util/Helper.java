@@ -121,9 +121,12 @@ public class Helper {
                 String token = data.get("access_token").toString();
                 ctfSessionId = getSessionId(ctfUrl, getOneTimeToken(ctfUrl, token));
             } else {
+                logger.log(Level.WARNING,"Error getting token for  - " + ctfUserName +  " , response code: " + response.getStatusLine().getStatusCode());
+                logger.log(Level.WARNING, "Response value: " + EntityUtils.toString(response.getEntity()));
                 throw new IOException("Invalid username or credentials");
             }
         } catch (Exception e) {
+            logger.log(Level.WARNING,"Error getting token for  - " + ctfUserName, e);
             throw new IOException("Invalid username or credentials");
         } finally {
             if (response != null) {
@@ -152,9 +155,15 @@ public class Helper {
             get.setHeader("Accept", "application/json");
             get.setHeader("Authorization", "Bearer " + accessToken);
             response = httpClient.execute(get);
-            String result = EntityUtils.toString(response.getEntity());
-            JSONObject data = (JSONObject) new JSONParser().parse(result);
-            oneTimeToken = data.get("oneTimeToken").toString();
+            if (response.getStatusLine().getStatusCode() < 300) {
+                String result = EntityUtils.toString(response.getEntity());
+                JSONObject data = (JSONObject) new JSONParser().parse(result);
+                oneTimeToken = data.get("oneTimeToken").toString();
+            } else {
+                logger.log(Level.WARNING,"Error getting the oneTimeToken for the access code, response code  - " +
+                        response.getStatusLine().getStatusCode());
+                logger.log(Level.WARNING, "Response value: " + EntityUtils.toString(response.getEntity()));
+            }
         } catch (Exception e) {
             logger.log(Level.WARNING,"Error getting the oneTimeToken for the access token  - " + e.getLocalizedMessage(), e);
         } finally {
@@ -183,11 +192,17 @@ public class Helper {
             httpClient = CNFormFieldValidator.getHttpClient();
             HttpGet get = new HttpGet(end_point);
             response = httpClient.execute(get);
-            String result = EntityUtils.toString(response.getEntity());
-            JSONObject data = (JSONObject) new JSONParser().parse(result);
-            sessionId = data.get("sessionId").toString();
+            if (response.getStatusLine().getStatusCode() < 300) {
+                String result = EntityUtils.toString(response.getEntity());
+                JSONObject data = (JSONObject) new JSONParser().parse(result);
+                sessionId = data.get("sessionId").toString();
+            } else  {
+                logger.log(Level.WARNING,"Error getting the sessionId for the oneTimeToken response code  - " +
+                        response.getStatusLine().getStatusCode());
+                logger.log(Level.WARNING, "Response value: " + EntityUtils.toString(response.getEntity()));
+            }
         } catch (Exception e) {
-            logger.log(Level.WARNING, "Error getting the sessionId  for the oneTimeToken  - " + e.getLocalizedMessage(), e);
+            logger.log(Level.WARNING, "Error getting the sessionId for the oneTimeToken  - " + e.getLocalizedMessage(), e);
         } finally {
             if (response != null) {
                 response.close();

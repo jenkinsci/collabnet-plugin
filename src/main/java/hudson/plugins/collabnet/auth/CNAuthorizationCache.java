@@ -1,6 +1,7 @@
 package hudson.plugins.collabnet.auth;
 
 import com.collabnet.ce.webservices.CTFList;
+import com.collabnet.ce.webservices.CTFProject;
 import com.collabnet.ce.webservices.CTFRole;
 import com.collabnet.ce.webservices.CollabNetApp;
 import hudson.model.Hudson;
@@ -11,6 +12,7 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.logging.Level;
@@ -22,6 +24,8 @@ import java.util.logging.Logger;
 public class CNAuthorizationCache {
 
     private Map<String, Set<Permission>> mPermSetMap = new HashMap<String, Set<Permission>>();
+    private Map<String, CTFProject> mProjects = new HashMap<>();
+    private Map<String, CTFList<CTFRole>> mRoles = new HashMap<>();
     private long mCacheExpirationDate;
 
     /**
@@ -36,6 +40,8 @@ public class CNAuthorizationCache {
      */
     private void clearCache() {
         mPermSetMap.clear();
+        mProjects.clear();
+        mRoles.clear();
 
         AuthorizationStrategy authStrategy = Hudson.getInstance().getAuthorizationStrategy();
         CNAuthorizationStrategy cnAuthStrategy = (CNAuthorizationStrategy) authStrategy;
@@ -58,11 +64,17 @@ public class CNAuthorizationCache {
             userPermSet = new HashSet<Permission>();
             try {
                 CollabNetApp conn = CNConnection.getInstance();
-                CTFList<CTFRole> roleNameSet = conn.getProjectById(projectId).getUserRoles(username);
-                Collection<CollabNetRole> userRoles = CNProjectACL.CollabNetRoles.getMatchingRoles(roleNameSet);
-                for (CollabNetRole role : userRoles) {
-                    userPermSet.addAll(role.getPermissions());
+                CTFProject ctfProject = mProjects.get(projectId);
+                if (ctfProject == null) {
+                    List<CTFProject> projects = conn.getProjects();
+                    for (CTFProject p : projects) {
+                        mProjects.put(p.getId(), p);
+                        userPermSet = getProjectRoles(p, cacheKey, projectId, username);
+                    }
+                } else {
+                    userPermSet = getProjectRoles(ctfProject, cacheKey, projectId, username);
                 }
+
             } catch (IOException e) {
                 LOGGER.log(Level.WARNING, "Failed to retrieve permissions for the user "+username+" on "+projectId);
                 // fall back to zero permission
@@ -73,4 +85,27 @@ public class CNAuthorizationCache {
     }
 
     private static final Logger LOGGER = Logger.getLogger(CNAuthorizationCache.class.getName());
+
+    private Set<Permission> getProjectRoles(CTFProject ctfProject, String cacheKey, String projectId, String username) {
+        Set<Permission> userPermSet = new HashSet<Permission>();
+        try {
+            if (ctfProject != null) {
+                if (ctfProject.getId().equals(projectId)) {
+                    CTFList<CTFRole> roleNameSet = mRoles.get(cacheKey);
+                    if (roleNameSet == null) {
+                        roleNameSet = ctfProject.getUserRoles(username);
+                        mRoles.put(cacheKey, roleNameSet);
+                    }
+                    Collection<CollabNetRole> userRoles = CNProjectACL.CollabNetRoles.getMatchingRoles(roleNameSet);
+                    for (CollabNetRole role : userRoles) {
+                        userPermSet.addAll(role.getPermissions());
+                    }
+                }
+            }
+        } catch (IOException e) {
+            LOGGER.log(Level.WARNING, "Failed to retrieve permissions for the user using getProjectRoles: + "+username+" on "+projectId);
+            // fall back to zero permission
+        }
+    return userPermSet;
+    }
 }

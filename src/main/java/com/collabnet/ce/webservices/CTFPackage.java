@@ -79,8 +79,10 @@ public class CTFPackage extends CTFFolder {
             relTitle = val[val.length -1 ];
         }
         for (CTFRelease p : getReleases()) {
-            if (p.getTitle().equals(relTitle))
-                return getReleaseById(p.getId());
+            if (p != null) {
+                if (p.getTitle().equals(relTitle))
+                    return getReleaseById(p.getId());
+            }
         }
         return null;
     }
@@ -122,7 +124,9 @@ public class CTFPackage extends CTFFolder {
                     Iterator it = dataArray.iterator();
                     while (it.hasNext()) {
                         JSONObject jsonObject = (JSONObject) it.next();
-                        r.add(new CTFRelease(this, jsonObject));
+                        if (jsonObject != null) {
+                            r.add(new CTFRelease(this, jsonObject));
+                        }
                     }
                 }
             } catch (ParseException e) {
