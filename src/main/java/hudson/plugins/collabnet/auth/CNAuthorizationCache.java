@@ -54,7 +54,7 @@ public class CNAuthorizationCache {
         }
         String cacheKey = projectId + ":" + username;
         Set<Permission> userPermSet = mPermSetMap.get(cacheKey);
-        if (userPermSet == null && userPermSet.size() != 0) {
+        if (userPermSet == null && userPermSet.size() == 0) {
             userPermSet = new HashSet<Permission>();
             try {
                 CollabNetApp conn = CNConnection.getInstance();
