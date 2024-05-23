@@ -69,7 +69,9 @@ public class CNAuthorizationCache {
                     List<CTFProject> projects = conn.getProjects();
                     for (CTFProject p : projects) {
                         mProjects.put(p.getId(), p);
-                        userPermSet = getProjectRoles(p, cacheKey, projectId, username);
+                        if (p.getId().equals(projectId)) {
+                            userPermSet = getProjectRoles(p, cacheKey, projectId, username);
+                        }
                     }
                 } else {
                     userPermSet = getProjectRoles(ctfProject, cacheKey, projectId, username);

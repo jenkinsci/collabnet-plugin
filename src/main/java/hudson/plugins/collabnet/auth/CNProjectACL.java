@@ -39,26 +39,21 @@ public class CNProjectACL extends ACL {
 
     public boolean hasPermission(Authentication a, Permission permission) {
 
-        if (!(a instanceof CNAuthentication)) {
-            log.severe("Improper Authentication type used with " +
-                       "CNAuthorizationStrategy!  CNAuthorization " +
-                       "strategy cannot be used without " +
-                       "CNAuthentication.  Please re-configure your " +
-                       "Jenkins instance.");
-            return false;
+        if (a.equals(ACL.SYSTEM)) {
+            return true;
         }
-
-        if (CommonUtil.isEmpty(projectId)) {
-            log.severe("hasPerission: project id could not be found for project: " + this.projectId + ".");
-            return false;
-        }
-
-        CNAuthentication cnAuth = (CNAuthentication) a;
-        String username = cnAuth.getPrincipal();
-        Set<Permission> userPerms = cnAuth.getUserProjectPermSet(username, projectId);
-        for(; permission!=null; permission=permission.impliedBy) {
-            if (userPerms.contains(permission)) {
-                return true;
+        if (a instanceof CNAuthentication) {
+            if (CommonUtil.isEmpty(projectId)) {
+                log.severe("hasPermission: project id could not be found for project: " + this.projectId + ".");
+                return false;
+            }
+            CNAuthentication cnAuth = (CNAuthentication) a;
+            String username = cnAuth.getPrincipal();
+            Set<Permission> userPerms = cnAuth.getUserProjectPermSet(username, projectId);
+            for (; permission != null; permission = permission.impliedBy) {
+                if (userPerms.contains(permission)) {
+                    return true;
+                }
             }
         }
         return false;
