@@ -17,12 +17,14 @@ import hudson.model.Hudson;
 import hudson.plugins.collabnet.util.CommonUtil;
 import hudson.security.SecurityRealm;
 
+import jenkins.security.SecurityListener;
 import org.acegisecurity.Authentication;
 import org.acegisecurity.GrantedAuthority;
 import org.acegisecurity.GrantedAuthorityImpl;
 import org.acegisecurity.context.SecurityContextHolder;
 
 import org.acegisecurity.providers.anonymous.AnonymousAuthenticationToken;
+import org.acegisecurity.userdetails.UserDetails;
 import org.apache.commons.lang3.StringUtils;
 
 import com.collabnet.ce.webservices.CollabNetApp;
@@ -131,6 +133,9 @@ public class CNFilter implements Filter {
         // see artf42298
         request.getSession(true);
         SecurityContextHolder.getContext().setAuthentication(auth);
+
+        UserDetails userDetails = new CNUserDetails(auth.getName(), auth.getAuthorities());
+        SecurityListener.fireAuthenticated(userDetails);
     }
     
     /**
