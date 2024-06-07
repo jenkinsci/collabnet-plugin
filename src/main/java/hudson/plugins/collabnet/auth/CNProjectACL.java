@@ -19,7 +19,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.logging.Logger;
 
-import org.acegisecurity.Authentication;
+import org.springframework.security.core.Authentication;
 
 /**
  * An ACL that uses project roles to determine what Jenkins permissions to give.
@@ -37,9 +37,9 @@ public class CNProjectACL extends ACL {
         this.projectId = projectId;
     }
 
-    public boolean hasPermission(Authentication a, Permission permission) {
+    public boolean hasPermission2(Authentication a, Permission permission) {
 
-        if (a.equals(ACL.SYSTEM)) {
+        if (a.equals(ACL.SYSTEM2)) {
             return true;
         }
         if (a instanceof CNAuthentication) {
@@ -48,9 +48,9 @@ public class CNProjectACL extends ACL {
                 return false;
             }
             CNAuthentication cnAuth = (CNAuthentication) a;
-            String username = cnAuth.getPrincipal();
+            String username = CommonUtil.getUsername(cnAuth.getPrincipal());
             Set<Permission> userPerms = cnAuth.getUserProjectPermSet(username, projectId);
-            for (; permission != null; permission = permission.impliedBy) {
+            for(; permission!=null; permission=permission.impliedBy) {
                 if (userPerms.contains(permission)) {
                     return true;
                 }

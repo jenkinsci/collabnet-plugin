@@ -2,7 +2,7 @@ package hudson.plugins.collabnet.auth;
 
 import hudson.security.ACL;
 import hudson.security.Permission;
-import org.acegisecurity.Authentication;
+import org.springframework.security.core.Authentication;
 
 /**
  * Gives user permission if the user is authenticated.
@@ -17,7 +17,7 @@ public class CNAuthenticatedUserACL extends ACL {
      * @return true if the user should have the permission.
      */
     @Override
-    public boolean hasPermission(Authentication a, Permission p) {
+    public boolean hasPermission2(Authentication a, Permission p) {
         return a.isAuthenticated();
     }
 }

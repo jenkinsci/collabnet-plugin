@@ -1,8 +1,8 @@
 package hudson.plugins.collabnet.auth;
 
 import com.collabnet.ce.webservices.CollabNetApp;
-import hudson.model.Hudson;
-import org.acegisecurity.Authentication;
+import jenkins.model.Jenkins;
+import org.springframework.security.core.Authentication;
 
 /**
  * Provides access to the {@link CollabNetApp} associated with the current {@link Authentication}
@@ -14,7 +14,7 @@ public class CNConnection {
      * is the wrong type.
      */
     public static CollabNetApp getInstance() {
-        return CNConnection.getInstance(Hudson.getAuthentication());
+        return CNConnection.getInstance(Jenkins.getAuthentication2());
     }
 
     /**

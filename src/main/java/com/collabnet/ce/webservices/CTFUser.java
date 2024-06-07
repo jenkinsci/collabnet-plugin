@@ -171,7 +171,7 @@ public class CTFUser extends CTFObject implements ObjectWithTitle {
                     while (it.hasNext()) {
                         JSONObject jsonObject = (JSONObject) it.next();
                         if (jsonObject != null) {
-                            groups.add(app.getGroupByTitle(jsonObject.get("fullname").toString()));
+                            groups.add(new CTFGroup(app, jsonObject));
                         }
                     }
                 }
