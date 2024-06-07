@@ -529,7 +529,7 @@ public abstract class CNFormFieldValidator {
         if (auth.isSuperUser()) {
             return false;
         }
-        String currentUser = auth.getPrincipal();
+        String currentUser = CommonUtil.getUsername(auth.getPrincipal());
         for (String user: CommonUtil.splitCommaStr(userStr)) {
             if (user.equals(currentUser)) {
                 return false;

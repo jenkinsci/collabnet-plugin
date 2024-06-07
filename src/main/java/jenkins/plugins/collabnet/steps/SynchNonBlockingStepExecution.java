@@ -8,12 +8,13 @@ import java.util.concurrent.Future;
 
 import javax.annotation.Nonnull;
 
-import org.acegisecurity.Authentication;
+import org.springframework.security.core.Authentication;
 import org.jenkinsci.plugins.workflow.steps.StepContext;
 import org.jenkinsci.plugins.workflow.steps.StepExecution;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.security.ACL;
+import hudson.security.ACLContext;
 import hudson.util.DaemonThreadFactory;
 import hudson.util.NamingThreadFactory;
 import jenkins.model.Jenkins;
@@ -43,18 +44,12 @@ public abstract class SynchNonBlockingStepExecution<T> extends StepExecution {
 
     @Override
     public final boolean start() throws Exception {
-        final Authentication auth = Jenkins.getAuthentication();
+        final Authentication auth = Jenkins.getAuthentication2();
         task = getExecutorService().submit(new Runnable() {
             @SuppressFBWarnings(value="SE_BAD_FIELD", justification="not serializing anything here")
             @Override public void run() {
-                try {
-                    getContext().onSuccess(ACL.impersonate(auth,
-                            new jenkins.security.NotReallyRoleSensitiveCallable<T, Exception>() {
-                        @Override public T call() throws Exception {
-                            threadName = Thread.currentThread().getName();
-                            return SynchNonBlockingStepExecution.this.run();
-                        }
-                    }));
+                try (ACLContext ctx = ACL.as2(auth)) {
+                    getContext().onSuccess(ctx);
                 } catch (Exception e) {
                     getContext().onFailure(e);
                 }

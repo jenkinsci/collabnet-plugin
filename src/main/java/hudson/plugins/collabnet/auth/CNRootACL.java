@@ -1,9 +1,11 @@
 package hudson.plugins.collabnet.auth;
 
 import hudson.model.Hudson;
+import hudson.plugins.collabnet.util.CommonUtil;
 import hudson.security.ACL;
 import hudson.security.Permission;
-import org.acegisecurity.Authentication;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.Collection;
 import java.util.logging.Logger;
@@ -51,14 +53,14 @@ public class CNRootACL extends ACL {
      * @return true if the user should have the permission.
      */
     @Override
-    public boolean hasPermission(Authentication a, Permission p) {
-        if (a.equals(ACL.SYSTEM)) {
+    public boolean hasPermission2(Authentication a, Permission p) {
+        if (a.equals(ACL.SYSTEM2)) {
             // We want the SYSTEM user to have full rights.
             // This is especially important for triggered builds.
             return true;
         }
-        String username = (String)a.getPrincipal();
-        if (!username.equals("anonymous")) {
+        String username = CommonUtil.getUsername(a.getPrincipal());
+        if (!"anonymous".equals(username)) {
             // allow all logged-in users to access the Hudson.READ
             if (p.equals(Hudson.READ)) {
                 return true;
@@ -68,7 +70,7 @@ public class CNRootACL extends ACL {
             if (auth == null) {
                 // try the inner ACL, if one exists
                 if (this.innerACL != null) {
-                    return this.innerACL.hasPermission(a, p);
+                    return this.innerACL.hasPermission2(a, p);
                 }
                 // if the authentication is the wrong type, return true
                 log.severe("Improper Authentication type used with " +
@@ -96,7 +98,7 @@ public class CNRootACL extends ACL {
         }
         // try the inner ACL, if one exists
         if (this.innerACL != null) {
-            return this.innerACL.hasPermission(a, p);
+            return this.innerACL.hasPermission2(a, p);
         }
         return false;
     }

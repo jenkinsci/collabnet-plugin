@@ -13,7 +13,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import net.sf.json.JSONObject;
-
+import org.springframework.security.core.userdetails.UserDetails;
 /**
  * Class for methods that are useful across Jenkins plugins.
  */
@@ -156,5 +156,15 @@ public class CommonUtil {
      */
     public static boolean isEmpty(String str) {
         return (str == null || str.trim().length() == 0); 
+    }
+
+    public static String getUsername(Object principal) {
+        String username = "";
+        if (principal instanceof UserDetails) {
+            username = ((UserDetails) principal).getUsername();
+        } else if (principal instanceof String) {
+            username = (String) principal;
+        }
+        return username;
     }
 }

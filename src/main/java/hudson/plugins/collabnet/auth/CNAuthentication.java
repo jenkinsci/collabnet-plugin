@@ -5,11 +5,12 @@ import com.collabnet.ce.webservices.CTFUser;
 import com.collabnet.ce.webservices.CollabNetApp;
 import hudson.model.Hudson;
 import hudson.security.Permission;
-import org.acegisecurity.Authentication;
-import org.acegisecurity.GrantedAuthority;
-import org.acegisecurity.GrantedAuthorityImpl;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Set;
@@ -23,7 +24,7 @@ public class CNAuthentication implements Authentication {
     private final String principal;
     private final CTFUser myself;
     private final CollabNetApp cna;
-    private GrantedAuthority[] authorities;
+    private List<SimpleGrantedAuthority> authorities = new ArrayList<>();
     private Collection<String> groups;
     private boolean authenticated = false;
     private boolean cnauthed = false;
@@ -55,14 +56,9 @@ public class CNAuthentication implements Authentication {
                     re.getMessage());
         }
         if (isSuper) {
-            this.authorities = new GrantedAuthority[2];
-            this.authorities[0] = 
-                new GrantedAuthorityImpl(CNAuthentication.SUPER_USER);
-            this.authorities[1] = new GrantedAuthorityImpl("authenticated");
-        } else {
-            this.authorities = new GrantedAuthority[1];
-            this.authorities[0] = new GrantedAuthorityImpl("authenticated");
+            authorities.add(new SimpleGrantedAuthority(CNAuthentication.SUPER_USER));
         }
+        authorities.add(new SimpleGrantedAuthority("authenticated"));
     }
 
     /**
@@ -88,12 +84,8 @@ public class CNAuthentication implements Authentication {
     /**
      * @return a copy of the granted authorities.
      */
-    public GrantedAuthority[] getAuthorities() {
-        GrantedAuthority[] authCopy = 
-            new GrantedAuthority[this.authorities.length];
-        System.arraycopy(this.authorities, 0, authCopy, 0, 
-                         this.authorities.length);
-        return authCopy;
+    public List<SimpleGrantedAuthority> getAuthorities() {
+        return authorities;
     }
     
     public String getPrincipal() {
@@ -148,7 +140,7 @@ public class CNAuthentication implements Authentication {
      * method to get the data on the fly.
      */
     public boolean isSuperUser() {
-        for (GrantedAuthority authority: getAuthorities()) {
+        for (SimpleGrantedAuthority authority: getAuthorities()) {
             if (authority.getAuthority().equals(CNAuthentication.SUPER_USER)) {
                 return true;
             }
@@ -207,7 +199,7 @@ public class CNAuthentication implements Authentication {
      * returns it. Or else null.
      */
     public static CNAuthentication get() {
-        return cast(Hudson.getAuthentication());
+        return cast(Hudson.getAuthentication2());
     }
 
     public static CNAuthentication cast(Authentication a) {

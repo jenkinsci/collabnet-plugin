@@ -1,6 +1,8 @@
 package hudson.plugins.collabnet.auth;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.logging.Logger;
 
 import javax.servlet.Filter;
@@ -17,12 +19,12 @@ import hudson.model.Hudson;
 import hudson.plugins.collabnet.util.CommonUtil;
 import hudson.security.SecurityRealm;
 
-import org.acegisecurity.Authentication;
-import org.acegisecurity.GrantedAuthority;
-import org.acegisecurity.GrantedAuthorityImpl;
-import org.acegisecurity.context.SecurityContextHolder;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 
-import org.acegisecurity.providers.anonymous.AnonymousAuthenticationToken;
 import org.apache.commons.lang3.StringUtils;
 
 import com.collabnet.ce.webservices.CollabNetApp;
@@ -58,7 +60,7 @@ public class CNFilter implements Filter {
                 boolean enableSSOFromCTF = cnRealm.getEnableSSOAuthFromCTF();
                 boolean enableSSOToCTF = cnRealm.getEnableSSOAuthToCTF();
 
-                Authentication auth = Hudson.getAuthentication();
+                Authentication auth = Hudson.getAuthentication2();
 
                 if (enableSSOFromCTF) {
                     HttpServletRequest httpRequest = (HttpServletRequest) request;
@@ -71,7 +73,7 @@ public class CNFilter implements Filter {
                         }
                     }
 
-                    if (!auth.isAuthenticated() || auth.getPrincipal().equals("anonymous")) {
+                    if (!auth.isAuthenticated() || "anonymous".equals(CommonUtil.getUsername(auth.getPrincipal()))) {
                         loginHudsonUsingCTFSSO((CollabNetSecurityRealm)securityRealm, httpRequest);
                     }
                 }
@@ -123,8 +125,9 @@ public class CNFilter implements Filter {
         }
 
         if (logoff) {
-            auth = new AnonymousAuthenticationToken("anonymous","anonymous",
-                new GrantedAuthority[]{new GrantedAuthorityImpl("anonymous")});
+            List authorities = new ArrayList(1);
+            authorities.add(new SimpleGrantedAuthority("anonymous"));
+            auth = new AnonymousAuthenticationToken("anonymous", "anonymous", authorities);
         }
 
         // ensure that a session exists before we set context in it
@@ -151,7 +154,7 @@ public class CNFilter implements Filter {
         cnauth.setCNAuthed(true);
         String reqUrl = getCurrentUrl(request);
         String collabNetUrl = securityRealm.getCollabNetUrl();
-        String username = (String)cnauth.getPrincipal();
+        String username = CommonUtil.getUsername(cnauth.getPrincipal());
         String id = cnauth.getSessionId();
         String cnauthUrl = collabNetUrl + "/sf/sfmain/do/soapredirect?id=" 
             + URLEncoder.encode(id, "UTF-8") + "&user=" + 
