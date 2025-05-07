@@ -12,7 +12,6 @@ import hudson.scm.ChangeLogSet.Entry;
 import hudson.scm.NullSCM;
 import hudson.scm.SCM;
 import hudson.util.AdaptedIterator;
-import hudson.util.IOException2;
 import org.xml.sax.SAXException;
 
 import java.io.File;
@@ -34,7 +33,7 @@ import static java.util.Arrays.asList;
  * This {@link SCM} doesn't really touch any files.
  *
  * TODO: to be moved to Jenkins' test harness.
- * 
+ *
  * @author Kohsuke Kawaguchi
  */
 public class FakeChangeLogSCM extends NullSCM {
@@ -125,7 +124,7 @@ public class FakeChangeLogSCM extends NullSCM {
                         }
                     };
                 } catch (ClassNotFoundException e) {
-                    throw new IOException2(e);
+                    throw new IOException(e);
                 }
             }
         };
