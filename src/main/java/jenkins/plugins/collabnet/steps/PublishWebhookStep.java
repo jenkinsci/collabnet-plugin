@@ -26,7 +26,6 @@ import hudson.plugins.collabnet.orchestrate.BuildNotifier.OptionalWebhook;
 import hudson.plugins.collabnet.orchestrate.PushNotification;
 import hudson.plugins.collabnet.share.TeamForgeShare;
 import hudson.plugins.collabnet.util.Helper;
-import static org.apache.commons.lang.StringUtils.isBlank;
 
 import java.io.IOException;
 import java.io.PrintStream;
@@ -146,7 +145,7 @@ public class PublishWebhookStep extends Step {
          * @return whether or not the validation succeeded
          */
         public FormValidation doCheckStatus(@QueryParameter String status) {
-            if (isBlank(status) // empty is ok
+            if ((status == null || status.trim().isEmpty()) // empty is ok
                     || status.toLowerCase().startsWith("success")
                     || status.toLowerCase().equals("unstable")
                     || status.toLowerCase().equals("aborted")
@@ -205,7 +204,7 @@ public class PublishWebhookStep extends Step {
             PrintStream consoleLogger = this.listener.getLogger();
             pushNotification = new PushNotification();
             String webhookUrl = this.step.getWebhookUrl();
-            if (isBlank(webhookUrl)) {
+            if ((webhookUrl == null || webhookUrl.trim().isEmpty())) {
                 markUnstable(
                         consoleLogger,
                         "Build information NOT sent: " + LOG_MESSAGE_INVALID_URL);

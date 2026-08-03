@@ -26,14 +26,12 @@ import hudson.plugins.collabnet.util.Helper;
 import hudson.tasks.BuildStepMonitor;
 import hudson.tasks.Notifier;
 import hudson.util.Secret;
-import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 import java.io.*;
 import java.net.URISyntaxException;
 import java.util.logging.Logger;
 
-import static org.apache.commons.lang.StringUtils.isBlank;
 
 /**
  * Notifies TeamForge when a build is complete. This is job-specific
@@ -255,7 +253,7 @@ public class BuildNotifier extends Notifier {
      */
     public String getCtfPassword() {
         String plainTextPassword = Secret.toString(this.ctfPassword);
-        return (StringUtils.isBlank(plainTextPassword)) ? null
+        return ((plainTextPassword == null || plainTextPassword.trim().isEmpty())) ? null
             : plainTextPassword;
     }
 

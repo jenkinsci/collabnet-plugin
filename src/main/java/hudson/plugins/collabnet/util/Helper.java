@@ -12,9 +12,7 @@ import hudson.model.TaskListener;
 import org.glassfish.jersey.client.HttpUrlConnectorProvider;
 import org.json.simple.JSONObject;
 
-import static org.apache.commons.lang.StringUtils.isBlank;
 
-import org.apache.commons.lang.StringUtils;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
@@ -316,7 +314,7 @@ public class Helper {
     public static StandardUsernamePasswordCredentials getCredentials(Item owner,
                                                                      String credentialsId, String webhookUrl) {
         StandardUsernamePasswordCredentials result = null;
-        if (!isBlank(credentialsId)) {
+        if (!(credentialsId == null || credentialsId.trim().isEmpty())) {
             for (StandardUsernamePasswordCredentials c : lookupCredentials(owner, webhookUrl)) {
                 if (c.getId().equals(credentialsId)) {
                     result = c;
@@ -328,7 +326,7 @@ public class Helper {
     }
 
     public static List<StandardUsernamePasswordCredentials> lookupCredentials(Item owner, String webhookUrl) {
-        URIRequirementBuilder rBuilder = isBlank(webhookUrl) ?
+        URIRequirementBuilder rBuilder = (webhookUrl == null || webhookUrl.trim().isEmpty()) ?
                 URIRequirementBuilder.create() : URIRequirementBuilder.fromUri(webhookUrl);
         return CredentialsProvider.lookupCredentials(
                 StandardUsernamePasswordCredentials.class, owner, null, rBuilder.build());
@@ -379,10 +377,10 @@ public class Helper {
             }
             Invocation.Builder builder = webTarget.request(MediaType.APPLICATION_JSON)
                     .accept(MediaType.APPLICATION_JSON);
-            if (StringUtils.isNotEmpty(tfSessionId)) {
+            if ((tfSessionId != null && !tfSessionId.isEmpty())) {
                 builder.header(X_AUTH_TOKEN, "Bearer " + tfSessionId);
             }
-            String requestContent = StringUtils.isNotEmpty(payload) ? payload : EMPTY_STRING;
+            String requestContent = (payload != null && !payload.isEmpty()) ? payload : EMPTY_STRING;
             if (HttpMethod.POST.equals(method)) {
                 builder.header(CONTENT_TYPE, MediaType.APPLICATION_JSON);
                 response = builder.post(Entity.entity(requestContent, MediaType.APPLICATION_JSON));

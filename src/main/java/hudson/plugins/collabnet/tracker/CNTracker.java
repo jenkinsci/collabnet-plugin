@@ -23,7 +23,6 @@ import hudson.plugins.collabnet.util.CommonUtil;
 import hudson.tasks.BuildStepMonitor;
 import hudson.util.ComboBoxModel;
 import hudson.util.FormValidation;
-import io.jenkins.cli.shaded.org.apache.commons.lang.ArrayUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 
@@ -369,7 +368,7 @@ public class CNTracker extends AbstractTeamForgeNotifier {
         String title = this.getInterpreted(build, this.getTitle());
         CTFRelease release = this.getRelease().isEmpty() ? null : CNHudsonUtil.getProjectReleaseId(t.getProject(),this.getRelease());
         String releaseId =  release != null ? release.getId() : null;
-        String[] releaseIds = releaseId != null ? new String[] {releaseId} : ArrayUtils.EMPTY_STRING_ARRAY;
+        String[] releaseIds = releaseId != null ? new String[] {releaseId} : new String[0];
         try {
             CTFArtifact asd = t.createArtifact(title,
                                               description, null, null, status,
