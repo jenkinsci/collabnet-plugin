@@ -206,7 +206,10 @@ public class CNFilter implements Filter {
         // remove the contextPath from the url, since it will also
         // be present in the requestURI.
         curBaseUrl = CommonUtil.stripSlashes(curBaseUrl);
-        curBaseUrl = StringUtils.removeEnd(curBaseUrl, req.getContextPath());
+        String contextPath = req.getContextPath();
+        if (contextPath != null && curBaseUrl.endsWith(contextPath)) {
+            curBaseUrl = curBaseUrl.substring(0, curBaseUrl.length() - contextPath.length());
+        }
         StringBuilder url = new StringBuilder(curBaseUrl);
         if (req.getRequestURI() != null) {
             url.append(req.getRequestURI());
